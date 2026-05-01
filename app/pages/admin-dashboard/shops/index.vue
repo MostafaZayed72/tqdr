@@ -213,7 +213,11 @@ watch(searchQuery, fetchShops)
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 dark:divide-white/5">
-            <tr v-for="shop in shops" :key="shop.id" class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group">
+            <tr 
+              v-for="shop in shops" :key="shop.id" 
+              @click="navigateTo(`/admin-dashboard/shops/${shop.id}`)"
+              class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group cursor-pointer"
+            >
               <td class="px-6 py-4">
                 <div class="flex items-center gap-3">
                   <div class="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center font-bold text-emerald-600">
@@ -231,7 +235,7 @@ watch(searchQuery, fetchShops)
               <td class="px-6 py-4">
                 <span class="px-3 py-1 bg-emerald-500/10 text-emerald-500 rounded-full text-xs font-bold">نشط</span>
               </td>
-              <td class="px-6 py-4">
+              <td class="px-6 py-4" @click.stop>
                 <div class="flex items-center justify-center gap-2">
                   <button 
                     @click="handleEditShop(shop)"

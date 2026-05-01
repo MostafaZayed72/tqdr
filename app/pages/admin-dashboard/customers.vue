@@ -9,7 +9,9 @@ import {
   Smartphone,
   Wallet,
   Activity,
-  Trash2
+  Trash2,
+  Edit2,
+  X
 } from 'lucide-vue-next'
 
 definePageMeta({
@@ -20,8 +22,21 @@ const { t, locale } = useI18n()
 const client = useSupabaseClient()
 
 const customers = ref([])
+const shops = ref([])
 const loading = ref(true)
 const searchQuery = ref('')
+const selectedShopId = ref('all')
+const showDeleteModal = ref(false)
+const customerToDelete = ref<string | null>(null)
+
+const fetchShops = async () => {
+  const { data } = await client
+    .from('profiles')
+    .select('id, shop_name')
+    .eq('role', 'shop_owner')
+    .order('shop_name')
+  shops.value = data || []
+}
 
 const fetchAllCustomers = async () => {
   try {
@@ -30,6 +45,10 @@ const fetchAllCustomers = async () => {
       .from('customers')
       .select('*, shop:profiles!customers_shop_owner_id_fkey(shop_name, email)')
       .order('created_at', { ascending: false })
+
+    if (selectedShopId.value !== 'all') {
+      query = query.eq('shop_owner_id', selectedShopId.value)
+    }
 
     if (searchQuery.value) {
       query = query.or(`name.ilike.%${searchQuery.value}%,mobile_number.ilike.%${searchQuery.value}%`)
@@ -45,30 +64,76 @@ const fetchAllCustomers = async () => {
   }
 }
 
-const handleDeleteCustomer = async (id: string) => {
-  if (!confirm('هل أنت متأكد من حذف هذا العميل؟')) return
+const confirmDeleteCustomer = (id: string) => {
+  customerToDelete.value = id
+  showDeleteModal.value = true
+}
+
+const handleDeleteCustomer = async () => {
+  if (!customerToDelete.value) return
   
   try {
-    console.log('Attempting to delete customer with ID:', id)
     loading.value = true
-    const { error, data } = await client.from('customers').delete().eq('id', id).select()
-    
-    console.log('Delete response:', { error, data })
+    const { error } = await client.from('customers').delete().eq('id', customerToDelete.value)
     
     if (error) throw error
     
+    showDeleteModal.value = false
+    customerToDelete.value = null
     await fetchAllCustomers()
-    alert('تم حذف العميل بنجاح.')
   } catch (e: any) {
-    console.error('Delete error:', e)
     alert(e.message)
   } finally {
     loading.value = false
   }
 }
 
-onMounted(fetchAllCustomers)
-watch(searchQuery, fetchAllCustomers)
+const showEditModal = ref(false)
+const editingCustomer = ref<any>(null)
+const editForm = ref({
+  name: '',
+  mobile_number: ''
+})
+
+const handleEditCustomer = (customer: any) => {
+  editingCustomer.value = customer
+  editForm.value = {
+    name: customer.name,
+    mobile_number: customer.mobile_number
+  }
+  showEditModal.value = true
+}
+
+const handleUpdateCustomer = async () => {
+  if (!editingCustomer.value) return
+  
+  try {
+    loading.value = true
+    const { error } = await client
+      .from('customers')
+      .update({
+        name: editForm.value.name,
+        mobile_number: editForm.value.mobile_number
+      })
+      .eq('id', editingCustomer.value.id)
+    
+    if (error) throw error
+    
+    showEditModal.value = false
+    editingCustomer.value = null
+    await fetchAllCustomers()
+  } catch (e: any) {
+    alert(e.message)
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchAllCustomers()
+  fetchShops()
+})
+watch([searchQuery, selectedShopId], fetchAllCustomers)
 </script>
 
 <template>
@@ -88,15 +153,29 @@ watch(searchQuery, fetchAllCustomers)
 
     <!-- Search & Filters -->
     <BaseCard>
-      <div class="relative">
-        <Search :class="locale === 'ar' ? 'right-4' : 'left-4'" class="absolute top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-        <input 
-          v-model="searchQuery"
-          type="text" 
-          placeholder="ابحث بالاسم أو رقم الجوال..."
-          :class="locale === 'ar' ? 'pr-12 pl-4' : 'pl-12 pr-4'"
-          class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl py-4 focus:ring-2 focus:ring-emerald-500/50 transition-all text-slate-900 dark:text-white"
-        />
+      <div class="flex flex-col md:flex-row gap-4">
+        <div class="flex-1 relative group">
+          <Search :class="locale === 'ar' ? 'right-4' : 'left-4'" class="absolute top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors w-5 h-5" />
+          <input 
+            v-model="searchQuery"
+            type="text" 
+            placeholder="ابحث بالاسم أو رقم الجوال..."
+            :class="locale === 'ar' ? 'pr-12 pl-4' : 'pl-12 pr-4'"
+            class="w-full bg-slate-50 dark:bg-white/5 border-none rounded-2xl py-4 focus:ring-2 focus:ring-emerald-500/50 transition-all text-slate-900 dark:text-white font-medium"
+          />
+        </div>
+        
+        <div class="md:w-64 relative group">
+          <Filter :class="locale === 'ar' ? 'right-4' : 'left-4'" class="absolute top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors w-5 h-5" />
+          <select 
+            v-model="selectedShopId"
+            :class="locale === 'ar' ? 'pr-12 pl-4' : 'pl-12 pr-4'"
+            class="w-full bg-slate-50 dark:bg-white/5 border-none rounded-2xl py-4 focus:ring-2 focus:ring-emerald-500/50 transition-all text-slate-900 dark:text-white font-bold appearance-none"
+          >
+            <option value="all">كل المحلات</option>
+            <option v-for="shop in shops" :key="shop.id" :value="shop.id">{{ shop.shop_name }}</option>
+          </select>
+        </div>
       </div>
     </BaseCard>
 
@@ -143,12 +222,17 @@ watch(searchQuery, fetchAllCustomers)
               </td>
               <td class="px-6 py-4">
                 <div class="flex items-center justify-center gap-2">
-                  <button class="p-2 text-slate-400 hover:text-emerald-500 hover:bg-emerald-500/10 rounded-xl transition-all">
-                    <Activity class="w-5 h-5" />
+                  <button 
+                    @click="handleEditCustomer(customer)"
+                    class="p-2 text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 rounded-xl transition-all"
+                    title="تعديل"
+                  >
+                    <Edit2 class="w-5 h-5" />
                   </button>
                   <button 
-                    @click="handleDeleteCustomer(customer.id)"
+                    @click="confirmDeleteCustomer(customer.id)"
                     class="p-2 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
+                    title="حذف"
                   >
                     <Trash2 class="w-5 h-5" />
                   </button>
@@ -165,5 +249,86 @@ watch(searchQuery, fetchAllCustomers)
         </table>
       </div>
     </BaseCard>
+
+    <!-- Edit Customer Modal -->
+    <div v-if="showEditModal" class="fixed inset-0 z-[130] flex items-center justify-center p-4">
+      <div @click="showEditModal = false" class="absolute inset-0 bg-slate-950/40 backdrop-blur-sm"></div>
+      <BaseCard class="w-full max-w-lg relative z-10 animate-slide-up !p-10 rounded-[40px]">
+        <div class="flex items-center justify-between mb-8">
+          <h3 class="text-2xl font-black text-slate-900 dark:text-white">تعديل بيانات العميل</h3>
+          <button @click="showEditModal = false" class="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors">
+            <X class="w-6 h-6 text-slate-400" />
+          </button>
+        </div>
+
+        <form @submit.prevent="handleUpdateCustomer" class="space-y-6">
+          <div>
+            <label class="block text-slate-700 dark:text-slate-300 text-sm font-bold mb-2">اسم العميل</label>
+            <input 
+              v-model="editForm.name"
+              type="text" 
+              required
+              class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl px-5 py-4 text-slate-900 dark:text-white font-bold"
+            />
+          </div>
+          <div>
+            <label class="block text-slate-700 dark:text-slate-300 text-sm font-bold mb-2">رقم الجوال</label>
+            <input 
+              v-model="editForm.mobile_number"
+              type="tel" 
+              required
+              class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl px-5 py-4 text-slate-900 dark:text-white font-bold"
+            />
+          </div>
+
+          <div class="flex gap-4 pt-4">
+            <button 
+              type="submit"
+              :disabled="loading"
+              class="flex-1 bg-emerald-500 text-slate-950 font-black py-4 rounded-2xl hover:bg-emerald-600 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
+            >
+              <span v-if="loading" class="w-4 h-4 border-2 border-slate-950/30 border-t-slate-950 rounded-full animate-spin"></span>
+              <span>حفظ التعديلات</span>
+            </button>
+            <button 
+              type="button"
+              @click="showEditModal = false"
+              class="flex-1 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 font-black py-4 rounded-2xl hover:bg-slate-200 transition-all"
+            >
+              إلغاء
+            </button>
+          </div>
+        </form>
+      </BaseCard>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div v-if="showDeleteModal" class="fixed inset-0 z-[120] flex items-center justify-center p-4">
+      <div @click="showDeleteModal = false" class="absolute inset-0 bg-slate-950/40 backdrop-blur-sm"></div>
+      <BaseCard class="w-full max-w-sm relative z-10 animate-in zoom-in duration-300 !p-10 rounded-[40px] text-center">
+        <div class="w-20 h-20 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+          <Trash2 class="w-10 h-10" />
+        </div>
+        <h3 class="text-2xl font-black text-slate-900 dark:text-white mb-2">تأكيد حذف العميل</h3>
+        <p class="text-slate-500 mb-8 font-medium">هل أنت متأكد من حذف هذا العميل نهائياً؟ سيتم مسح كافة سجلاته من النظام.</p>
+        <div class="space-y-3">
+          <button 
+            @click="handleDeleteCustomer"
+            :disabled="loading"
+            class="w-full bg-red-500 text-white font-black py-4 rounded-2xl hover:bg-red-600 transition-all flex items-center justify-center gap-2"
+          >
+            <span v-if="loading" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+            <span>نعم، احذف العميل</span>
+          </button>
+          <button 
+            @click="showDeleteModal = false"
+            class="w-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 font-black py-4 rounded-2xl hover:bg-slate-200 transition-all"
+          >
+            إلغاء
+          </button>
+        </div>
+      </BaseCard>
+    </div>
   </div>
 </template>
+

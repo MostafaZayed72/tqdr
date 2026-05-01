@@ -1,0 +1,222 @@
+<script setup lang="ts">
+import { 
+  ArrowLeft,
+  Store,
+  Users,
+  Activity,
+  Wallet,
+  ArrowUpCircle,
+  ArrowDownCircle,
+  Calendar,
+  Smartphone
+} from 'lucide-vue-next'
+
+definePageMeta({
+  layout: 'admin'
+})
+
+const route = useRoute()
+const client = useSupabaseClient()
+const { t, locale } = useI18n()
+
+const shop = ref(null)
+const customers = ref([])
+const transactions = ref([])
+const loading = ref(true)
+
+const stats = ref([
+  { label: 'إجمالي العملاء', value: '0', icon: Users, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
+  { label: 'إجمالي الأرصدة', value: '0', icon: Wallet, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+  { label: 'إجمالي العمليات', value: '0', icon: Activity, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+])
+
+const fetchData = async () => {
+  try {
+    loading.value = true
+    const shopId = route.params.id
+    console.log('Fetching data for shop:', shopId)
+
+    if (!shopId) throw new Error('Shop ID is missing')
+
+    // 1. Fetch Shop Info
+    const { data: profile, error: profileErr } = await client
+      .from('profiles')
+      .select('*')
+      .eq('id', shopId)
+      .single()
+    
+    if (profileErr) throw profileErr
+    shop.value = profile
+
+    // 2. Fetch Customers
+    const { data: custData, count: custCount, error: custErr } = await client
+      .from('customers')
+      .select('*', { count: 'exact' })
+      .eq('shop_owner_id', shopId)
+    
+    if (custErr) throw custErr
+    customers.value = custData || []
+    
+    // 3. Fetch Transactions
+    const { data: txData, count: txCount, error: txErr } = await client
+      .from('transactions')
+      .select('*, customer:customers(name, mobile_number)', { count: 'exact' })
+      .eq('shop_owner_id', shopId)
+      .order('created_at', { ascending: false })
+    
+    if (txErr) throw txErr
+    transactions.value = txData || []
+
+    // 4. Calculate Stats
+    const totalBalance = customers.value.reduce((acc, curr) => acc + (Number(curr.balance) || 0), 0)
+    
+    stats.value[0].value = custCount?.toString() || '0'
+    stats.value[1].value = `${totalBalance.toLocaleString()} ${t('common.currency')}`
+    stats.value[2].value = txCount?.toString() || '0'
+
+    console.log('Shop data loaded successfully')
+  } catch (e: any) {
+    console.error('Error fetching shop data:', e.message)
+    // Optionally redirect back if not found
+    // navigateTo('/admin-dashboard/shops')
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(fetchData)
+</script>
+
+<template>
+  <div class="space-y-8 animate-fade-in pb-12">
+    <!-- Breadcrumb & Header -->
+    <div class="flex flex-col gap-4">
+      <button @click="navigateTo('/admin-dashboard/shops')" class="flex items-center gap-2 text-slate-500 hover:text-emerald-500 transition-colors w-fit font-bold">
+        <ArrowLeft class="w-4 h-4" />
+        العودة لإدارة المحلات
+      </button>
+      
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <div class="w-16 h-16 bg-emerald-500 text-slate-950 rounded-3xl flex items-center justify-center shadow-xl shadow-emerald-500/20">
+            <Store class="w-8 h-8" />
+          </div>
+          <div>
+            <h1 class="text-3xl font-black text-slate-900 dark:text-white">{{ shop?.shop_name || 'جاري التحميل...' }}</h1>
+            <p class="text-slate-500 dark:text-slate-400 font-medium">{{ shop?.email }}</p>
+          </div>
+        </div>
+        <div class="px-4 py-2 bg-emerald-500/10 text-emerald-500 rounded-full text-sm font-bold border border-emerald-500/20">
+          حساب نشط
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <BaseCard v-for="stat in stats" :key="stat.label" class="!p-6 group hover:scale-[1.02] transition-all">
+        <div class="flex items-center gap-4">
+          <div :class="`w-12 h-12 ${stat.bg} ${stat.color} rounded-2xl flex items-center justify-center`">
+            <component :is="stat.icon" class="w-6 h-6" />
+          </div>
+          <div>
+            <p class="text-slate-500 dark:text-slate-400 text-sm font-bold">{{ stat.label }}</p>
+            <h3 class="text-2xl font-black text-slate-900 dark:text-white">{{ stat.value }}</h3>
+          </div>
+        </div>
+      </BaseCard>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Transactions Log -->
+      <div class="lg:col-span-2 space-y-6">
+        <h3 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+          <Activity class="w-5 h-5 text-emerald-500" />
+          سجل العمليات المالي للمحل
+        </h3>
+        
+        <BaseCard class="!p-0 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-right">
+              <thead>
+                <tr class="bg-slate-50 dark:bg-white/5 border-b border-slate-100 dark:border-white/5">
+                  <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">العميل</th>
+                  <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase text-center">النوع</th>
+                  <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">المبلغ</th>
+                  <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">التوقيت</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 dark:divide-white/5">
+                <tr v-for="tx in transactions" :key="tx.id" class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                  <td class="px-6 py-4">
+                    <div class="font-bold text-slate-900 dark:text-white text-sm">{{ tx.customer?.name }}</div>
+                    <div class="text-[10px] text-slate-400 flex items-center gap-1">
+                      <Smartphone class="w-3 h-3" /> {{ tx.customer?.mobile_number }}
+                    </div>
+                  </td>
+                  <td class="px-6 py-4">
+                    <div class="flex justify-center">
+                      <div class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-black" :class="tx.type === 'deposit' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-600'">
+                        <component :is="tx.type === 'deposit' ? ArrowUpCircle : ArrowDownCircle" class="w-3 h-3" />
+                        {{ tx.type === 'deposit' ? 'إيداع' : 'خصم' }}
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4">
+                    <div class="font-black text-sm" :class="tx.type === 'deposit' ? 'text-emerald-500' : 'text-red-500'">
+                      {{ tx.type === 'deposit' ? '+' : '-' }}{{ tx.amount }}
+                    </div>
+                  </td>
+                  <td class="px-6 py-4">
+                    <div class="text-[10px] font-bold text-slate-500 flex items-center gap-1">
+                      <Calendar class="w-3 h-3" />
+                      {{ new Date(tx.created_at).toLocaleDateString('ar-EG') }}
+                    </div>
+                  </td>
+                </tr>
+                <tr v-if="transactions.length === 0">
+                  <td colspan="4" class="px-6 py-12 text-center text-slate-400 text-sm">
+                    لا توجد عمليات مسجلة لهذا المحل حتى الآن.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </BaseCard>
+      </div>
+
+      <!-- Shop Customers List -->
+      <div class="space-y-6">
+        <h3 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+          <Users class="w-5 h-5 text-indigo-500" />
+          عملاء المحل
+        </h3>
+        
+        <div class="space-y-3">
+          <BaseCard v-for="customer in customers.slice(0, 8)" :key="customer.id" class="!p-4 group hover:border-indigo-500/30 transition-all">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-slate-100 dark:bg-white/5 rounded-xl flex items-center justify-center font-bold text-slate-400 group-hover:bg-indigo-500 group-hover:text-white transition-all">
+                  {{ customer.name.charAt(0) }}
+                </div>
+                <div>
+                  <h4 class="font-bold text-sm text-slate-900 dark:text-white">{{ customer.name }}</h4>
+                  <p class="text-[10px] text-slate-500">{{ customer.mobile_number }}</p>
+                </div>
+              </div>
+              <div class="text-right">
+                <p class="text-xs font-black text-emerald-500">{{ customer.balance }} ر.س</p>
+              </div>
+            </div>
+          </BaseCard>
+          <div v-if="customers.length > 8" class="text-center">
+            <p class="text-xs text-slate-400">و {{ customers.length - 8 }} عملاء آخرين</p>
+          </div>
+          <div v-if="customers.length === 0" class="text-center py-8">
+            <p class="text-slate-400 text-sm">لا يوجد عملاء مضافين.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

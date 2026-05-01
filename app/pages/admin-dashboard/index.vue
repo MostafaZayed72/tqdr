@@ -24,25 +24,38 @@ const stats = ref([
   { label: t('dashboard.admin_stats.growth'), value: '+14%', icon: TrendingUp, color: 'bg-rose-500' },
 ])
 
+const user = useSupabaseUser()
 const recentShops = ref([])
 const loading = ref(true)
 
-onMounted(async () => {
-  if (!user.value?.id || String(user.value.id) === 'undefined') {
-    loading.value = false
-    return
-  }
+const fetchStats = async () => {
   try {
-    const { count: shopsCount } = await client.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'shop_owner')
-    const { count: customersCount } = await client.from('customers').select('*', { count: 'exact', head: true })
-    const { data: transactions } = await client.from('transactions').select('amount')
+    loading.value = true
+    
+    // 1. Total Shops
+    const { count: shopsCount } = await client
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .eq('role', 'shop_owner')
+    
+    // 2. Total Customers
+    const { count: customersCount } = await client
+      .from('customers')
+      .select('*', { count: 'exact', head: true })
+    
+    // 3. Total Transaction Volume
+    const { data: transactions } = await client
+      .from('transactions')
+      .select('amount')
     
     const totalVolume = transactions?.reduce((acc, curr) => acc + Number(curr.amount), 0) || 0
 
     stats.value[0].value = shopsCount?.toString() || '0'
     stats.value[1].value = customersCount?.toString() || '0'
     stats.value[2].value = `${totalVolume.toLocaleString()} ${t('common.currency')}`
+    stats.value[3].value = `+${Math.min(100, Math.round((totalVolume / 1000) * 10))}%` // Temporary growth logic
 
+    // 4. Recent Shops
     const { data: shops } = await client
       .from('profiles')
       .select('*')
@@ -52,11 +65,13 @@ onMounted(async () => {
     
     recentShops.value = shops || []
   } catch (e) {
-    console.error(e)
+    console.error('Stats error:', e)
   } finally {
     loading.value = false
   }
-})
+}
+
+onMounted(fetchStats)
 </script>
 
 <template>
@@ -91,55 +106,25 @@ onMounted(async () => {
     </div>
 
     <!-- Main Content -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      <!-- Performance Chart -->
-      <div class="lg:col-span-2 space-y-6">
-        <div class="flex items-center justify-between">
-          <h3 class="text-xl font-bold text-slate-900 dark:text-white">أداء المنصة</h3>
-          <div class="flex items-center gap-2">
-            <button class="px-3 py-1 text-xs font-bold bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 rounded-lg">أسبوعي</button>
-            <button class="px-3 py-1 text-xs font-bold bg-emerald-500 text-slate-950 rounded-lg">شهري</button>
-          </div>
-        </div>
-        
-        <BaseCard class="h-[400px] flex items-center justify-center relative overflow-hidden">
-          <div class="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent"></div>
-          <div class="text-center space-y-4 relative z-10">
-            <BarChart3 class="w-16 h-16 text-emerald-500/20 mx-auto" />
-            <p class="text-slate-400 font-medium italic">رسم بياني تفاعلي (قريباً)</p>
-          </div>
-        </BaseCard>
-      </div>
-
-      <!-- System Health & Recent -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <!-- Recent Participants -->
       <div class="space-y-6">
-        <h3 class="text-xl font-bold text-slate-900 dark:text-white">حالة النظام</h3>
-        <BaseCard>
-          <div class="space-y-6">
-            <div class="flex items-center justify-between">
-              <span class="text-slate-600 dark:text-slate-400">قاعدة البيانات</span>
-              <span class="flex items-center gap-2 text-emerald-500 font-bold">
-                <div class="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></div>
-                مستقرة
-              </span>
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-slate-600 dark:text-slate-400">الاستضافة</span>
-              <span class="text-emerald-500 font-bold">100% متصل</span>
-            </div>
-          </div>
-        </BaseCard>
-
-        <div class="flex items-center justify-between mt-8">
-          <h3 class="text-xl font-bold text-slate-900 dark:text-white">أحدث المشتركين</h3>
-          <NuxtLink to="/admin/shops" class="text-sm font-bold text-emerald-500 hover:underline">المزيد</NuxtLink>
+        <div class="flex items-center justify-between">
+          <h3 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <Store class="w-5 h-5 text-emerald-500" />
+            أحدث المشتركين
+          </h3>
+          <NuxtLink to="/admin-dashboard/shops" class="text-sm font-bold text-emerald-500 hover:bg-emerald-500/10 px-3 py-1 rounded-lg transition-colors">المزيد</NuxtLink>
         </div>
 
-        <div class="space-y-4">
-          <BaseCard v-for="shop in recentShops" :key="shop.id" class="!p-4 hover:border-emerald-500/50 transition-colors group">
+        <div class="grid grid-cols-1 gap-4">
+          <BaseCard v-for="shop in recentShops" :key="shop.id" 
+            @click="navigateTo(`/admin-dashboard/shops/${shop.id}`)"
+            class="!p-4 hover:border-emerald-500/50 transition-all group cursor-pointer"
+          >
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-slate-100 dark:bg-white/5 rounded-xl flex items-center justify-center font-bold text-slate-500">
+                <div class="w-10 h-10 bg-slate-100 dark:bg-white/5 rounded-xl flex items-center justify-center font-bold text-slate-500 group-hover:bg-emerald-500 group-hover:text-white transition-all">
                   {{ shop.email.charAt(0).toUpperCase() }}
                 </div>
                 <div>
@@ -150,7 +135,39 @@ onMounted(async () => {
               <ChevronRight class="w-4 h-4 text-slate-300 group-hover:translate-x-[-4px] transition-transform" />
             </div>
           </BaseCard>
+          <div v-if="recentShops.length === 0 && !loading" class="text-center py-12 text-slate-500 font-medium">
+            لا يوجد مشتركين جدد حالياً.
+          </div>
         </div>
+      </div>
+
+      <!-- System Health -->
+      <div class="space-y-6">
+        <h3 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+          <ShieldCheck class="w-5 h-5 text-indigo-500" />
+          حالة النظام
+        </h3>
+        <BaseCard class="!p-8">
+          <div class="space-y-8">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></div>
+                <span class="text-slate-600 dark:text-slate-400 font-medium">قاعدة البيانات</span>
+              </div>
+              <span class="text-emerald-500 font-black">مستقرة وجاهزة</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                <span class="text-slate-600 dark:text-slate-400 font-medium">حالة الاستضافة</span>
+              </div>
+              <span class="text-emerald-500 font-black">100% متصل</span>
+            </div>
+            <div class="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-white/5">
+              <span class="text-slate-500 text-sm italic font-medium">آخر فحص للنظام: الآن</span>
+            </div>
+          </div>
+        </BaseCard>
       </div>
     </div>
   </div>
