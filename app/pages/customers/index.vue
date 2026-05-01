@@ -12,7 +12,13 @@ import {
   PlusCircle,
   MinusCircle,
   TrendingUp,
-  Wallet
+  Wallet,
+  ArrowUpCircle,
+  ArrowDownCircle,
+  User,
+  Smartphone,
+  Save,
+  DollarSign
 } from 'lucide-vue-next'
 
 definePageMeta({
@@ -50,7 +56,7 @@ const form = ref({
 })
 
 const txForm = ref({
-  type: 'deposit',
+  type: 'deposit' as 'deposit' | 'withdrawal',
   amount: 0,
   paid_amount: 0,
   saved_amount: 0,
@@ -62,12 +68,18 @@ const showTxModal = ref(false)
 const fetchCustomers = async () => {
   try {
     loading.value = true
-    if (!user.value?.id) return
+    
+    // Explicitly get user
+    const { data: { user: currentUser } } = await client.auth.getUser()
+    if (!currentUser) {
+      console.log('No user found in fetchCustomers')
+      return
+    }
 
     let query = client
       .from('customers')
       .select('*', { count: 'exact' })
-      .eq('shop_owner_id', user.value.id)
+      .eq('shop_owner_id', currentUser.id)
       .order('created_at', { ascending: false })
       .range((currentPage.value - 1) * pageSize, currentPage.value * pageSize - 1)
 
@@ -75,11 +87,13 @@ const fetchCustomers = async () => {
       query = query.or(`name.ilike.%${searchQuery.value}%,mobile_number.ilike.%${searchQuery.value}%`)
     }
 
-    const { data, count } = await query
+    const { data, count, error } = await query
+    if (error) throw error
+    
     customers.value = data || []
     totalCustomers.value = count || 0
   } catch (e) {
-    console.error(e)
+    console.error('Error fetching customers:', e)
   } finally {
     loading.value = false
   }
@@ -89,12 +103,16 @@ const handleAddCustomer = async () => {
   try {
     loading.value = true
     
+    // Explicitly get user to avoid null shop_owner_id
+    const { data: { user: currentUser } } = await client.auth.getUser()
+    if (!currentUser) throw new Error('يرجى تسجيل الدخول أولاً')
+
     // 1. Create Customer
     const { data: customer, error: custError } = await client.from('customers').insert({
       name: form.value.name,
       mobile_number: form.value.mobile_number,
       balance: form.value.added_balance,
-      shop_owner_id: user.value.id
+      shop_owner_id: currentUser.id
     }).select().single()
 
     if (custError) throw custError
@@ -103,10 +121,9 @@ const handleAddCustomer = async () => {
     if (form.value.added_balance > 0) {
       await client.from('transactions').insert({
         customer_id: customer.id,
-        shop_owner_id: user.value.id,
+        shop_owner_id: currentUser.id,
         type: 'deposit',
         amount: form.value.added_balance,
-        paid_amount: form.value.paid_amount,
         balance_before: 0,
         balance_after: form.value.added_balance,
         note: 'افتتاح حساب عميل جديد'
@@ -115,7 +132,7 @@ const handleAddCustomer = async () => {
     
     showAddModal.value = false
     form.value = { name: '', mobile_number: '', paid_amount: 0, added_balance: 0 }
-    fetchCustomers()
+    await fetchCustomers()
   } catch (e: any) {
     if (import.meta.client) alert(e.message)
   } finally {
@@ -126,6 +143,10 @@ const handleAddCustomer = async () => {
 const handleQuickTx = async () => {
   try {
     loading.value = true
+    
+    const { data: { user: currentUser } } = await client.auth.getUser()
+    if (!currentUser) throw new Error('يرجى تسجيل الدخول أولاً')
+
     const customer = selectedCustomer.value
     const balanceBefore = Number(customer.balance)
     let balanceAfter = balanceBefore
@@ -139,13 +160,8 @@ const handleQuickTx = async () => {
     if (balanceAfter < 0) throw new Error('رصيد العميل غير كافٍ')
 
     // 1. Update Customer Balance
-    const totalSavedUpdate = txForm.value.type === 'withdrawal' 
-      ? Number(customer.total_saved) + Number(txForm.value.saved_amount)
-      : Number(customer.total_saved)
-
     const { error: custError } = await client.from('customers').update({
-      balance: balanceAfter,
-      total_saved: totalSavedUpdate
+      balance: balanceAfter
     }).eq('id', customer.id)
 
     if (custError) throw custError
@@ -153,11 +169,9 @@ const handleQuickTx = async () => {
     // 2. Create Transaction
     await client.from('transactions').insert({
       customer_id: customer.id,
-      shop_owner_id: user.value.id,
+      shop_owner_id: currentUser.id,
       type: txForm.value.type,
       amount: txForm.value.amount,
-      paid_amount: txForm.value.paid_amount,
-      saved_amount: txForm.value.saved_amount,
       balance_before: balanceBefore,
       balance_after: balanceAfter,
       note: txForm.value.note
@@ -165,12 +179,68 @@ const handleQuickTx = async () => {
 
     showTxModal.value = false
     txForm.value = { type: 'deposit', amount: 0, paid_amount: 0, saved_amount: 0, note: '' }
-    fetchCustomers()
+    await fetchCustomers()
   } catch (e: any) {
     if (import.meta.client) alert(e.message)
   } finally {
     loading.value = false
   }
+}
+
+const showEditModal = ref(false)
+
+const handleUpdateCustomer = async () => {
+  try {
+    loading.value = true
+    const { error } = await client
+      .from('customers')
+      .update({
+        name: form.value.name,
+        mobile_number: form.value.mobile_number
+      })
+      .eq('id', selectedCustomer.value.id)
+
+    if (error) throw error
+    
+    showEditModal.value = false
+    form.value = { name: '', mobile_number: '', paid_amount: 0, added_balance: 0 }
+    await fetchCustomers()
+  } catch (e: any) {
+    if (import.meta.client) alert(e.message)
+  } finally {
+    loading.value = false
+  }
+}
+
+const handleDeleteCustomer = async (id: string) => {
+  if (!confirm('هل أنت متأكد من حذف هذا العميل؟ سيتم حذف جميع سجلات العمليات المرتبطة به.')) return
+  
+  try {
+    loading.value = true
+    // 1. Delete transactions first (due to FK)
+    await client.from('transactions').delete().eq('customer_id', id)
+    
+    // 2. Delete customer
+    const { error } = await client.from('customers').delete().eq('id', id)
+    if (error) throw error
+    
+    await fetchCustomers()
+  } catch (e: any) {
+    if (import.meta.client) alert(e.message)
+  } finally {
+    loading.value = false
+  }
+}
+
+const openEditModal = (customer: any) => {
+  selectedCustomer.value = customer
+  form.value = {
+    name: customer.name,
+    mobile_number: customer.mobile_number,
+    paid_amount: 0,
+    added_balance: 0
+  }
+  showEditModal.value = true
 }
 
 const openTxModal = (customer: any, type: 'deposit' | 'withdrawal') => {
@@ -191,14 +261,13 @@ const viewHistory = async (customer: any) => {
 }
 
 onMounted(async () => {
-  if (!user.value?.id || String(user.value.id) === 'undefined') {
-    loading.value = false
-    return
-  }
-  
   await fetchCustomers()
-  const { data } = await client.from('profiles').select('shop_name').eq('id', user.value.id).maybeSingle()
-  profile.value = data
+  
+  const { data: { user: currentUser } } = await client.auth.getUser()
+  if (currentUser) {
+    const { data } = await client.from('profiles').select('shop_name').eq('id', currentUser.id).maybeSingle()
+    profile.value = data
+  }
 })
 watch(searchQuery, fetchCustomers)
 </script>
@@ -236,59 +305,83 @@ watch(searchQuery, fetchCustomers)
     </BaseCard>
 
     <!-- Customers Table -->
-    <BaseCard class="!p-0 overflow-hidden">
+    <BaseCard class="!p-0 overflow-hidden shadow-xl border-white/5">
       <div class="overflow-x-auto">
         <table class="w-full" :class="locale === 'ar' ? 'text-right' : 'text-left'">
           <thead>
             <tr class="bg-slate-50 dark:bg-white/5 border-b border-slate-100 dark:border-white/5">
-              <th class="px-6 py-4 text-sm font-bold text-slate-500">اسم العميل</th>
-              <th class="px-6 py-4 text-sm font-bold text-slate-500">رقم الجوال</th>
-              <th class="px-6 py-4 text-sm font-bold text-slate-500">الرصيد</th>
-              <th class="px-6 py-4 text-sm font-bold text-slate-500">إجمالي التوفير</th>
-              <th class="px-6 py-4 text-sm font-bold text-slate-500 text-center">الإجراءات</th>
+              <th class="px-6 py-5 text-sm font-bold text-slate-500">اسم العميل</th>
+              <th class="px-6 py-5 text-sm font-bold text-slate-500">رقم الجوال</th>
+              <th class="px-6 py-5 text-sm font-bold text-slate-500">الرصيد الحقيقي</th>
+              <th class="px-6 py-5 text-sm font-bold text-slate-500">إجمالي التوفير</th>
+              <th class="px-6 py-5 text-sm font-bold text-slate-500 text-center">الإجراءات السريعة</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 dark:divide-white/5">
             <tr v-for="customer in customers" :key="customer.id" class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group">
-              <td class="px-6 py-4 font-bold text-slate-900 dark:text-white">{{ customer.name }}</td>
-              <td class="px-6 py-4">
+              <td class="px-6 py-5">
+                <div class="font-bold text-slate-900 dark:text-white text-lg">{{ customer.name }}</div>
+                <div class="text-xs text-slate-400">منذ {{ new Date(customer.created_at).toLocaleDateString('ar-EG') }}</div>
+              </td>
+              <td class="px-6 py-5">
                 <div class="flex items-center gap-2 text-slate-600 dark:text-slate-400">
-                  <Phone class="w-4 h-4 text-slate-400" />
-                  {{ customer.mobile_number }}
+                  <Smartphone class="w-4 h-4 text-emerald-500" />
+                  <span class="font-mono">{{ customer.mobile_number }}</span>
                 </div>
               </td>
-              <td class="px-6 py-4">
-                <span class="text-lg font-black text-emerald-500">{{ customer.balance }} ر.س</span>
+              <td class="px-6 py-5">
+                <div class="flex flex-col">
+                  <span class="text-xl font-black text-emerald-500">{{ customer.balance }} ر.س</span>
+                  <span class="text-[10px] text-slate-400">رصيد متاح للاستهلاك</span>
+                </div>
               </td>
-              <td class="px-6 py-4 text-slate-500">{{ customer.total_saved }} ر.س</td>
-              <td class="px-6 py-4">
-                <div class="flex items-center justify-center gap-2">
-                  <button 
-                    @click="openTxModal(customer, 'deposit')" 
-                    class="flex items-center gap-1 px-3 py-1.5 bg-emerald-500/10 text-emerald-600 rounded-xl font-bold hover:bg-emerald-500 hover:text-white transition-all group"
-                  >
-                    <PlusCircle class="w-4 h-4" />
-                    <span>شحن</span>
-                  </button>
-                  <button 
-                    @click="openTxModal(customer, 'withdrawal')" 
-                    class="flex items-center gap-1 px-3 py-1.5 bg-red-500/10 text-red-600 rounded-xl font-bold hover:bg-red-500 hover:text-white transition-all group"
-                  >
-                    <MinusCircle class="w-4 h-4" />
-                    <span>خصم</span>
-                  </button>
-                  <div class="w-[1px] h-6 bg-slate-100 dark:bg-white/5 mx-1"></div>
-                  <button @click="viewHistory(customer)" class="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-500/10 rounded-xl transition-colors">
-                    <History class="w-5 h-5" />
-                  </button>
+              <td class="px-6 py-5">
+                <div class="flex flex-col">
+                  <span class="text-lg font-bold text-blue-500">{{ customer.total_saved }} ر.س</span>
+                  <span class="text-[10px] text-slate-400">إجمالي المبالغ المخفّضة</span>
+                </div>
+              </td>
+              <td class="px-6 py-5">
+                <div class="flex items-center justify-center gap-3">
+                  <div class="flex items-center gap-1">
+                    <button 
+                      @click="openTxModal(customer, 'deposit')" 
+                      class="p-2 bg-emerald-500/10 text-emerald-600 rounded-xl hover:bg-emerald-500 hover:text-white transition-all shadow-sm active:scale-95"
+                      title="شحن رصيد"
+                    >
+                      <PlusCircle class="w-5 h-5" />
+                    </button>
+                    <button 
+                      @click="openTxModal(customer, 'withdrawal')" 
+                      class="p-2 bg-red-500/10 text-red-600 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-sm active:scale-95"
+                      title="خصم رصيد"
+                    >
+                      <MinusCircle class="w-5 h-5" />
+                    </button>
+                  </div>
+                  
+                  <div class="w-[1px] h-8 bg-slate-200 dark:bg-white/10 mx-1"></div>
+                  
+                  <div class="flex items-center gap-1">
+                    <button @click="viewHistory(customer)" class="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-500/10 rounded-xl transition-all active:scale-90" title="السجل">
+                      <History class="w-5 h-5" />
+                    </button>
+                    <button @click="openEditModal(customer)" class="p-2 text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 rounded-xl transition-all active:scale-90" title="تعديل">
+                      <Edit2 class="w-5 h-5" />
+                    </button>
+                    <button @click="handleDeleteCustomer(customer.id)" class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-500/10 rounded-xl transition-all active:scale-90" title="حذف">
+                      <Trash2 class="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
               </td>
             </tr>
             <tr v-if="customers.length === 0 && !loading">
-              <td colspan="5" class="px-6 py-12 text-center text-slate-500">
-                <div class="flex flex-col items-center gap-4">
-                  <Users class="w-12 h-12 text-slate-300" />
-                  <p>لا يوجد عملاء مضافين حالياً.</p>
+              <td colspan="5" class="px-6 py-20 text-center text-slate-500">
+                <div class="flex flex-col items-center gap-4 opacity-40">
+                  <Users class="w-20 h-20 text-slate-300" />
+                  <p class="text-xl font-bold">لا يوجد عملاء مضافين حالياً</p>
+                  <p class="text-sm">ابدأ بإضافة أول عميل لمتجرك الآن</p>
                 </div>
               </td>
             </tr>
@@ -297,13 +390,13 @@ watch(searchQuery, fetchCustomers)
       </div>
 
       <!-- Pagination -->
-      <div v-if="totalPages > 1" class="p-6 border-t border-slate-100 dark:border-white/5 flex items-center justify-between">
+      <div v-if="totalPages > 1" class="p-6 bg-slate-50/50 dark:bg-white/5 border-t border-slate-100 dark:border-white/5 flex items-center justify-between">
         <p class="text-sm text-slate-500 font-medium">
           عرض 
           <span class="font-bold text-slate-900 dark:text-white">{{ (currentPage - 1) * pageSize + 1 }}</span>
-          -
+          إلى
           <span class="font-bold text-slate-900 dark:text-white">{{ Math.min(currentPage * pageSize, totalCustomers) }}</span>
-          من
+          من أصل
           <span class="font-bold text-slate-900 dark:text-white">{{ totalCustomers }}</span>
         </p>
         
@@ -311,9 +404,9 @@ watch(searchQuery, fetchCustomers)
           <button 
             @click="currentPage--; fetchCustomers()"
             :disabled="currentPage === 1"
-            class="p-2 rounded-xl bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="w-10 h-10 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-50 transition-all shadow-sm"
           >
-            {{ locale === 'ar' ? '→' : '←' }}
+            {{ locale === 'ar' ? '←' : '→' }}
           </button>
           
           <div class="flex items-center gap-1">
@@ -321,8 +414,8 @@ watch(searchQuery, fetchCustomers)
               v-for="page in totalPages" 
               :key="page"
               @click="currentPage = page; fetchCustomers()"
-              class="w-10 h-10 rounded-xl font-bold transition-all"
-              :class="currentPage === page ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20' : 'hover:bg-slate-100 dark:hover:bg-white/5 text-slate-500'"
+              class="w-10 h-10 rounded-xl font-bold transition-all shadow-sm"
+              :class="currentPage === page ? 'bg-emerald-500 text-slate-950 scale-110 z-10' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-500 hover:bg-slate-50'"
             >
               {{ page }}
             </button>
@@ -331,14 +424,240 @@ watch(searchQuery, fetchCustomers)
           <button 
             @click="currentPage++; fetchCustomers()"
             :disabled="currentPage === totalPages"
-            class="p-2 rounded-xl bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="w-10 h-10 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-50 transition-all shadow-sm"
           >
-            {{ locale === 'ar' ? '←' : '→' }}
+            {{ locale === 'ar' ? '→' : '←' }}
           </button>
         </div>
       </div>
     </BaseCard>
 
-    <!-- Modals (Add, Transaction, History) ... Simplified for now to ensure stability -->
+    <!-- Modal: Edit Customer -->
+    <div v-if="showEditModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-md" @click="showEditModal = false"></div>
+      <div class="relative bg-white dark:bg-slate-900 w-full max-w-xl rounded-[40px] shadow-2xl border border-white/10 overflow-hidden animate-in fade-in zoom-in duration-300">
+        <div class="p-8 border-b border-slate-100 dark:border-white/5 flex items-center justify-between bg-gradient-to-r from-amber-500/10 to-transparent">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-amber-500 rounded-2xl flex items-center justify-center text-slate-950 shadow-lg shadow-amber-500/20">
+              <Edit2 class="w-6 h-6" />
+            </div>
+            <div>
+              <h3 class="text-2xl font-black text-slate-900 dark:text-white">تعديل بيانات العميل</h3>
+              <p class="text-sm text-slate-500">تحديث معلومات العميل الأساسية</p>
+            </div>
+          </div>
+          <button @click="showEditModal = false" class="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-all">
+            <X class="w-6 h-6 text-slate-400" />
+          </button>
+        </div>
+
+        <form @submit.prevent="handleUpdateCustomer" class="p-10 space-y-8">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-2">
+              <label class="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                <User class="w-4 h-4 text-amber-500" /> اسم العميل
+              </label>
+              <input v-model="form.name" type="text" required placeholder="محمد علي..." class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl px-5 py-4 focus:ring-2 focus:ring-amber-500" />
+            </div>
+            <div class="space-y-2">
+              <label class="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                <Smartphone class="w-4 h-4 text-amber-500" /> رقم الجوال
+              </label>
+              <input v-model="form.mobile_number" type="tel" required placeholder="05xxxxxxxx" class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl px-5 py-4 focus:ring-2 focus:ring-amber-500" />
+            </div>
+          </div>
+
+          <button type="submit" class="w-full bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 font-black py-5 rounded-[24px] text-lg hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-amber-500/10">
+            تحديث البيانات
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal: Add New Customer -->
+    <div v-if="showAddModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-md" @click="showAddModal = false"></div>
+      <div class="relative bg-white dark:bg-slate-900 w-full max-w-xl rounded-[40px] shadow-2xl border border-white/10 overflow-hidden animate-in fade-in zoom-in duration-300">
+        <div class="p-8 border-b border-slate-100 dark:border-white/5 flex items-center justify-between bg-gradient-to-r from-emerald-500/10 to-transparent">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center text-slate-950 shadow-lg shadow-emerald-500/20">
+              <Plus class="w-6 h-6" />
+            </div>
+            <div>
+              <h3 class="text-2xl font-black text-slate-900 dark:text-white">إضافة عميل جديد</h3>
+              <p class="text-sm text-slate-500">سجل بيانات عميلك وابدأ في شحن رصيده</p>
+            </div>
+          </div>
+          <button @click="showAddModal = false" class="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-all">
+            <X class="w-6 h-6 text-slate-400" />
+          </button>
+        </div>
+
+        <form @submit.prevent="handleAddCustomer" class="p-10 space-y-8">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-2">
+              <label class="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                <User class="w-4 h-4 text-emerald-500" /> اسم العميل
+              </label>
+              <input v-model="form.name" type="text" required placeholder="محمد علي..." class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl px-5 py-4 focus:ring-2 focus:ring-emerald-500" />
+            </div>
+            <div class="space-y-2">
+              <label class="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                <Smartphone class="w-4 h-4 text-emerald-500" /> رقم الجوال
+              </label>
+              <input v-model="form.mobile_number" type="tel" required placeholder="05xxxxxxxx" class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl px-5 py-4 focus:ring-2 focus:ring-emerald-500" />
+            </div>
+          </div>
+
+          <div class="bg-emerald-500/5 p-8 rounded-[32px] border border-emerald-500/10 space-y-6">
+            <div class="flex items-center gap-2 text-emerald-600 font-black mb-2">
+              <Wallet class="w-5 h-5" />
+              <span>الرصيد الافتتاحي</span>
+            </div>
+            <div class="grid grid-cols-2 gap-6">
+              <div class="space-y-2">
+                <label class="text-[10px] uppercase font-bold text-slate-500">المبلغ المدفوع (كاش)</label>
+                <input v-model="form.paid_amount" type="number" step="0.01" class="w-full bg-white dark:bg-slate-900 border-none rounded-2xl px-4 py-3 font-bold text-lg focus:ring-2 focus:ring-emerald-500" />
+              </div>
+              <div class="space-y-2">
+                <label class="text-[10px] uppercase font-bold text-slate-500">الرصيد المضاف</label>
+                <input v-model="form.added_balance" type="number" step="0.01" class="w-full bg-white dark:bg-slate-900 border-none rounded-2xl px-4 py-3 font-bold text-lg text-emerald-500 focus:ring-2 focus:ring-emerald-500" />
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="w-full bg-slate-900 dark:bg-emerald-500 text-white dark:text-slate-950 font-black py-5 rounded-[24px] text-lg hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-emerald-500/10">
+            حفظ العميل والاشتراك
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal: Quick Transaction (Deposit/Withdrawal) -->
+    <div v-if="showTxModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-md" @click="showTxModal = false"></div>
+      <div class="relative bg-white dark:bg-slate-900 w-full max-w-lg rounded-[40px] shadow-2xl border border-white/10 overflow-hidden animate-in fade-in zoom-in duration-300">
+        <div class="p-8 border-b border-slate-100 dark:border-white/5 flex items-center justify-between" :class="txForm.type === 'deposit' ? 'bg-emerald-500/10' : 'bg-red-500/10'">
+          <div class="flex items-center gap-4">
+            <div :class="txForm.type === 'deposit' ? 'bg-emerald-500' : 'bg-red-500'" class="w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg">
+              <component :is="txForm.type === 'deposit' ? ArrowUpCircle : ArrowDownCircle" class="w-6 h-6" />
+            </div>
+            <div>
+              <h3 class="text-2xl font-black text-slate-900 dark:text-white">{{ txForm.type === 'deposit' ? 'شحن رصيد جديد' : 'خصم من الرصيد' }}</h3>
+              <p class="text-sm text-slate-500">{{ selectedCustomer?.name }}</p>
+            </div>
+          </div>
+          <button @click="showTxModal = false" class="p-2 hover:bg-black/5 rounded-xl transition-all">
+            <X class="w-6 h-6 text-slate-400" />
+          </button>
+        </div>
+
+        <form @submit.prevent="handleQuickTx" class="p-10 space-y-8">
+          <div class="space-y-4">
+            <label class="text-center block text-sm font-bold text-slate-500 uppercase tracking-widest">أدخل المبلغ</label>
+            <input 
+              v-model="txForm.amount" 
+              type="number" 
+              required 
+              autofocus
+              step="0.01" 
+              placeholder="0.00"
+              class="w-full bg-transparent border-none text-center text-6xl font-black text-slate-900 dark:text-white focus:ring-0 placeholder:text-slate-200 dark:placeholder:text-slate-800" 
+            />
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <label class="text-[10px] font-bold text-slate-500 px-2 uppercase">المبلغ المدفوع كاش</label>
+              <div class="relative">
+                <DollarSign class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input v-model="txForm.paid_amount" type="number" step="0.01" class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl pl-10 pr-4 py-4 font-bold focus:ring-2 focus:ring-emerald-500" />
+              </div>
+            </div>
+            <div class="space-y-2">
+              <label class="text-[10px] font-bold text-slate-500 px-2 uppercase">المبلغ المخفّض (توفير)</label>
+              <div class="relative">
+                <Save class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input v-model="txForm.saved_amount" type="number" step="0.01" class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl pl-10 pr-4 py-4 font-bold text-blue-500 focus:ring-2 focus:ring-blue-500" />
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-slate-500 px-2">ملاحظات العملية</label>
+            <input v-model="txForm.note" type="text" placeholder="مثلاً: عرض نهاية الشهر..." class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl px-5 py-4 focus:ring-2 focus:ring-emerald-500" />
+          </div>
+
+          <button 
+            type="submit" 
+            :class="txForm.type === 'deposit' ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-red-500 shadow-red-500/20'"
+            class="w-full text-slate-950 font-black py-6 rounded-[28px] text-xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl"
+          >
+            تأكيد العملية الآن
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal: Transaction History (Simple Version) -->
+    <div v-if="showHistoryModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-md" @click="showHistoryModal = false"></div>
+      <div class="relative bg-white dark:bg-slate-900 w-full max-w-2xl rounded-[40px] shadow-2xl border border-white/10 overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-300">
+        <div class="p-8 border-b border-slate-100 dark:border-white/5 flex items-center justify-between bg-slate-50 dark:bg-white/5">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-blue-500 rounded-2xl flex items-center justify-center text-white shadow-lg">
+              <History class="w-6 h-6" />
+            </div>
+            <div>
+              <h3 class="text-2xl font-black text-slate-900 dark:text-white">سجل العميل</h3>
+              <p class="text-sm text-slate-500">{{ selectedCustomer?.name }}</p>
+            </div>
+          </div>
+          <button @click="showHistoryModal = false" class="p-2 hover:bg-black/5 rounded-xl transition-all">
+            <X class="w-6 h-6 text-slate-400" />
+          </button>
+        </div>
+
+        <div class="max-h-[60vh] overflow-y-auto p-4 custom-scrollbar">
+          <div v-if="customerHistory.length === 0" class="p-20 text-center text-slate-400">لا توجد عمليات سابقة لهذا العميل.</div>
+          <div v-for="tx in customerHistory" :key="tx.id" class="mb-4 p-5 rounded-3xl border border-slate-100 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/5 transition-all flex items-center justify-between">
+            <div class="flex items-center gap-4">
+              <div :class="tx.type === 'deposit' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'" class="w-12 h-12 rounded-2xl flex items-center justify-center font-black">
+                {{ tx.type === 'deposit' ? '+' : '-' }}
+              </div>
+              <div>
+                <p class="font-bold text-slate-900 dark:text-white">{{ tx.type === 'deposit' ? 'شحن رصيد' : 'خصم من الرصيد' }}</p>
+                <p class="text-[10px] text-slate-500">{{ new Date(tx.created_at).toLocaleString('ar-EG') }}</p>
+                <p v-if="tx.note" class="text-xs text-slate-400 mt-1 italic">"{{ tx.note }}"</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <p class="font-black text-lg" :class="tx.type === 'deposit' ? 'text-emerald-500' : 'text-red-500'">
+                {{ tx.amount }} ر.س
+              </p>
+              <p class="text-[10px] text-slate-400">بعد العملية: {{ tx.balance_after }} ر.س</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
+
+<style scoped>
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #10b981;
+  border-radius: 10px;
+}
+</style>

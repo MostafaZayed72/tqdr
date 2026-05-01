@@ -8,7 +8,8 @@ import {
   Plus,
   X,
   User,
-  Smartphone
+  Smartphone,
+  Calendar
 } from 'lucide-vue-next'
 
 definePageMeta({
@@ -51,13 +52,15 @@ const submittng = ref(false)
 const fetchData = async () => {
   try {
     loading.value = true
-    if (!user.value?.id) return
+    
+    const { data: { user: currentUser } } = await client.auth.getUser()
+    if (!currentUser) return
 
     // 1. Fetch Stats (Total sums)
     const { data: statsData } = await client
       .from('transactions')
       .select('type, amount')
-      .eq('shop_owner_id', user.value.id)
+      .eq('shop_owner_id', currentUser.id)
     
     totalDeposits.value = statsData?.filter(t => t.type === 'deposit').reduce((acc, curr) => acc + Number(curr.amount), 0) || 0
     totalWithdrawals.value = statsData?.filter(t => t.type === 'withdrawal').reduce((acc, curr) => acc + Number(curr.amount), 0) || 0
@@ -66,7 +69,7 @@ const fetchData = async () => {
     let txQuery = client
       .from('transactions')
       .select('*, customer:customers(name, mobile_number)', { count: 'exact' })
-      .eq('shop_owner_id', user.value.id)
+      .eq('shop_owner_id', currentUser.id)
       .order('created_at', { ascending: false })
       .range((currentPage.value - 1) * pageSize, currentPage.value * pageSize - 1)
 
@@ -87,7 +90,7 @@ const fetchData = async () => {
     const { data: custData } = await client
       .from('customers')
       .select('id, name, mobile_number')
-      .eq('shop_owner_id', user.value.id)
+      .eq('shop_owner_id', currentUser.id)
     customers.value = custData || []
 
   } catch (e) {
@@ -101,6 +104,9 @@ const handleAddTransaction = async () => {
   try {
     submittng.value = true
     
+    const { data: { user: currentUser } } = await client.auth.getUser()
+    if (!currentUser) throw new Error('يرجى تسجيل الدخول أولاً')
+
     // 1. Get current customer balance
     const { data: customer } = await client
       .from('customers')
@@ -124,7 +130,7 @@ const handleAddTransaction = async () => {
     // 2. Insert transaction
     const { error: txError } = await client.from('transactions').insert({
       ...form.value,
-      shop_owner_id: user.value.id,
+      shop_owner_id: currentUser.id,
       balance_before,
       balance_after
     })
@@ -157,10 +163,6 @@ const handleAddTransaction = async () => {
 }
 
 onMounted(async () => {
-  if (!user.value?.id || String(user.value.id) === 'undefined') {
-    loading.value = false
-    return
-  }
   await fetchData()
 })
 watch([filterType], fetchData)
