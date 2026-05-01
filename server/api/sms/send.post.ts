@@ -23,37 +23,23 @@ export default defineEventHandler(async (event) => {
   const password = process.env.SMS_PASSWORD || config.smsPassword
   const sender = process.env.SMS_SENDER || config.smsSender
 
-  // Using URLSearchParams to handle encoding automatically and safely
-  const query = new URLSearchParams({
-    username: username as string,
-    password: password as string,
-    src: sender as string,
-    dests: formattedPhone,
-    body: message,
-    priority: '0',
-    delay: '0',
-    validity: '0',
-    maxParts: '0',
-    dlr: '0',
-    prevDups: '0',
-    msgClass: 'promotional'
-  })
-
-  const apiUrl = `https://api.oursms.com/api-a/msgs?${query.toString()}`
-
   try {
-    const response: any = await $fetch(apiUrl, {
-      method: 'GET'
+    const response: any = await $fetch('https://api.oursms.com/api-a/msgs', {
+      method: 'POST',
+      body: `username=${username}&password=${password}&src=${sender}&dests=${formattedPhone}&body=${encodeURIComponent(message)}&priority=0&delay=0&validity=0&maxParts=0&dlr=0&prevDups=0&msgClass=transactional`,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
     })
 
-    console.log('--- SMS Service Report (GET) ---')
+    console.log('--- SMS Service Report (POST Revert) ---')
     console.log('To:', formattedPhone)
     console.log('Status:', response)
     console.log('--------------------------')
 
     return { success: true, response }
   } catch (error: any) {
-    console.error('--- SMS Service Error (GET) ---')
+    console.error('--- SMS Service Error (POST Revert) ---')
     console.error('To:', phone)
     console.error('Error Status:', error.statusCode)
     console.error('Error Message:', error.message)

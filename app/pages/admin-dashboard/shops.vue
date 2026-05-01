@@ -240,7 +240,7 @@ watch(searchQuery, fetchShops)
                     <Edit2 class="w-5 h-5" />
                   </button>
                   <button 
-                    @click="handleDeleteShop(shop.id)"
+                    @click="confirmDeleteShop(shop.id)"
                     class="p-2 text-red-500 hover:bg-red-500/10 rounded-xl transition-colors"
                   >
                     <Trash2 class="w-5 h-5" />
@@ -297,12 +297,12 @@ watch(searchQuery, fetchShops)
             <input 
               v-model="form.password"
               type="password" 
-              required
+              :required="!editingShop"
               class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl px-5 py-4 text-slate-900 dark:text-white"
               placeholder="••••••••"
             />
           </div>
-          <div>
+          <div v-if="!editingShop">
             <label class="block text-slate-700 dark:text-slate-300 text-sm font-bold mb-2">رقم الجوال (للإشعارات)</label>
             <input 
               v-model="form.mobile_number"
@@ -319,9 +319,37 @@ watch(searchQuery, fetchShops)
             class="w-full bg-emerald-500 text-slate-950 font-black py-5 rounded-2xl hover:bg-emerald-600 transition-all shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-3"
           >
             <span v-if="loading" class="w-5 h-5 border-2 border-slate-950/30 border-t-slate-950 rounded-full animate-spin"></span>
-            <span>إنشاء الحساب</span>
+            <span>{{ editingShop ? 'حفظ التعديلات' : 'إنشاء الحساب' }}</span>
           </button>
         </form>
+      </BaseCard>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div v-if="showDeleteModal" class="fixed inset-0 z-[120] flex items-center justify-center p-4">
+      <div @click="showDeleteModal = false" class="absolute inset-0 bg-slate-950/40 backdrop-blur-sm"></div>
+      <BaseCard class="w-full max-w-sm relative z-10 animate-in zoom-in duration-300 !p-10 rounded-[40px] text-center">
+        <div class="w-20 h-20 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+          <Trash2 class="w-10 h-10" />
+        </div>
+        <h3 class="text-2xl font-black text-slate-900 dark:text-white mb-2">تأكيد الحذف</h3>
+        <p class="text-slate-500 mb-8 font-medium">هل أنت متأكد من حذف هذا الحساب نهائياً؟ لا يمكن التراجع عن هذه الخطوة.</p>
+        <div class="space-y-3">
+          <button 
+            @click="handleDeleteShop"
+            :disabled="loading"
+            class="w-full bg-red-500 text-white font-black py-4 rounded-2xl hover:bg-red-600 transition-all flex items-center justify-center gap-2"
+          >
+            <span v-if="loading" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+            <span>نعم، احذف الحساب</span>
+          </button>
+          <button 
+            @click="showDeleteModal = false"
+            class="w-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 font-black py-4 rounded-2xl hover:bg-slate-200 transition-all"
+          >
+            إلغاء
+          </button>
+        </div>
       </BaseCard>
     </div>
 
