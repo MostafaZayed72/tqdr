@@ -1,0 +1,58 @@
+import { fileURLToPath } from 'node:url'
+
+// https://nuxt.com/docs/api/configuration/nuxt-config
+export default defineNuxtConfig({
+  compatibilityDate: '2025-07-15',
+
+  future: {
+    compatibilityVersion: 4,
+  },
+
+  srcDir: 'app/',
+
+  devtools: { enabled: true },
+  devServer: {
+    port: 3005
+  },
+
+  modules: [
+    '@nuxtjs/tailwindcss',
+    '@nuxtjs/i18n',
+    '@vueuse/nuxt',
+    '@nuxtjs/supabase',
+  ],
+
+  i18n: {
+    locales: [
+      { code: 'en', language: 'en-US', file: 'en.json', name: 'English' },
+      { code: 'ar', language: 'ar-SA', file: 'ar.json', name: 'العربية', dir: 'rtl' },
+    ],
+    defaultLocale: 'ar',
+    langDir: fileURLToPath(new URL('./i18n/locales', import.meta.url)),
+    strategy: 'no_prefix',
+    lazy: true,
+  },
+
+  supabase: {
+    redirect: false
+  },
+
+  css: ['~/assets/css/main.css'],
+
+  tailwindcss: {
+    cssPath: '~/assets/css/main.css',
+  },
+
+  app: {
+    head: {
+      link: [
+        { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
+        {
+          rel: 'stylesheet',
+          href: 'https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap',
+        },
+      ],
+    },
+  },
+})
