@@ -32,7 +32,7 @@ const handleLogout = async () => {
   <div class="min-h-screen bg-slate-50 dark:bg-slate-950 font-['Tajawal']" :dir="locale === 'ar' ? 'rtl' : 'ltr'">
     <!-- Sidebar -->
     <aside 
-      class="fixed inset-y-0 z-50 w-72 bg-slate-900 border-white/10 transition-transform duration-300 transform lg:translate-x-0"
+      class="fixed inset-y-0 z-50 w-72 bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 transition-transform duration-300 transform lg:translate-x-0"
       :class="[
         locale === 'ar' ? 'right-0 border-l' : 'left-0 border-r',
         isSidebarOpen ? 'translate-x-0' : (locale === 'ar' ? 'translate-x-full' : '-translate-x-full')
@@ -42,7 +42,7 @@ const handleLogout = async () => {
         <!-- Sidebar Header -->
         <div class="p-6 flex items-center justify-between">
           <NuxtLink to="/admin-dashboard" class="flex items-center">
-            <img src="/logo.png" alt="Logo" class="h-16 w-auto object-contain brightness-0 invert" />
+            <img src="/logo.png" alt="Logo" class="h-16 w-auto object-contain dark:invert" />
           </NuxtLink>
           <button @click="isSidebarOpen = false" class="lg:hidden text-slate-500">
             <X class="w-6 h-6" />

@@ -215,7 +215,7 @@ const handleAddTransaction = async () => {
 
       if (custInfo?.mobile_number) {
         let smsMessage = ''
-        const shopName = profile?.shop_name || 'تقدير'
+        const shopName = profile?.shop_name || 'تقدر'
         
         if (form.value.type === 'deposit') {
           smsMessage = `تم تسجيلك في محل (${shopName}). دفعت ${amount} ر.س ورصيدك الحالي هو ${balance_after} ر.س. شكراً لثقتك!`
