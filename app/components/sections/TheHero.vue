@@ -110,7 +110,7 @@ onUnmounted(() => {
                   <ChevronRight class="w-5 h-5 rtl:rotate-180" />
                 </a>
                 <a
-                  href="#how-it-works"
+                  href="#features"
                   class="inline-flex items-center gap-2 px-8 py-4 rounded-full border border-white/30 bg-white/5 hover:bg-white/10 text-white font-bold text-lg backdrop-blur-md transition-all"
                 >
                   {{ slides[currentSlide].ctaSecondary }}

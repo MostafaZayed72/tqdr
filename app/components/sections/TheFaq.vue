@@ -6,14 +6,8 @@ const faqs = computed(() => [
   { q: t('landing.faq.questions[0].q'), a: t('landing.faq.questions[0].a') },
   { q: t('landing.faq.questions[1].q'), a: t('landing.faq.questions[1].a') },
   { q: t('landing.faq.questions[2].q'), a: t('landing.faq.questions[2].a') },
-  { 
-    q: t('landing.faq.questions[3]?.q') || 'كيف يعرف البائع أن لديّ رصيد؟', 
-    a: t('landing.faq.questions[3]?.a') || 'تعطيه رقم جوالك المسجل، وبعد الخصم تصلك رسالة SMS بالمبلغ المخصوم والرصيد الجديد فوراً.' 
-  },
-  { 
-    q: t('landing.faq.questions[4]?.q') || 'ماذا يحدث إذا انتهى رصيدي؟', 
-    a: t('landing.faq.questions[4]?.a') || 'ببساطة، يمكنك تعبئة رصيد جديد في أي وقت للاستمرار في الاستفادة من الخصومات الحصرية.' 
-  },
+  { q: t('landing.faq.questions[3].q'), a: t('landing.faq.questions[3].a') },
+  { q: t('landing.faq.questions[4].q'), a: t('landing.faq.questions[4].a') },
 ])
 
 function toggle(i: number) {

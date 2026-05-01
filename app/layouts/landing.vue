@@ -6,8 +6,8 @@ const { locale } = useI18n()
 
 const navLinks = [
   { nameKey: 'landing.nav.home', href: '#home' },
-  { nameKey: 'landing.nav.features', href: '#shop-features' },
-  { nameKey: 'landing.nav.how_it_works', href: '#how-it-works' },
+  { nameKey: 'landing.nav.how_it_works', href: '#features' },
+  { nameKey: 'landing.nav.features', href: '#shops' },
   { nameKey: 'landing.nav.faq', href: '#faq' },
   { nameKey: 'landing.nav.contact', href: '#contact' },
 ]

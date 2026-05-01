@@ -73,7 +73,7 @@
       "how_it_works": "How it works",
       "faq": "FAQ",
       "contact": "Contact",
-      "login": "Merchant Portal"
+      "login": "Login"
     },
     "hero": {
       "slides": [
@@ -126,6 +126,10 @@
           "desc": "Monitor every penny in your balance at all stores at a glance."
         },
         {
+          "title": "Instant Confirmations",
+          "desc": "Receive an SMS notification after every transaction with full details."
+        },
+        {
           "title": "Continuous Savings",
           "desc": "Benefit from exclusive discounts and offers available only to balance holders."
         },
@@ -169,6 +173,17 @@
         }
       ]
     },
+    "contact": {
+      "title": "Contact Us",
+      "subtitle": "We're here to answer your questions and help you join the Tqdr network.",
+      "form": {
+        "name": "Full Name",
+        "email": "Email Address",
+        "message": "Your Message",
+        "send": "Send Message",
+        "success": "Sent successfully! We'll contact you soon."
+      }
+    },
     "faq": {
       "title": "FAQ",
       "subtitle": "Everything you need to know about Tqdr",
@@ -180,8 +195,27 @@
         {
           "q": "Is it secure?",
           "a": "Yes, we use the highest security standards to protect all data."
+        },
+        {
+          "q": "Does the customer need an app?",
+          "a": "No app needed for customers, they just provide their mobile number and get SMS alerts."
+        },
+        {
+          "q": "How does the seller know my balance?",
+          "a": "Provide your registered number, and after the discount, you get an SMS with details instantly."
+        },
+        {
+          "q": "What if my balance runs out?",
+          "a": "Simply recharge your balance at any time to continue enjoying exclusive discounts."
         }
       ]
+    },
+    "footer": {
+      "description": "Tqdr Plus is the ultimate solution for managing customer loyalty and saving money through local stores in an innovative and secure way.",
+      "quick_links": "Quick Links",
+      "contact_info": "Contact Info",
+      "rights": "Tqdr Plus. All Rights Reserved.",
+      "status": "Running 24/7"
     }
   }
 }
