@@ -65,5 +65,123 @@
     "amount": "Amount",
     "date": "Date",
     "status": "Status"
+  },
+  "landing": {
+    "nav": {
+      "home": "Home",
+      "features": "Features",
+      "how_it_works": "How it works",
+      "faq": "FAQ",
+      "contact": "Contact",
+      "login": "Merchant Portal"
+    },
+    "hero": {
+      "slides": [
+        {
+          "badge": "Future of Digital Trade 🚀",
+          "title": "Turn Your Local Shop into a Smart Store",
+          "subtitle": "Tqdr Plus helps you manage customer balances and increase loyalty through a fully integrated digital system.",
+          "cta_primary": "Get Started",
+          "cta_secondary": "Discover More"
+        },
+        {
+          "badge": "Safe & Secure 🔒",
+          "title": "Fully Encrypted Financial System",
+          "subtitle": "We use the latest encryption technologies to protect your customers' data and financial operations 24/7.",
+          "cta_primary": "Join Us",
+          "cta_secondary": "Security Details"
+        },
+        {
+          "badge": "Sustainable Growth 📈",
+          "title": "Double Profits via Customer Loyalty",
+          "subtitle": "Customers with balances in your shop return to buy 3 times more often than others.",
+          "cta_primary": "Start Growing",
+          "cta_secondary": "View Stats"
+        },
+        {
+          "badge": "Pure Simplicity ✨",
+          "title": "Simple Interface Managed via Mobile",
+          "subtitle": "No need for complex devices, manage all operations and add customers directly from your smartphone.",
+          "cta_primary": "Join Now",
+          "cta_secondary": "Live Demo"
+        }
+      ]
+    },
+    "stats": {
+      "badge": "Amazing Stats 📊",
+      "title": "Kingdom's Largest Loyalty Network",
+      "subtitle": "We take pride in supporting thousands of merchants and millions of customers.",
+      "partners": "Partners",
+      "customers": "Active Users",
+      "savings": "Total Savings",
+      "cities": "Cities Covered"
+    },
+    "customer_features": {
+      "badge": "Customer Benefits ✨",
+      "title": "Easier & Smarter Shopping",
+      "subtitle": "Save money and track your balances in your favorite stores via one secure platform.",
+      "features": [
+        {
+          "title": "Balance Tracking",
+          "desc": "Monitor every penny in your balance at all stores at a glance."
+        },
+        {
+          "title": "Continuous Savings",
+          "desc": "Benefit from exclusive discounts and offers available only to balance holders."
+        },
+        {
+          "title": "Financial Security",
+          "desc": "Your rights are protected and secured with the latest digital encryption."
+        }
+      ]
+    },
+    "shop_features": {
+      "badge": "Merchant Benefits 🏪",
+      "title": "Pro Tools for Shop Growth",
+      "subtitle": "Everything you need to manage customer relations and loyalty in one platform.",
+      "dashboard": "Smart Dashboard",
+      "revenue": "Revenue Analysis",
+      "live": "Live Tracking",
+      "features": [
+        {
+          "title": "CRM",
+          "desc": "Full record for each customer, their transactions, and preferences."
+        },
+        {
+          "title": "Growth Reports",
+          "desc": "Charts illustrating your business development and monthly performance."
+        },
+        {
+          "title": "Liquidity Management",
+          "desc": "Full control over cash flow and deposited balances."
+        },
+        {
+          "title": "Loyalty System",
+          "desc": "Advanced tools to ensure customers return for more purchases."
+        },
+        {
+          "title": "Gift Cards",
+          "desc": "Ability to send special offers to the most loyal customers."
+        },
+        {
+          "title": "Mobile Management",
+          "desc": "Integrated app allowing you to manage your business from anywhere."
+        }
+      ]
+    },
+    "faq": {
+      "title": "FAQ",
+      "subtitle": "Everything you need to know about Tqdr",
+      "questions": [
+        {
+          "q": "How can I start?",
+          "a": "You can start immediately by registering as a merchant and adding your shop."
+        },
+        {
+          "q": "Is it secure?",
+          "a": "Yes, we use the highest security standards to protect all data."
+        }
+      ]
+    }
   }
 }
