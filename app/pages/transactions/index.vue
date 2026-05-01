@@ -26,6 +26,10 @@ const loading = ref(true)
 const showAddModal = ref(false)
 const searchQuery = ref('')
 const filterType = ref('all')
+const dateRange = ref('today') // today, week, month, custom
+const customDateStart = ref('')
+const customDateEnd = ref('')
+const showDateDropdown = ref(false)
 
 // Pagination
 const currentPage = ref(1)
@@ -49,6 +53,29 @@ const form = ref({
 })
 const submittng = ref(false)
 
+const getDateRangeParams = () => {
+  const now = new Date()
+  const start = new Date()
+  start.setHours(0, 0, 0, 0)
+  
+  if (dateRange.value === 'today') {
+    return { start: start.toISOString(), end: now.toISOString() }
+  } else if (dateRange.value === 'week') {
+    start.setDate(now.getDate() - 7)
+    return { start: start.toISOString(), end: now.toISOString() }
+  } else if (dateRange.value === 'month') {
+    start.setMonth(now.getMonth() - 1)
+    return { start: start.toISOString(), end: now.toISOString() }
+  } else if (dateRange.value === 'custom' && customDateStart.value && customDateEnd.value) {
+    const s = new Date(customDateStart.value)
+    s.setHours(0,0,0,0)
+    const e = new Date(customDateEnd.value)
+    e.setHours(23,59,59,999)
+    return { start: s.toISOString(), end: e.toISOString() }
+  }
+  return null
+}
+
 const fetchData = async () => {
   try {
     loading.value = true
@@ -56,30 +83,45 @@ const fetchData = async () => {
     const { data: { user: currentUser } } = await client.auth.getUser()
     if (!currentUser) return
 
-    // 1. Fetch Stats (Total sums)
-    const { data: statsData } = await client
+    const range = getDateRangeParams()
+
+    // 1. Base Stats Query (joined with customers to support search filtering)
+    let statsQuery = client
       .from('transactions')
-      .select('type, amount')
+      .select('type, amount, customer:customers!inner(name, mobile_number)')
       .eq('shop_owner_id', currentUser.id)
+    
+    if (range) {
+      statsQuery = statsQuery.gte('created_at', range.start).lte('created_at', range.end)
+    }
+
+    if (searchQuery.value) {
+      statsQuery = statsQuery.or(`name.ilike.%${searchQuery.value}%,mobile_number.ilike.%${searchQuery.value}%`, { foreignTable: 'customers' })
+    }
+
+    const { data: statsData } = await statsQuery
     
     totalDeposits.value = statsData?.filter(t => t.type === 'deposit').reduce((acc, curr) => acc + Number(curr.amount), 0) || 0
     totalWithdrawals.value = statsData?.filter(t => t.type === 'withdrawal').reduce((acc, curr) => acc + Number(curr.amount), 0) || 0
 
-    // 2. Fetch Transactions with Pagination
+    // 2. Fetch Transactions
     let txQuery = client
       .from('transactions')
-      .select('*, customer:customers(name, mobile_number)', { count: 'exact' })
+      .select('*, customer:customers!inner(name, mobile_number)', { count: 'exact' })
       .eq('shop_owner_id', currentUser.id)
       .order('created_at', { ascending: false })
       .range((currentPage.value - 1) * pageSize, currentPage.value * pageSize - 1)
+
+    if (range) {
+      txQuery = txQuery.gte('created_at', range.start).lte('created_at', range.end)
+    }
 
     if (filterType.value !== 'all') {
       txQuery = txQuery.eq('type', filterType.value)
     }
 
     if (searchQuery.value) {
-      // Searching by customer name or mobile within transactions
-      txQuery = txQuery.or(`customer.name.ilike.%${searchQuery.value}%,customer.mobile_number.ilike.%${searchQuery.value}%`)
+      txQuery = txQuery.or(`name.ilike.%${searchQuery.value}%,mobile_number.ilike.%${searchQuery.value}%`, { foreignTable: 'customers' })
     }
 
     const { data: txData, count } = await txQuery
@@ -97,6 +139,21 @@ const fetchData = async () => {
     console.error(e)
   } finally {
     loading.value = false
+  }
+}
+
+const setRange = (range: string) => {
+  dateRange.value = range
+  if (range !== 'custom') {
+    showDateDropdown.value = false
+    fetchData()
+  }
+}
+
+const applyCustomRange = () => {
+  if (customDateStart.value && customDateEnd.value) {
+    showDateDropdown.value = false
+    fetchData()
   }
 }
 
@@ -165,120 +222,171 @@ const handleAddTransaction = async () => {
 onMounted(async () => {
   await fetchData()
 })
-watch([filterType], fetchData)
+watch([filterType, searchQuery], fetchData)
 </script>
 
 <template>
-  <div class="space-y-8">
+  <div class="space-y-8 animate-fade-in">
     <!-- Header -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
       <div>
-        <h1 class="text-3xl font-black text-slate-900 dark:text-white">سجل العمليات</h1>
-        <p class="text-slate-500 mt-1">تتبع كافة عمليات الشحن والخصم التي تمت في محلك.</p>
+        <h1 class="text-4xl font-black text-slate-900 dark:text-white flex items-center gap-3">
+          <div class="p-2 bg-emerald-500/10 rounded-2xl">
+            <History class="w-8 h-8 text-emerald-500" />
+          </div>
+          {{ $t('nav.transactions') }}
+        </h1>
+        <p class="text-slate-500 dark:text-slate-400 mt-2 font-medium">سجل كامل لجميع عمليات الشحن والخصم ومتابعة الأرصدة.</p>
       </div>
       
       <button 
         @click="showAddModal = true"
-        class="flex items-center gap-2 px-6 py-3 bg-emerald-500 text-slate-950 rounded-2xl font-bold hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20"
+        class="flex items-center gap-2 px-8 py-4 bg-emerald-500 text-slate-950 rounded-[24px] font-black hover:bg-emerald-600 transition-all shadow-xl shadow-emerald-500/20 active:scale-95 premium-btn"
       >
-        <Plus class="w-5 h-5" />
+        <Plus class="w-6 h-6" />
         <span>عملية جديدة</span>
       </button>
     </div>
 
-    <!-- Filters -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div class="md:col-span-2 relative">
-        <Search class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+    <!-- Filters Row -->
+    <div class="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between bg-white dark:bg-slate-900 p-4 rounded-[32px] border border-slate-200 dark:border-white/5 shadow-sm">
+      <div class="flex-1 relative group">
+        <Search class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors w-5 h-5" />
         <input 
           v-model="searchQuery"
           type="text" 
-          placeholder="ابحث عن عملية..."
-          class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl pr-12 pl-4 py-3.5 focus:ring-2 focus:ring-emerald-500/50 transition-all text-slate-900 dark:text-white shadow-sm"
+          placeholder="ابحث عن اسم العميل أو رقم الجوال..."
+          class="w-full bg-slate-50 dark:bg-white/5 border-none rounded-2xl pr-12 pl-4 py-4 focus:ring-2 focus:ring-emerald-500/50 transition-all text-slate-900 dark:text-white"
         />
-        <h1 class="text-3xl font-black text-slate-900 dark:text-white">{{ $t('nav.transactions') }}</h1>
-        <p class="text-slate-500 dark:text-slate-400 mt-1">سجل كامل لجميع عمليات الشحن والخصم.</p>
       </div>
       
-      <div class="flex items-center gap-3">
-        <button class="flex items-center gap-2 px-6 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-          <Calendar class="w-5 h-5 text-slate-400" />
-          <span>تاريخ اليوم</span>
-        </button>
-        <button class="p-3 bg-emerald-500 text-slate-950 rounded-2xl hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20">
-          <Filter class="w-5 h-5" />
-        </button>
+      <div class="flex flex-wrap items-center gap-3">
+        <!-- Date Range Selector -->
+        <div class="relative">
+          <button 
+            @click="showDateDropdown = !showDateDropdown"
+            class="flex items-center gap-3 px-6 py-4 bg-slate-50 dark:bg-white/5 border border-transparent hover:border-emerald-500/30 rounded-2xl font-bold text-slate-700 dark:text-slate-300 transition-all whitespace-nowrap"
+          >
+            <Calendar class="w-5 h-5 text-emerald-500" />
+            <span>{{ dateRange === 'custom' ? (customDateStart || 'من') + ' - ' + (customDateEnd || 'إلى') : dateRange === 'today' ? 'اليوم' : dateRange === 'week' ? 'آخر أسبوع' : 'آخر شهر' }}</span>
+          </button>
+
+          <!-- Dropdown Menu -->
+          <div v-if="showDateDropdown" class="absolute left-0 top-full mt-2 w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-3xl shadow-2xl z-[100] p-4 animate-in fade-in slide-in-from-top-2">
+            <div class="space-y-1">
+              <button @click="setRange('today')" class="w-full text-right px-4 py-3 rounded-xl hover:bg-emerald-500/10 hover:text-emerald-500 font-bold transition-colors" :class="dateRange === 'today' ? 'bg-emerald-500/10 text-emerald-500' : 'text-slate-600'">اليوم</button>
+              <button @click="setRange('week')" class="w-full text-right px-4 py-3 rounded-xl hover:bg-emerald-500/10 hover:text-emerald-500 font-bold transition-colors" :class="dateRange === 'week' ? 'bg-emerald-500/10 text-emerald-500' : 'text-slate-600'">آخر أسبوع</button>
+              <button @click="setRange('month')" class="w-full text-right px-4 py-3 rounded-xl hover:bg-emerald-500/10 hover:text-emerald-500 font-bold transition-colors" :class="dateRange === 'month' ? 'bg-emerald-500/10 text-emerald-500' : 'text-slate-600'">آخر شهر</button>
+              <button @click="dateRange = 'custom'" class="w-full text-right px-4 py-3 rounded-xl hover:bg-emerald-500/10 hover:text-emerald-500 font-bold transition-colors" :class="dateRange === 'custom' ? 'bg-emerald-500/10 text-emerald-500' : 'text-slate-600'">نطاق مخصص</button>
+            </div>
+
+            <!-- Custom Range Inputs -->
+            <div v-if="dateRange === 'custom'" class="mt-4 pt-4 border-t border-slate-100 dark:border-white/5 space-y-3">
+              <div class="grid grid-cols-2 gap-2">
+                <input v-model="customDateStart" type="date" class="w-full bg-slate-50 dark:bg-white/5 border-none rounded-xl p-2 text-xs font-bold text-slate-700 dark:text-white" />
+                <input v-model="customDateEnd" type="date" class="w-full bg-slate-50 dark:bg-white/5 border-none rounded-xl p-2 text-xs font-bold text-slate-700 dark:text-white" />
+              </div>
+              <button @click="applyCustomRange" class="w-full bg-emerald-500 text-slate-950 font-black py-2 rounded-xl text-sm shadow-lg shadow-emerald-500/20">تطبيق</button>
+            </div>
+          </div>
+        </div>
+
+        <select 
+          v-model="filterType"
+          class="bg-slate-50 dark:bg-white/5 border border-transparent hover:border-emerald-500/30 rounded-2xl px-6 py-4 font-bold text-slate-700 dark:text-slate-300 focus:ring-0 appearance-none min-w-[140px]"
+        >
+          <option value="all">جميع العمليات</option>
+          <option value="deposit">شحن فقط</option>
+          <option value="withdrawal">خصم فقط</option>
+        </select>
       </div>
     </div>
 
-    <!-- Stats Row -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <BaseCard class="flex items-center gap-6">
-        <div class="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-500">
-          <ArrowUpCircle class="w-8 h-8" />
+    <!-- Stats Section -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 p-8 rounded-[40px] text-slate-950 relative overflow-hidden shadow-2xl shadow-emerald-500/20 group hover:scale-[1.02] transition-all duration-500">
+        <div class="absolute -right-10 -top-10 w-40 h-40 bg-white/20 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000"></div>
+        <div class="relative z-10 flex items-center justify-between">
+          <div>
+            <p class="text-slate-950/60 font-bold uppercase tracking-wider text-sm mb-1">إجمالي الشحن</p>
+            <h3 class="text-4xl font-black">+{{ totalDeposits.toLocaleString() }} <span class="text-xl opacity-80">{{ $t('common.currency') }}</span></h3>
+          </div>
+          <div class="w-16 h-16 bg-white/20 rounded-[24px] flex items-center justify-center backdrop-blur-md">
+            <ArrowUpCircle class="w-10 h-10 text-white" />
+          </div>
         </div>
-        <div>
-          <p class="text-slate-500 dark:text-slate-400 font-medium">إجمالي الشحن</p>
-          <h3 class="text-2xl font-black text-emerald-500">+{{ totalDeposits.toLocaleString() }} {{ $t('common.currency') }}</h3>
-        </div>
-      </BaseCard>
+      </div>
 
-      <BaseCard class="flex items-center gap-6">
-        <div class="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center text-red-500">
-          <ArrowDownCircle class="w-8 h-8" />
+      <div class="bg-white dark:bg-slate-900 p-8 rounded-[40px] border border-slate-200 dark:border-white/5 relative overflow-hidden shadow-sm group hover:scale-[1.02] transition-all duration-500">
+        <div class="absolute -right-10 -top-10 w-40 h-40 bg-red-500/5 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000"></div>
+        <div class="relative z-10 flex items-center justify-between">
+          <div>
+            <p class="text-slate-500 font-bold uppercase tracking-wider text-sm mb-1">إجمالي الخصم</p>
+            <h3 class="text-4xl font-black text-red-500">-{{ totalWithdrawals.toLocaleString() }} <span class="text-xl opacity-60">{{ $t('common.currency') }}</span></h3>
+          </div>
+          <div class="w-16 h-16 bg-red-500/10 rounded-[24px] flex items-center justify-center">
+            <ArrowDownCircle class="w-10 h-10 text-red-500" />
+          </div>
         </div>
-        <div>
-          <p class="text-slate-500 dark:text-slate-400 font-medium">إجمالي الخصم</p>
-          <h3 class="text-2xl font-black text-red-500">-{{ totalWithdrawals.toLocaleString() }} {{ $t('common.currency') }}</h3>
-        </div>
-      </BaseCard>
+      </div>
     </div>
 
-    <!-- Transactions List -->
-    <BaseCard class="!p-0 overflow-hidden">
+    <!-- Table Section -->
+    <BaseCard class="!p-0 overflow-hidden border-white/5 shadow-xl">
       <div class="overflow-x-auto">
         <table class="w-full" :class="locale === 'ar' ? 'text-right' : 'text-left'">
           <thead>
             <tr class="bg-slate-50 dark:bg-white/5 border-b border-slate-100 dark:border-white/5">
-              <th class="px-6 py-4 text-sm font-bold text-slate-500">{{ $t('customers.table.name') }}</th>
-              <th class="px-6 py-4 text-sm font-bold text-slate-500">النوع</th>
-              <th class="px-6 py-4 text-sm font-bold text-slate-500">المبلغ</th>
-              <th class="px-6 py-4 text-sm font-bold text-slate-500">التاريخ</th>
-              <th class="px-6 py-4 text-sm font-bold text-slate-500">الحالة</th>
+              <th class="px-8 py-5 text-sm font-bold text-slate-500">العميل والمعلومات</th>
+              <th class="px-8 py-5 text-sm font-bold text-slate-500">نوع العملية</th>
+              <th class="px-8 py-5 text-sm font-bold text-slate-500">المبلغ والقيمة</th>
+              <th class="px-8 py-5 text-sm font-bold text-slate-500">التوقيت</th>
+              <th class="px-8 py-5 text-sm font-bold text-slate-500 text-center">الحالة</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 dark:divide-white/5">
-            <tr v-for="tx in transactions" :key="tx.id" class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-              <td class="px-6 py-4">
-                <div class="font-bold text-slate-900 dark:text-white">{{ tx.customer?.name || 'عميل محذوف' }}</div>
-                <div class="text-xs text-slate-500">{{ tx.customer?.mobile_number }}</div>
-              </td>
-              <td class="px-6 py-4">
-                <div class="flex items-center gap-2">
-                  <component 
-                    :is="tx.type === 'deposit' ? ArrowUpCircle : ArrowDownCircle" 
-                    :class="tx.type === 'deposit' ? 'text-emerald-500' : 'text-red-500'"
-                    class="w-4 h-4"
-                  />
-                  <span class="font-medium text-slate-700 dark:text-slate-300">
-                    {{ tx.type === 'deposit' ? 'إيداع' : 'سحب' }}
-                  </span>
+            <tr v-for="tx in transactions" :key="tx.id" class="hover:bg-slate-50 dark:hover:bg-white/5 transition-all group">
+              <td class="px-8 py-5">
+                <div class="font-black text-slate-900 dark:text-white text-lg">{{ tx.customer?.name || 'عميل محذوف' }}</div>
+                <div class="text-xs text-slate-400 mt-0.5 flex items-center gap-1">
+                  <Smartphone class="w-3 h-3" /> {{ tx.customer?.mobile_number }}
                 </div>
               </td>
-              <td class="px-6 py-4 font-black" :class="tx.type === 'deposit' ? 'text-emerald-500' : 'text-red-500'">
-                {{ tx.type === 'deposit' ? '+' : '-' }}{{ tx.amount }} {{ $t('common.currency') }}
+              <td class="px-8 py-5">
+                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl font-bold text-sm" :class="tx.type === 'deposit' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-600'">
+                  <component :is="tx.type === 'deposit' ? ArrowUpCircle : ArrowDownCircle" class="w-4 h-4" />
+                  {{ tx.type === 'deposit' ? 'شحن رصيد' : 'سحب / خصم' }}
+                </div>
               </td>
-              <td class="px-6 py-4 text-sm text-slate-500">
-                {{ new Date(tx.created_at).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-US') }}
+              <td class="px-8 py-5">
+                <div class="font-black text-xl" :class="tx.type === 'deposit' ? 'text-emerald-500' : 'text-red-500'">
+                  {{ tx.type === 'deposit' ? '+' : '-' }}{{ tx.amount }} <span class="text-xs opacity-60 font-bold">ر.س</span>
+                </div>
+                <div class="text-[10px] text-slate-400 mt-1">الرصيد بعد: {{ tx.balance_after }} ر.س</div>
               </td>
-              <td class="px-6 py-4">
-                <span class="px-3 py-1 bg-emerald-500/10 text-emerald-500 rounded-full text-xs font-bold">مكتمل</span>
+              <td class="px-8 py-5">
+                <div class="text-sm font-bold text-slate-700 dark:text-slate-300">
+                  {{ new Date(tx.created_at).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US') }}
+                </div>
+                <div class="text-[10px] text-slate-500">
+                  {{ new Date(tx.created_at).toLocaleTimeString(locale === 'ar' ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' }) }}
+                </div>
+              </td>
+              <td class="px-8 py-5">
+                <div class="flex justify-center">
+                  <span class="px-4 py-1.5 bg-emerald-500/10 text-emerald-500 rounded-full text-xs font-black ring-1 ring-emerald-500/20">مكتمل</span>
+                </div>
               </td>
             </tr>
             <tr v-if="transactions.length === 0 && !loading">
-              <td colspan="5" class="px-6 py-12 text-center text-slate-500">
-                <History class="w-16 h-16 mx-auto mb-4 opacity-10" />
-                {{ $t('common.no_data') }}
+              <td colspan="5" class="px-8 py-24 text-center text-slate-500">
+                <div class="flex flex-col items-center gap-6 opacity-30">
+                  <History class="w-20 h-20" />
+                  <div class="space-y-1">
+                    <p class="text-2xl font-black">لا توجد سجلات</p>
+                    <p class="text-sm">لم يتم العثور على أي عمليات في هذه الفترة</p>
+                  </div>
+                </div>
               </td>
             </tr>
           </tbody>
