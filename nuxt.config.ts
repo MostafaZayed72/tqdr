@@ -14,6 +14,11 @@ export default defineNuxtConfig({
   devServer: {
     port: 3005
   },
+  runtimeConfig: {
+    smsUsername: process.env.SMS_USERNAME,
+    smsPassword: process.env.SMS_PASSWORD,
+    smsSender: process.env.SMS_SENDER
+  },
 
   routeRules: {
     '/merchant/**': { ssr: false },

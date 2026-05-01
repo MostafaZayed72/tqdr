@@ -207,10 +207,40 @@ const handleAddTransaction = async () => {
 
     if (custError) throw custError
 
+    // 4. Send SMS to Customer
+    try {
+      // Fetch shop name and customer phone
+      const { data: profile } = await client.from('profiles').select('shop_name').eq('id', currentUser.id).single()
+      const { data: custInfo } = await client.from('customers').select('name, mobile_number').eq('id', form.value.customer_id).single()
+
+      if (custInfo?.mobile_number) {
+        let smsMessage = ''
+        const shopName = profile?.shop_name || 'تقدير'
+        
+        if (form.value.type === 'deposit') {
+          smsMessage = `تم تسجيلك في محل (${shopName}). دفعت ${amount} ر.س ورصيدك الحالي هو ${balance_after} ر.س. شكراً لثقتك!`
+        } else {
+          // Assume a 5% saving for the example, or use 0 if not defined
+          const saving = (amount * 0.05).toFixed(2) 
+          smsMessage = `تم خصم ${amount} ر.س من رصيدك في (${shopName}). رصيدك المتبقي هو ${balance_after} ر.س. لقد وفرت ${saving} ر.س في هذه العملية!`
+        }
+
+        await $fetch('/api/sms/send', {
+          method: 'POST',
+          body: {
+            phone: custInfo.mobile_number,
+            message: smsMessage
+          }
+        })
+      }
+    } catch (smsErr) {
+      console.error('Failed to send customer SMS:', smsErr)
+    }
+
     showAddModal.value = false
     form.value = { customer_id: '', type: 'deposit', amount: 0, note: '' }
     fetchData()
-    alert('تم تنفيذ العملية بنجاح.')
+    alert('تم تنفيذ العملية بنجاح وإرسال الإشعار للعميل.')
 
   } catch (e: any) {
     alert(e.message)

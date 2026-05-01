@@ -32,7 +32,8 @@ const showSuccessModal = ref(false)
 const form = ref({
   email: '',
   password: '',
-  shop_name: ''
+  shop_name: '',
+  mobile_number: ''
 })
 
 const fetchShops = async () => {
@@ -81,24 +82,40 @@ const handleAddShop = async () => {
       
       if (authError) throw authError
 
-      // 2. Profile is auto-created by trigger, but we might want to update it
+      // 2. Profile is auto-created by trigger, but we update it
       if (authData.user) {
         const { error: profileError } = await client
           .from('profiles')
           .update({ 
             role: 'shop_owner',
-            shop_name: form.value.shop_name 
+            shop_name: form.value.shop_name
           })
           .eq('id', authData.user.id)
         
         if (profileError) throw profileError
+
+        // 3. Send Welcome SMS
+        if (form.value.mobile_number) {
+          try {
+            const welcomeMsg = `مرحباً بك كصاحب محل في منصة تقدر بلس! تم إنشاء حسابك. بيانات دخولك: البريد: ${form.value.email} كلمة المرور: ${form.value.password} رابط الدخول: https://tqdrplus.sa/login`
+            await $fetch('/api/sms/send', {
+              method: 'POST',
+              body: {
+                phone: form.value.mobile_number,
+                message: welcomeMsg
+              }
+            })
+          } catch (smsErr) {
+            console.error('Failed to send SMS:', smsErr)
+          }
+        }
       }
     }
 
     showAddModal.value = false
     showSuccessModal.value = true
     editingShop.value = null
-    form.value = { email: '', password: '', shop_name: '' }
+    form.value = { email: '', password: '', shop_name: '', mobile_number: '' }
     fetchShops()
   } catch (e: any) {
     alert(e.message)
@@ -107,22 +124,28 @@ const handleAddShop = async () => {
   }
 }
 
-const handleDeleteShop = async (id: string) => {
-  if (!confirm('هل أنت متأكد من حذف هذا الحساب نهائياً؟ لا يمكن التراجع عن هذه الخطوة.')) return
+const showDeleteModal = ref(false)
+const shopToDelete = ref<string | null>(null)
+
+const confirmDeleteShop = (id: string) => {
+  shopToDelete.value = id
+  showDeleteModal.value = true
+}
+
+const handleDeleteShop = async () => {
+  if (!shopToDelete.value) return
   
   try {
-    console.log('Attempting to delete shop with ID:', id)
     loading.value = true
-    const { error, data } = await client.from('profiles').delete().eq('id', id).select()
-    
-    console.log('Delete response:', { error, data })
+    const { error } = await client.from('profiles').delete().eq('id', shopToDelete.value)
     
     if (error) throw error
     
+    showDeleteModal.value = false
+    shopToDelete.value = null
     await fetchShops()
-    alert('تم حذف الحساب بنجاح.')
+    // We can use a toast here later, for now we just refresh
   } catch (e: any) {
-    console.error('Delete error:', e)
     alert(e.message)
   } finally {
     loading.value = false
@@ -277,6 +300,16 @@ watch(searchQuery, fetchShops)
               required
               class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl px-5 py-4 text-slate-900 dark:text-white"
               placeholder="••••••••"
+            />
+          </div>
+          <div>
+            <label class="block text-slate-700 dark:text-slate-300 text-sm font-bold mb-2">رقم الجوال (للإشعارات)</label>
+            <input 
+              v-model="form.mobile_number"
+              type="tel" 
+              required
+              class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl px-5 py-4 text-slate-900 dark:text-white"
+              placeholder="05xxxxxxxx"
             />
           </div>
 
