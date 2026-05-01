@@ -1,25 +1,25 @@
 <script setup lang="ts">
 import { 
   LayoutDashboard, 
-  Store, 
-  Users,
+  Users, 
   History, 
   LogOut,
   Menu,
   X,
-  ShieldCheck
+  Store,
+  Wallet
 } from 'lucide-vue-next'
 
 const client = useSupabaseClient()
 const user = useSupabaseUser()
 const isSidebarOpen = ref(false)
 const { t, locale } = useI18n()
+const route = useRoute()
 
 const navItems = computed(() => [
-  { label: t('nav.overview'), icon: LayoutDashboard, path: '/admin-dashboard' },
-  { label: t('nav.shops'), icon: Store, path: '/admin-dashboard/shops' },
-  { label: t('nav.customers'), icon: Users, path: '/admin-dashboard/customers' },
-  { label: t('nav.reports'), icon: History, path: '/admin-dashboard/reports' },
+  { label: 'الرئيسية', icon: LayoutDashboard, path: '/merchant' },
+  { label: 'إدارة العملاء', icon: Users, path: '/customers' },
+  { label: 'سجل العمليات', icon: History, path: '/transactions' },
 ])
 
 const handleLogout = async () => {
@@ -32,7 +32,7 @@ const handleLogout = async () => {
   <div class="min-h-screen bg-slate-50 dark:bg-slate-950 font-['Tajawal']" :dir="locale === 'ar' ? 'rtl' : 'ltr'">
     <!-- Sidebar -->
     <aside 
-      class="fixed inset-y-0 z-50 w-72 bg-slate-900 border-white/10 transition-transform duration-300 transform lg:translate-x-0"
+      class="fixed inset-y-0 z-50 w-72 bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 transition-transform duration-300 transform lg:translate-x-0"
       :class="[
         locale === 'ar' ? 'right-0 border-l' : 'left-0 border-r',
         isSidebarOpen ? 'translate-x-0' : (locale === 'ar' ? 'translate-x-full' : '-translate-x-full')
@@ -41,8 +41,11 @@ const handleLogout = async () => {
       <div class="flex flex-col h-full">
         <!-- Sidebar Header -->
         <div class="p-6 flex items-center justify-between">
-          <NuxtLink to="/admin-dashboard" class="flex items-center">
-            <img src="/logo.png" alt="Logo" class="h-16 w-auto object-contain brightness-0 invert" />
+          <NuxtLink to="/merchant" class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-slate-950 shadow-lg shadow-emerald-500/20">
+              <Store class="w-6 h-6" />
+            </div>
+            <span class="font-black text-xl text-slate-900 dark:text-white">تاجر تقديـر</span>
           </NuxtLink>
           <button @click="isSidebarOpen = false" class="lg:hidden text-slate-500">
             <X class="w-6 h-6" />
@@ -56,11 +59,11 @@ const handleLogout = async () => {
             :key="item.path"
             :to="item.path"
             class="flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 group"
-            active-class="bg-emerald-500 text-slate-950"
+            active-class="bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
             :class="[
-              $route.path === item.path 
+              route.path === item.path 
                 ? '' 
-                : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 dark:text-slate-400'
             ]"
           >
             <component :is="item.icon" class="w-5 h-5" />
@@ -69,10 +72,10 @@ const handleLogout = async () => {
         </nav>
 
         <!-- Sidebar Footer -->
-        <div class="p-4 border-t border-white/10">
+        <div class="p-4 border-t border-slate-200 dark:border-white/10">
           <button 
             @click="handleLogout"
-            class="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-red-400 hover:bg-red-500/10 transition-colors group"
+            class="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-red-500 hover:bg-red-500/10 transition-colors group"
           >
             <LogOut class="w-5 h-5" />
             <span class="font-bold">{{ $t('auth.logout') }}</span>
@@ -97,30 +100,29 @@ const handleLogout = async () => {
             <Menu class="w-6 h-6" />
           </button>
           <div class="flex items-center gap-2">
-            <ShieldCheck class="w-5 h-5 text-emerald-500" />
+            <Wallet class="w-5 h-5 text-emerald-500" />
             <h2 class="text-xl font-bold text-slate-900 dark:text-white hidden sm:block">
-              {{ $t('nav.admin_panel') }}
+              لوحة تحكم المتجر
             </h2>
           </div>
         </div>
 
         <div class="flex items-center gap-4">
           <ThemeLangSwitcher />
-
-          <div class="flex items-center gap-3">
-            <div class="hidden sm:block text-right">
-              <p class="text-sm font-bold text-slate-900 dark:text-white">Admin</p>
-              <p class="text-[10px] text-emerald-500 font-medium">Online</p>
+          
+          <div class="flex items-center gap-3 px-3 py-1.5 bg-slate-100 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10">
+            <div class="w-8 h-8 bg-emerald-500 text-slate-950 rounded-lg flex items-center justify-center font-bold text-sm">
+              {{ user?.email?.charAt(0).toUpperCase() }}
             </div>
-            <div class="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center text-emerald-500 font-bold border border-emerald-500/30">
-              AD
-            </div>
+            <span class="text-sm font-bold text-slate-700 dark:text-slate-300 hidden sm:block">
+              {{ user?.email?.split('@')[0] }}
+            </span>
           </div>
         </div>
       </header>
 
       <!-- Page Content -->
-      <main class="p-6 flex-1 animate-fade-in">
+      <main class="p-6 flex-1">
         <slot />
       </main>
     </div>

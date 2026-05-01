@@ -10,7 +10,6 @@ import {
 } from 'lucide-vue-next'
 
 definePageMeta({
-  middleware: 'auth'
 })
 
 const { t, locale } = useI18n()

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { 
-  BarChart3, 
+  History, 
   Search, 
   Filter, 
   Download,
@@ -11,8 +11,7 @@ import {
 } from 'lucide-vue-next'
 
 definePageMeta({
-  layout: 'admin',
-  middleware: 'auth'
+  layout: 'admin'
 })
 
 const { t, locale } = useI18n()
@@ -43,8 +42,11 @@ onMounted(async () => {
     <!-- Header -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
-        <h1 class="text-3xl font-black text-slate-900 dark:text-white">{{ $t('nav.reports') }}</h1>
-        <p class="text-slate-500 dark:text-slate-400 mt-1">مراقبة جميع العمليات المالية عبر المنصة بالكامل.</p>
+        <div class="flex items-center gap-3 mb-1">
+          <History class="w-8 h-8 text-emerald-500" />
+          <h1 class="text-3xl font-black text-slate-900 dark:text-white">سجل العمليات 📑</h1>
+        </div>
+        <p class="text-slate-500 dark:text-slate-400">مراقبة جميع العمليات المالية عبر المنصة بالكامل.</p>
       </div>
       
       <div class="flex items-center gap-3">
@@ -82,7 +84,7 @@ onMounted(async () => {
         <table class="w-full" :class="locale === 'ar' ? 'text-right' : 'text-left'">
           <thead>
             <tr class="bg-slate-50 dark:bg-white/5 border-b border-slate-100 dark:border-white/5">
-              <th class="px-6 py-4 text-sm font-bold text-slate-500">المحل</th>
+              <th class="px-6 py-4 text-sm font-bold text-slate-500">المتجر / البائع</th>
               <th class="px-6 py-4 text-sm font-bold text-slate-500">العميل</th>
               <th class="px-6 py-4 text-sm font-bold text-slate-500">النوع</th>
               <th class="px-6 py-4 text-sm font-bold text-slate-500">المبلغ</th>

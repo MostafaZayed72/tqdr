@@ -1,190 +1,61 @@
 {
-  "brand": {
-    "name": "Tqdr",
-    "suffix": "Plus",
-    "description": "Integrated Mobile Shop Management System"
-  },
-  "auth": {
-    "login": "Login",
-    "email": "Email Address",
-    "password": "Password",
-    "login_btn": "Sign In",
-    "logging_in": "Signing in...",
-    "error": "Login failed. Please check your credentials.",
-    "logout": "Logout",
-    "rights": "All rights reserved"
-  },
   "common": {
     "currency": "SAR",
     "loading": "Loading...",
     "no_data": "No data available",
     "save": "Save",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search..."
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "email": "Email",
+    "password": "Password",
+    "error": "Authentication Error",
+    "welcome": "Welcome Back"
   },
   "nav": {
     "dashboard": "Dashboard",
     "customers": "Customers",
     "transactions": "Transactions",
-    "settings": "Settings"
+    "settings": "Settings",
+    "admin_panel": "Admin Panel",
+    "overview": "Overview",
+    "shops": "Manage Shops",
+    "reports": "Financial Reports"
   },
   "dashboard": {
     "welcome": "Welcome back",
-    "subtitle": "Here is your shop performance summary",
-    "total_customers": "Total Customers",
-    "total_balances": "Total Balances",
-    "today_transactions": "Today's Transactions",
-    "recent_activity": "Recent Activity",
-    "view_all": "View All",
-    "quick_search": "Quick Search",
-    "add_customer": "Add Customer"
+    "total_balance": "Total Balance",
+    "active_customers": "Active Customers",
+    "recent_transactions": "Recent Transactions",
+    "admin_stats": {
+      "shops": "Total Shops",
+      "customers": "Total Customers",
+      "volume": "Transaction Volume",
+      "growth": "Monthly Growth"
+    }
   },
   "customers": {
     "title": "Customer Management",
-    "subtitle": "List of registered customers in your shop",
     "add_new": "Add New Customer",
-    "search_placeholder": "Search by mobile number...",
     "table": {
-      "name": "Customer Name",
-      "phone": "Mobile Number",
+      "name": "Name",
+      "phone": "Mobile",
       "balance": "Balance",
-      "total_saved": "Total Saved",
+      "total_savings": "Total Savings",
       "actions": "Actions"
     }
   },
-  "landing": {
-    "nav": {
-      "home": "Home",
-      "features": "Features",
-      "how_it_works": "How it works?",
-      "faq": "FAQ",
-      "contact": "Contact Us",
-      "login": "Login"
-    },
-    "hero": {
-      "badge": "New: Tqdr Plus for Business 🚀",
-      "title": "The First Loyalty Platform for Mobile Shops",
-      "subtitle": "Attract your customers with an innovative prepaid and documented loyalty system.",
-      "cta_start": "Start Now for Free",
-      "cta_demo": "Watch Demo",
-      "slides": [
-        {
-          "badge": "Tqdr Plus System 📱",
-          "title": "Innovative Loyalty Platform for Mobile Shops",
-          "subtitle": "Engage your customers with prepaid balance and exclusive documented discounts.",
-          "cta_primary": "Start Now",
-          "cta_secondary": "Learn More"
-        },
-        {
-          "badge": "Increase Sales 📈",
-          "title": "Double Your Sales with Smart Balance",
-          "subtitle": "A system that ensures customer loyalty and repeated visits to your shop.",
-          "cta_primary": "Try for Free",
-          "cta_secondary": "More Details"
-        },
-        {
-          "badge": "Secure Transactions 🔐",
-          "title": "Every Transaction Documented via Instant SMS",
-          "subtitle": "Full transparency between merchant and customer ensures everyone's rights.",
-          "cta_primary": "Subscribe Now",
-          "cta_secondary": "Contact Us"
-        },
-        {
-          "badge": "Easy Management ⚙️",
-          "title": "Smart & Comprehensive Dashboard for Your Business",
-          "subtitle": "Add customers, track balances, and monitor your shop growth in one place.",
-          "cta_primary": "Login",
-          "cta_secondary": "Contact Us"
-        }
-      ]
-    },
-    "stats": {
-      "badge": "Our Numbers Talk 📊",
-      "title": "Building a Stronger Tech Community",
-      "subtitle": "Join thousands of merchants and customers who trust Tqdr Plus daily.",
-      "cities": "Saudi Cities",
-      "savings": "Total Customer Savings",
-      "customers": "Active Users",
-      "partners": "Success Partners"
-    },
-    "customer_features": {
-      "badge": "Customer Features 👤",
-      "title": "Why Customers Prefer Tqdr Plus?",
-      "subtitle": "Discover the hidden power of our innovative prepaid and loyalty system.",
-      "features": [
-        {
-          "title": "Exclusive Discounts",
-          "desc": "Get special prices and discounts available only to prepaid subscribers."
-        },
-        {
-          "title": "Instant Documentation",
-          "desc": "Receive an SMS for every financial movement; your balance is always under your eye."
-        },
-        {
-          "title": "Ease of Payment",
-          "desc": "No need for cash or cards every time; pay from your balance in a blink."
-        }
-      ]
-    },
-    "shop_features": {
-      "badge": "Merchant Features 🏪",
-      "title": "Professional Tools for Your Shop's Growth",
-      "subtitle": "Everything you need to manage customer relationships and increase loyalty in one platform.",
-      "features": [
-        {
-          "title": "Balance Management",
-          "desc": "Accurate system for managing customer funds and ensuring shop rights."
-        },
-        {
-          "title": "Smart Reports",
-          "desc": "Watch your sales growth and customer performance through clear charts."
-        },
-        {
-          "title": "Alert Messages",
-          "desc": "Automated communication with customers via SMS for every transaction."
-        }
-      ]
-    },
-    "faq": {
-      "title": "Frequently Asked Questions",
-      "subtitle": "Everything you need to know about Tqdr Plus",
-      "questions": [
-        {
-          "q": "What is Tqdr Plus?",
-          "a": "It is a platform that allows customers to get discounts when prepaying to shops, and allows shops to manage their customers and increase their loyalty."
-        },
-        {
-          "q": "How do I ensure my rights?",
-          "a": "All transactions are documented and you receive instant SMS messages for every charge or discount process."
-        },
-        {
-          "q": "Is the service free?",
-          "a": "Yes, the service is completely free for customers, and provides flexible packages for shop owners."
-        },
-        {
-          "q": "How does the seller know I have a balance?",
-          "a": "Give them your registered mobile number, and after the discount, you will receive an SMS with the deducted amount and the new balance immediately."
-        },
-        {
-          "q": "What happens if my balance runs out?",
-          "a": "Simply, you can recharge a new balance at any time to continue benefiting from exclusive discounts."
-        }
-      ]
-    },
-    "contact": {
-      "title": "Contact Us",
-      "subtitle": "We are here to help you at any time",
-      "form": {
-        "name": "Full Name",
-        "email": "Email Address",
-        "message": "Your Message",
-        "send": "Send Message"
-      }
-    },
-    "footer": {
-      "description": "Tqdr Plus - The first loyalty platform for mobile shops in the Kingdom.",
-      "quick_links": "Quick Links",
-      "contact_info": "Contact Info",
-      "rights": "All rights reserved for Tqdr Plus system"
-    }
+  "transactions": {
+    "title": "Financial Transactions",
+    "deposit": "Deposit",
+    "withdraw": "Withdraw",
+    "amount": "Amount",
+    "date": "Date",
+    "status": "Status"
   }
 }

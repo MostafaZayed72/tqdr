@@ -15,6 +15,13 @@ export default defineNuxtConfig({
     port: 3005
   },
 
+  routeRules: {
+    '/merchant/**': { ssr: false },
+    '/customers': { ssr: false },
+    '/transactions': { ssr: false },
+    '/admin-dashboard/**': { ssr: false }
+  },
+
   modules: [
     '@nuxtjs/tailwindcss',
     '@nuxtjs/i18n',

@@ -11,24 +11,27 @@ import {
 } from 'lucide-vue-next'
 
 definePageMeta({
-  layout: 'admin',
-  middleware: 'auth'
+  layout: 'admin'
 })
 
 const { t, locale } = useI18n()
 const client = useSupabaseClient()
 
 const stats = ref([
-  { label: 'إجمالي المحلات', value: '0', icon: Store, color: 'bg-indigo-500' },
-  { label: 'إجمالي العملاء', value: '0', icon: Users, color: 'bg-emerald-500' },
-  { label: 'حجم العمليات', value: '0', icon: Activity, color: 'bg-amber-500' },
-  { label: 'النمو الشهري', value: '+14%', icon: TrendingUp, color: 'bg-rose-500' },
+  { label: t('dashboard.admin_stats.shops'), value: '0', icon: Store, color: 'bg-indigo-500' },
+  { label: t('dashboard.admin_stats.customers'), value: '0', icon: Users, color: 'bg-emerald-500' },
+  { label: t('dashboard.admin_stats.volume'), value: '0', icon: Activity, color: 'bg-amber-500' },
+  { label: t('dashboard.admin_stats.growth'), value: '+14%', icon: TrendingUp, color: 'bg-rose-500' },
 ])
 
 const recentShops = ref([])
 const loading = ref(true)
 
 onMounted(async () => {
+  if (!user.value?.id || String(user.value.id) === 'undefined') {
+    loading.value = false
+    return
+  }
   try {
     const { count: shopsCount } = await client.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'shop_owner')
     const { count: customersCount } = await client.from('customers').select('*', { count: 'exact', head: true })
@@ -61,7 +64,7 @@ onMounted(async () => {
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-3xl font-black text-slate-900 dark:text-white">مرحباً، مسؤول النظام 🛡️</h1>
+        <h1 class="text-3xl font-black text-slate-900 dark:text-white">{{ $t('dashboard.welcome') }}, {{ $t('nav.admin_panel') }} 🛡️</h1>
         <p class="text-slate-500 dark:text-slate-400 mt-1">إليك تقرير شامل عن أداء المنصة بالكامل.</p>
       </div>
       

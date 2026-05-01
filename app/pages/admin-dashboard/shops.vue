@@ -16,8 +16,7 @@ import {
 } from 'lucide-vue-next'
 
 definePageMeta({
-  layout: 'admin',
-  middleware: 'auth'
+  layout: 'admin'
 })
 
 const { t, locale } = useI18n()
@@ -27,6 +26,7 @@ const shops = ref([])
 const loading = ref(true)
 const searchQuery = ref('')
 const showAddModal = ref(false)
+const showSuccessModal = ref(false)
 
 // Form state for new shop owner
 const form = ref({
@@ -45,7 +45,7 @@ const fetchShops = async () => {
       .order('created_at', { ascending: false })
 
     if (searchQuery.value) {
-      query = query.ilike('email', `%${searchQuery.value}%`)
+      query = query.or(`email.ilike.%${searchQuery.value}%,shop_name.ilike.%${searchQuery.value}%`)
     }
 
     const { data } = await query
@@ -60,28 +60,44 @@ const fetchShops = async () => {
 const handleAddShop = async () => {
   try {
     loading.value = true
-    // 1. Create auth user
-    const { data: authData, error: authError } = await client.auth.signUp({
-      email: form.value.email,
-      password: form.value.password,
-    })
     
-    if (authError) throw authError
-
-    // 2. Profile is auto-created by trigger, but we might want to update it
-    if (authData.user) {
-      const { error: profileError } = await client
+    if (editingShop.value) {
+      // Update existing shop
+      const { error } = await client
         .from('profiles')
         .update({ 
-          role: 'shop_owner',
-          shop_name: form.value.shop_name 
+          shop_name: form.value.shop_name,
+          email: form.value.email
         })
-        .eq('id', authData.user.id)
+        .eq('id', editingShop.value.id)
       
-      if (profileError) throw profileError
+      if (error) throw error
+    } else {
+      // 1. Create auth user
+      const { data: authData, error: authError } = await client.auth.signUp({
+        email: form.value.email,
+        password: form.value.password,
+      })
+      
+      if (authError) throw authError
+
+      // 2. Profile is auto-created by trigger, but we might want to update it
+      if (authData.user) {
+        const { error: profileError } = await client
+          .from('profiles')
+          .update({ 
+            role: 'shop_owner',
+            shop_name: form.value.shop_name 
+          })
+          .eq('id', authData.user.id)
+        
+        if (profileError) throw profileError
+      }
     }
 
     showAddModal.value = false
+    showSuccessModal.value = true
+    editingShop.value = null
     form.value = { email: '', password: '', shop_name: '' }
     fetchShops()
   } catch (e: any) {
@@ -89,6 +105,39 @@ const handleAddShop = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const handleDeleteShop = async (id: string) => {
+  if (!confirm('هل أنت متأكد من حذف هذا الحساب نهائياً؟ لا يمكن التراجع عن هذه الخطوة.')) return
+  
+  try {
+    console.log('Attempting to delete shop with ID:', id)
+    loading.value = true
+    const { error, data } = await client.from('profiles').delete().eq('id', id).select()
+    
+    console.log('Delete response:', { error, data })
+    
+    if (error) throw error
+    
+    await fetchShops()
+    alert('تم حذف الحساب بنجاح.')
+  } catch (e: any) {
+    console.error('Delete error:', e)
+    alert(e.message)
+  } finally {
+    loading.value = false
+  }
+}
+
+const editingShop = ref(null)
+const handleEditShop = (shop: any) => {
+  editingShop.value = { ...shop }
+  form.value = { 
+    email: shop.email, 
+    password: '', 
+    shop_name: shop.shop_name 
+  }
+  showAddModal.value = true
 }
 
 onMounted(fetchShops)
@@ -161,13 +210,16 @@ watch(searchQuery, fetchShops)
               </td>
               <td class="px-6 py-4">
                 <div class="flex items-center justify-center gap-2">
-                  <button class="p-2 text-blue-500 hover:bg-blue-500/10 rounded-xl transition-colors">
-                    <Eye class="w-5 h-5" />
-                  </button>
-                  <button class="p-2 text-amber-500 hover:bg-amber-500/10 rounded-xl transition-colors">
+                  <button 
+                    @click="handleEditShop(shop)"
+                    class="p-2 text-amber-500 hover:bg-amber-500/10 rounded-xl transition-colors"
+                  >
                     <Edit2 class="w-5 h-5" />
                   </button>
-                  <button class="p-2 text-red-500 hover:bg-red-500/10 rounded-xl transition-colors">
+                  <button 
+                    @click="handleDeleteShop(shop.id)"
+                    class="p-2 text-red-500 hover:bg-red-500/10 rounded-xl transition-colors"
+                  >
                     <Trash2 class="w-5 h-5" />
                   </button>
                 </div>
@@ -188,8 +240,10 @@ watch(searchQuery, fetchShops)
       <div @click="showAddModal = false" class="absolute inset-0 bg-slate-950/40 backdrop-blur-sm"></div>
       <BaseCard class="w-full max-w-lg relative z-10 animate-slide-up !p-8 rounded-[40px]">
         <div class="flex items-center justify-between mb-8">
-          <h3 class="text-2xl font-black text-slate-900 dark:text-white">إضافة صاحب محل</h3>
-          <button @click="showAddModal = false" class="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors">
+          <h3 class="text-2xl font-black text-slate-900 dark:text-white">
+            {{ editingShop ? 'تعديل بيانات المحل' : 'إضافة صاحب محل' }}
+          </h3>
+          <button @click="showAddModal = false; editingShop = null" class="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors">
             <X class="w-6 h-6 text-slate-400" />
           </button>
         </div>
@@ -235,6 +289,24 @@ watch(searchQuery, fetchShops)
             <span>إنشاء الحساب</span>
           </button>
         </form>
+      </BaseCard>
+    </div>
+
+    <!-- Success Modal -->
+    <div v-if="showSuccessModal" class="fixed inset-0 z-[110] flex items-center justify-center p-4">
+      <div @click="showSuccessModal = false" class="absolute inset-0 bg-slate-950/40 backdrop-blur-md"></div>
+      <BaseCard class="w-full max-w-sm relative z-10 animate-in zoom-in duration-300 !p-10 rounded-[40px] text-center">
+        <div class="w-20 h-20 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
+          <ShieldCheck class="w-10 h-10" />
+        </div>
+        <h3 class="text-2xl font-black text-slate-900 dark:text-white mb-2">تم الإنشاء بنجاح!</h3>
+        <p class="text-slate-500 mb-8 font-medium">تم إنشاء حساب المحل الجديد وتفعيل صلاحياته في النظام.</p>
+        <button 
+          @click="showSuccessModal = false"
+          class="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black py-4 rounded-2xl hover:shadow-lg transition-all"
+        >
+          موافق
+        </button>
       </BaseCard>
     </div>
   </div>

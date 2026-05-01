@@ -41,13 +41,13 @@ const handleLogin = async () => {
     const role = profile.role
 
     if (role === 'admin') {
-      await navigateTo('/admin-dashboard')
+      return navigateTo('/admin-dashboard', { replace: true })
     } else if (role === 'shop_owner') {
-      await navigateTo('/merchant')
+      return navigateTo('/merchant', { replace: true })
     } else if (role === 'customer') {
-      await navigateTo('/customers')
+      return navigateTo('/customers', { replace: true })
     } else {
-      await navigateTo('/')
+      return navigateTo('/', { replace: true })
     }
   } catch (e: any) {
     errorMsg.value = e.message || t('auth.error')

@@ -12,11 +12,12 @@ import {
 } from 'lucide-vue-next'
 
 definePageMeta({
-  middleware: 'auth'
+  layout: 'merchant'
 })
 
 const user = useSupabaseUser()
 const client = useSupabaseClient()
+const { t, locale } = useI18n()
 
 const transactions = ref([])
 const customers = ref([])
@@ -24,6 +25,19 @@ const loading = ref(true)
 const showAddModal = ref(false)
 const searchQuery = ref('')
 const filterType = ref('all')
+
+// Pagination
+const currentPage = ref(1)
+const pageSize = 10
+const totalTransactions = ref(0)
+const totalPages = computed(() => {
+  const total = totalTransactions.value || 0
+  return Math.max(1, Math.ceil(total / pageSize))
+})
+
+// Stats
+const totalDeposits = ref(0)
+const totalWithdrawals = ref(0)
 
 // Form state
 const form = ref({
@@ -37,22 +51,39 @@ const submittng = ref(false)
 const fetchData = async () => {
   try {
     loading.value = true
+    if (!user.value?.id) return
+
+    // 1. Fetch Stats (Total sums)
+    const { data: statsData } = await client
+      .from('transactions')
+      .select('type, amount')
+      .eq('shop_owner_id', user.value.id)
     
-    // Fetch Transactions
+    totalDeposits.value = statsData?.filter(t => t.type === 'deposit').reduce((acc, curr) => acc + Number(curr.amount), 0) || 0
+    totalWithdrawals.value = statsData?.filter(t => t.type === 'withdrawal').reduce((acc, curr) => acc + Number(curr.amount), 0) || 0
+
+    // 2. Fetch Transactions with Pagination
     let txQuery = client
       .from('transactions')
-      .select('*, customer:customers(name, mobile_number)')
+      .select('*, customer:customers(name, mobile_number)', { count: 'exact' })
       .eq('shop_owner_id', user.value.id)
       .order('created_at', { ascending: false })
+      .range((currentPage.value - 1) * pageSize, currentPage.value * pageSize - 1)
 
     if (filterType.value !== 'all') {
       txQuery = txQuery.eq('type', filterType.value)
     }
 
-    const { data: txData } = await txQuery
-    transactions.value = txData || []
+    if (searchQuery.value) {
+      // Searching by customer name or mobile within transactions
+      txQuery = txQuery.or(`customer.name.ilike.%${searchQuery.value}%,customer.mobile_number.ilike.%${searchQuery.value}%`)
+    }
 
-    // Fetch Customers for the dropdown
+    const { data: txData, count } = await txQuery
+    transactions.value = txData || []
+    totalTransactions.value = count || 0
+
+    // 3. Fetch Customers for the dropdown
     const { data: custData } = await client
       .from('customers')
       .select('id, name, mobile_number')
@@ -125,7 +156,13 @@ const handleAddTransaction = async () => {
   }
 }
 
-onMounted(fetchData)
+onMounted(async () => {
+  if (!user.value?.id || String(user.value.id) === 'undefined') {
+    loading.value = false
+    return
+  }
+  await fetchData()
+})
 watch([filterType], fetchData)
 </script>
 
@@ -180,7 +217,7 @@ watch([filterType], fetchData)
         </div>
         <div>
           <p class="text-slate-500 dark:text-slate-400 font-medium">إجمالي الشحن</p>
-          <h3 class="text-2xl font-black text-emerald-500">+12,450 {{ $t('common.currency') }}</h3>
+          <h3 class="text-2xl font-black text-emerald-500">+{{ totalDeposits.toLocaleString() }} {{ $t('common.currency') }}</h3>
         </div>
       </BaseCard>
 
@@ -190,7 +227,7 @@ watch([filterType], fetchData)
         </div>
         <div>
           <p class="text-slate-500 dark:text-slate-400 font-medium">إجمالي الخصم</p>
-          <h3 class="text-2xl font-black text-red-500">-5,200 {{ $t('common.currency') }}</h3>
+          <h3 class="text-2xl font-black text-red-500">-{{ totalWithdrawals.toLocaleString() }} {{ $t('common.currency') }}</h3>
         </div>
       </BaseCard>
     </div>
@@ -211,7 +248,7 @@ watch([filterType], fetchData)
           <tbody class="divide-y divide-slate-100 dark:divide-white/5">
             <tr v-for="tx in transactions" :key="tx.id" class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
               <td class="px-6 py-4">
-                <div class="font-bold text-slate-900 dark:text-white">{{ tx.customer?.name }}</div>
+                <div class="font-bold text-slate-900 dark:text-white">{{ tx.customer?.name || 'عميل محذوف' }}</div>
                 <div class="text-xs text-slate-500">{{ tx.customer?.mobile_number }}</div>
               </td>
               <td class="px-6 py-4">
@@ -244,6 +281,35 @@ watch([filterType], fetchData)
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- Pagination -->
+      <div v-if="totalPages > 1" class="p-6 border-t border-slate-100 dark:border-white/5 flex items-center justify-between">
+        <p class="text-sm text-slate-500 font-medium">
+          عرض 
+          <span class="font-bold text-slate-900 dark:text-white">{{ (currentPage - 1) * pageSize + 1 }}</span>
+          -
+          <span class="font-bold text-slate-900 dark:text-white">{{ Math.min(currentPage * pageSize, totalTransactions) }}</span>
+          من
+          <span class="font-bold text-slate-900 dark:text-white">{{ totalTransactions }}</span>
+        </p>
+        
+        <div class="flex items-center gap-2">
+          <button 
+            @click="currentPage--; fetchData()"
+            :disabled="currentPage === 1"
+            class="p-2 rounded-xl bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {{ locale === 'ar' ? '→' : '←' }}
+          </button>
+          <button 
+            @click="currentPage++; fetchData()"
+            :disabled="currentPage === totalPages"
+            class="p-2 rounded-xl bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {{ locale === 'ar' ? '←' : '→' }}
+          </button>
+        </div>
       </div>
     </BaseCard>
 
