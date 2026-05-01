@@ -9,13 +9,21 @@
     "edit": "Edit",
     "search": "Search..."
   },
+  "brand": {
+    "name": "Merchant",
+    "suffix": "Tqdr",
+    "description": "Your Integrated System for Customer Balance & Loyalty"
+  },
   "auth": {
     "login": "Login",
+    "login_btn": "Login Now",
+    "logging_in": "Logging in...",
     "logout": "Logout",
-    "email": "Email",
+    "email": "Email Address",
     "password": "Password",
-    "error": "Authentication Error",
-    "welcome": "Welcome Back"
+    "error": "Authentication Failed",
+    "welcome": "Welcome Back",
+    "rights": "All Rights Reserved"
   },
   "nav": {
     "dashboard": "Dashboard",

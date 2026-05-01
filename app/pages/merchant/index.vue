@@ -152,7 +152,7 @@ onMounted(fetchDashboardData)
         <div class="relative z-10 flex flex-col h-full">
           <h3 class="text-2xl font-black mb-4 tracking-tight">نصيحة اليوم 💡</h3>
           <p class="text-emerald-100 font-medium mb-8 leading-relaxed">
-            اجعل عملاءك يشعرون بالتقدير! قم بإضافة رصيد مجاني (بونص) لعملائك الدائمين لزيادة ولائهم لمتجرك.
+            اجعل عملاءك يشعرون بالتقدر! قم بإضافة رصيد مجاني (بونص) لعملائك الدائمين لزيادة ولائهم لمتجرك.
           </p>
           
           <div class="mt-auto grid grid-cols-2 gap-4">
