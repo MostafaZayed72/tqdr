@@ -21,7 +21,6 @@ const stats = ref([
   { label: t('dashboard.admin_stats.shops'), value: '0', icon: Store, color: 'bg-indigo-500' },
   { label: t('dashboard.admin_stats.customers'), value: '0', icon: Users, color: 'bg-emerald-500' },
   { label: t('dashboard.admin_stats.volume'), value: '0', icon: Activity, color: 'bg-amber-500' },
-  { label: t('dashboard.admin_stats.growth'), value: '+14%', icon: TrendingUp, color: 'bg-rose-500' },
 ])
 
 const user = useSupabaseUser()
@@ -84,7 +83,6 @@ const fetchStats = async () => {
     stats.value[0].value = shopsCount?.toString() || '0'
     stats.value[1].value = customersCount?.toString() || '0'
     stats.value[2].value = `${totalVolume.toLocaleString()} ${t('common.currency')}`
-    stats.value[3].value = dateFilter.value === 'today' ? '+2%' : '+14%' 
 
     // 4. Recent Shops (Always show latest 5 regardless of filter)
     const { data: shops } = await client
