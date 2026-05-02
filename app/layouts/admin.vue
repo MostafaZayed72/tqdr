@@ -60,7 +60,7 @@ const handleLogout = async () => {
             :class="[
               $route.path === item.path 
                 ? '' 
-                : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white'
             ]"
           >
             <component :is="item.icon" class="w-5 h-5" />

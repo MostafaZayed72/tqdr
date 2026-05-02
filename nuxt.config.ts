@@ -17,7 +17,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     smsUsername: process.env.SMS_USERNAME,
     smsPassword: process.env.SMS_PASSWORD,
-    smsSender: process.env.SMS_SENDER
+    smsSender: process.env.SMS_SENDER,
+    smsToken: process.env.SMS_TOKEN
   },
 
   routeRules: {
