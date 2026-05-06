@@ -7,7 +7,8 @@ import {
   Menu,
   X,
   Store,
-  Wallet
+  Wallet,
+  CreditCard
 } from 'lucide-vue-next'
 
 const client = useSupabaseClient()
@@ -16,11 +17,65 @@ const isSidebarOpen = ref(false)
 const { t, locale } = useI18n()
 const route = useRoute()
 
-const navItems = computed(() => [
-  { label: 'الرئيسية', icon: LayoutDashboard, path: '/merchant' },
-  { label: 'إدارة العملاء', icon: Users, path: '/customers' },
-  { label: 'سجل العمليات', icon: History, path: '/transactions' },
-])
+const profile = ref(null)
+
+const fetchProfile = async () => {
+  // Try to get user directly from client if user.value is not ready
+  let userId = user.value?.id
+  if (!userId) {
+    const { data: { user: authUser } } = await client.auth.getUser()
+    userId = authUser?.id
+  }
+
+  if (!userId) {
+    console.log('Merchant Layout: No user ID found yet')
+    return
+  }
+  
+  console.log('Merchant Layout: Fetching profile for', userId)
+  try {
+    const { data, error } = await client
+      .from('profiles')
+      .select('subscriptions_enabled, shop_name')
+      .eq('id', userId)
+      .single()
+    
+    if (error) {
+      console.error('Merchant Layout: Error fetching profile:', error)
+      return
+    }
+    console.log('Merchant Layout: Profile fetched successfully:', data)
+    profile.value = data
+  } catch (err) {
+    console.error('Merchant Layout: Unexpected error:', err)
+  }
+}
+
+// Watch for user changes
+watch(user, (newUser) => {
+  if (newUser?.id) fetchProfile()
+}, { immediate: true })
+
+onMounted(() => {
+  fetchProfile()
+})
+
+const navItems = computed(() => {
+  const items = [
+    { label: 'الرئيسية', icon: LayoutDashboard, path: '/merchant' },
+    { label: 'إدارة العملاء', icon: Users, path: '/customers' },
+    { label: 'سجل العمليات', icon: History, path: '/transactions' },
+  ]
+
+  // Debug log to see if subscriptions are enabled
+  console.log('Merchant Profile:', profile.value)
+
+  if (profile.value?.subscriptions_enabled) {
+    items.push({ label: 'عروض الاشتراكات', icon: CreditCard, path: '/merchant/subscriptions' })
+  }
+
+  return items
+})
 
 const handleLogout = async () => {
   await client.auth.signOut()

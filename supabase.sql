@@ -91,3 +91,37 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE OR REPLACE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- Add subscriptions_enabled to profiles
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS subscriptions_enabled BOOLEAN DEFAULT FALSE;
+
+-- Create subscription_offers table
+CREATE TABLE IF NOT EXISTS public.subscription_offers (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    shop_owner_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+    name TEXT NOT NULL,
+    price DECIMAL(12, 2) NOT NULL,
+    usage_limit INTEGER NOT NULL,
+    discount DECIMAL(12, 2) NOT NULL,
+    duration INTEGER NOT NULL CHECK (duration IN (30, 60, 90)),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Enable RLS
+ALTER TABLE public.subscription_offers ENABLE ROW LEVEL SECURITY;
+
+-- Policies for subscription_offers
+CREATE POLICY "Anyone can view subscription offers" ON public.subscription_offers
+    FOR SELECT USING (true);
+
+CREATE POLICY "Shop owners can insert their own offers" ON public.subscription_offers
+    FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
+CREATE POLICY "Shop owners can update their own offers" ON public.subscription_offers
+    FOR UPDATE USING (auth.uid() = shop_owner_id);
+
+CREATE POLICY "Shop owners can delete their own offers" ON public.subscription_offers
+    FOR DELETE USING (auth.uid() = shop_owner_id);
+
+CREATE POLICY "Admins have full access to offers" ON public.subscription_offers
+    FOR ALL USING ((SELECT role FROM public.profiles WHERE id = auth.uid()) = 'admin');

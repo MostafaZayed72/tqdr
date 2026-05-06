@@ -32,8 +32,28 @@
     "settings": "Settings",
     "admin_panel": "Admin Panel",
     "overview": "Overview",
-    "shops": "Manage Shops",
-    "reports": "Financial Reports"
+    "reports": "Financial Reports",
+    "subscriptions_nav": "Subscriptions",
+    "merchant_dashboard": "Dashboard",
+    "manage_customers": "Manage Customers",
+    "transactions_history": "Transactions History",
+    "subscription_offers": "Subscription Offers"
+  },
+  "subscriptions": {
+    "title": "Subscriptions",
+    "offers": "Subscription Offers",
+    "add_offer": "Add New Offer",
+    "edit_offer": "Edit Offer",
+    "offer_name": "Offer Name",
+    "price": "Price (SAR)",
+    "usage_limit": "Usage Limit",
+    "discount": "Discount",
+    "duration": "Duration (Days)",
+    "enable_feature": "Enable Subscriptions",
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    }
   },
   "dashboard": {
     "welcome": "Welcome back",

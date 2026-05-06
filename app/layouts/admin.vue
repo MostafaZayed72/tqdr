@@ -7,7 +7,8 @@ import {
   LogOut,
   Menu,
   X,
-  ShieldCheck
+  ShieldCheck,
+  CreditCard
 } from 'lucide-vue-next'
 
 const client = useSupabaseClient()
@@ -16,10 +17,11 @@ const isSidebarOpen = ref(false)
 const { t, locale } = useI18n()
 
 const navItems = computed(() => [
-  { label: t('nav.overview'), icon: LayoutDashboard, path: '/admin-dashboard' },
-  { label: t('nav.shops'), icon: Store, path: '/admin-dashboard/shops' },
-  { label: t('nav.customers'), icon: Users, path: '/admin-dashboard/customers' },
-  { label: t('nav.reports'), icon: History, path: '/admin-dashboard/reports' },
+  { label: 'nav.overview', icon: LayoutDashboard, path: '/admin-dashboard' },
+  { label: 'nav.shops', icon: Store, path: '/admin-dashboard/shops' },
+  { label: 'nav.customers', icon: Users, path: '/admin-dashboard/customers' },
+  { label: 'nav.subscriptions_nav', icon: CreditCard, path: '/admin-dashboard/subscriptions' },
+  { label: 'nav.reports', icon: History, path: '/admin-dashboard/reports' },
 ])
 
 const handleLogout = async () => {
@@ -64,7 +66,7 @@ const handleLogout = async () => {
             ]"
           >
             <component :is="item.icon" class="w-5 h-5" />
-            <span class="font-bold">{{ item.label }}</span>
+            <span class="font-bold">{{ $t(item.label) }}</span>
           </NuxtLink>
         </nav>
 

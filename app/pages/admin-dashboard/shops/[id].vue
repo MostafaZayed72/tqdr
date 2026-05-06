@@ -8,7 +8,9 @@ import {
   ArrowUpCircle,
   ArrowDownCircle,
   Calendar,
-  Smartphone
+  Smartphone,
+  CreditCard,
+  CheckCircle2
 } from 'lucide-vue-next'
 
 definePageMeta({
@@ -22,7 +24,9 @@ const { t, locale } = useI18n()
 const shop = ref(null)
 const customers = ref([])
 const transactions = ref([])
+const subscriptionOffers = ref([])
 const loading = ref(true)
+const updatingSubscriptions = ref(false)
 
 const stats = ref([
   { label: 'إجمالي العملاء', value: '0', icon: Users, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
@@ -67,7 +71,16 @@ const fetchData = async () => {
     if (txErr) throw txErr
     transactions.value = txData || []
 
-    // 4. Calculate Stats
+    // 4. Fetch Subscription Offers
+    const { data: offersData, error: offersErr } = await client
+      .from('subscription_offers')
+      .select('*')
+      .eq('shop_owner_id', shopId)
+    
+    if (offersErr) throw offersErr
+    subscriptionOffers.value = offersData || []
+
+    // 5. Calculate Stats
     const totalBalance = customers.value.reduce((acc, curr) => acc + (Number(curr.balance) || 0), 0)
     
     stats.value[0].value = custCount?.toString() || '0'
@@ -77,10 +90,25 @@ const fetchData = async () => {
     console.log('Shop data loaded successfully')
   } catch (e: any) {
     console.error('Error fetching shop data:', e.message)
-    // Optionally redirect back if not found
-    // navigateTo('/admin-dashboard/shops')
   } finally {
     loading.value = false
+  }
+}
+
+const toggleSubscriptions = async () => {
+  try {
+    updatingSubscriptions.value = true
+    const { error } = await client
+      .from('profiles')
+      .update({ subscriptions_enabled: !shop.value.subscriptions_enabled })
+      .eq('id', shop.value.id)
+    
+    if (error) throw error
+    shop.value.subscriptions_enabled = !shop.value.subscriptions_enabled
+  } catch (e: any) {
+    alert(e.message)
+  } finally {
+    updatingSubscriptions.value = false
   }
 }
 
@@ -106,8 +134,21 @@ onMounted(fetchData)
             <p class="text-slate-500 dark:text-slate-400 font-medium">{{ shop?.email }}</p>
           </div>
         </div>
-        <div class="px-4 py-2 bg-emerald-500/10 text-emerald-500 rounded-full text-sm font-bold border border-emerald-500/20">
-          حساب نشط
+        <div class="flex items-center gap-3">
+          <button 
+            @click="toggleSubscriptions"
+            :disabled="updatingSubscriptions"
+            class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all"
+            :class="shop?.subscriptions_enabled 
+              ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' 
+              : 'bg-slate-100 dark:bg-white/5 text-slate-500 border border-slate-200 dark:border-white/10'"
+          >
+            <CreditCard class="w-4 h-4" />
+            <span>{{ shop?.subscriptions_enabled ? 'تعطيل الاشتراكات' : 'تفعيل الاشتراكات' }}</span>
+          </button>
+          <div class="px-4 py-2 bg-emerald-500/10 text-emerald-500 rounded-xl text-sm font-bold border border-emerald-500/20">
+            حساب نشط
+          </div>
         </div>
       </div>
     </div>
@@ -186,34 +227,63 @@ onMounted(fetchData)
       </div>
 
       <!-- Shop Customers List -->
-      <div class="space-y-6">
-        <h3 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          <Users class="w-5 h-5 text-indigo-500" />
-          عملاء المحل
-        </h3>
-        
-        <div class="space-y-3">
-          <BaseCard v-for="customer in customers.slice(0, 8)" :key="customer.id" class="!p-4 group hover:border-indigo-500/30 transition-all">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-slate-100 dark:bg-white/5 rounded-xl flex items-center justify-center font-bold text-slate-400 group-hover:bg-indigo-500 group-hover:text-white transition-all">
-                  {{ customer.name.charAt(0) }}
-                </div>
+      <div class="space-y-8">
+        <!-- Subscriptions Section -->
+        <div v-if="shop?.subscriptions_enabled" class="space-y-6">
+          <h3 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <CreditCard class="w-5 h-5 text-amber-500" />
+            عروض الاشتراكات
+          </h3>
+          <div class="space-y-3">
+            <BaseCard v-for="offer in subscriptionOffers" :key="offer.id" class="!p-4 border-l-4 border-amber-500">
+              <div class="flex justify-between items-start">
                 <div>
-                  <h4 class="font-bold text-sm text-slate-900 dark:text-white">{{ customer.name }}</h4>
-                  <p class="text-[10px] text-slate-500">{{ customer.mobile_number }}</p>
+                  <h4 class="font-bold text-slate-900 dark:text-white">{{ offer.name }}</h4>
+                  <p class="text-xs text-slate-500 mt-1">
+                    {{ offer.usage_limit }} مرات | {{ offer.duration }} يوم
+                  </p>
+                </div>
+                <div class="text-right">
+                  <p class="font-black text-amber-500">{{ offer.price }} ر.س</p>
+                  <p class="text-[10px] text-emerald-500 font-bold">خصم {{ offer.discount }} ر.س</p>
                 </div>
               </div>
-              <div class="text-right">
-                <p class="text-xs font-black text-emerald-500">{{ customer.balance }} ر.س</p>
-              </div>
+            </BaseCard>
+            <div v-if="subscriptionOffers.length === 0" class="text-center py-6 bg-slate-50 dark:bg-white/5 rounded-2xl border-2 border-dashed border-slate-200 dark:border-white/10">
+              <p class="text-slate-400 text-sm">لا توجد عروض مضافة حتى الآن.</p>
             </div>
-          </BaseCard>
-          <div v-if="customers.length > 8" class="text-center">
-            <p class="text-xs text-slate-400">و {{ customers.length - 8 }} عملاء آخرين</p>
           </div>
-          <div v-if="customers.length === 0" class="text-center py-8">
-            <p class="text-slate-400 text-sm">لا يوجد عملاء مضافين.</p>
+        </div>
+
+        <div class="space-y-6">
+          <h3 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <Users class="w-5 h-5 text-indigo-500" />
+            عملاء المحل
+          </h3>
+          
+          <div class="space-y-3">
+            <BaseCard v-for="customer in customers.slice(0, 8)" :key="customer.id" class="!p-4 group hover:border-indigo-500/30 transition-all">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 bg-slate-100 dark:bg-white/5 rounded-xl flex items-center justify-center font-bold text-slate-400 group-hover:bg-indigo-500 group-hover:text-white transition-all">
+                    {{ customer.name.charAt(0) }}
+                  </div>
+                  <div>
+                    <h4 class="font-bold text-sm text-slate-900 dark:text-white">{{ customer.name }}</h4>
+                    <p class="text-[10px] text-slate-500">{{ customer.mobile_number }}</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <p class="text-xs font-black text-emerald-500">{{ customer.balance }} ر.س</p>
+                </div>
+              </div>
+            </BaseCard>
+            <div v-if="customers.length > 8" class="text-center">
+              <p class="text-xs text-slate-400">و {{ customers.length - 8 }} عملاء آخرين</p>
+            </div>
+            <div v-if="customers.length === 0" class="text-center py-8">
+              <p class="text-slate-400 text-sm">لا يوجد عملاء مضافين.</p>
+            </div>
           </div>
         </div>
       </div>

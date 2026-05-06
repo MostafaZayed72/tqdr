@@ -25,7 +25,28 @@
     "admin_panel": "لوحة الإدارة",
     "overview": "الإحصائيات العامة",
     "shops": "إدارة المحلات",
-    "reports": "سجل العمليات"
+    "reports": "سجل العمليات",
+    "subscriptions_nav": "الاشتراكات",
+    "merchant_dashboard": "الرئيسية",
+    "manage_customers": "إدارة العملاء",
+    "transactions_history": "سجل العمليات",
+    "subscription_offers": "عروض الاشتراكات"
+  },
+  "subscriptions": {
+    "title": "الاشتراكات",
+    "offers": "عروض الاشتراكات",
+    "add_offer": "إضافة عرض جديد",
+    "edit_offer": "تعديل العرض",
+    "offer_name": "اسم العرض",
+    "price": "قيمة الاشتراك (ر.س)",
+    "usage_limit": "عدد مرات الاستخدام",
+    "discount": "قيمة الخصم",
+    "duration": "مدة العرض (أيام)",
+    "enable_feature": "تفعيل خاصية الاشتراكات",
+    "status": {
+      "active": "نشط",
+      "inactive": "غير نشط"
+    }
   },
   "dashboard": {
     "welcome": "أهلاً بك",
