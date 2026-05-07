@@ -23,9 +23,10 @@ export default defineNuxtRouteMiddleware(async (to) => {
       if (session) return // Session exists, allow access
     }
 
-    if (to.path !== '/login' && to.path !== '/') {
+    if (to.path !== '/login' && to.path !== '/' && !to.path.startsWith('/my')) {
       return navigateTo('/login')
     }
+
   }
 
   // 3. Final check for non-auth users (if we're still here and no user/session)
@@ -33,8 +34,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
     // Check session one last time
     if (process.client) {
       const { data: { session } } = await client.auth.getSession()
-      if (!session) return navigateTo('/login')
+      if (!session && !to.path.startsWith('/my')) return navigateTo('/login')
     } else {
+
       // On server, we already skipped dashboard routes, 
       // but for other protected routes we might need a redirect
       // However, usually we want to be careful here

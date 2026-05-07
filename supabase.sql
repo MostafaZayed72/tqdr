@@ -125,3 +125,27 @@ CREATE POLICY "Shop owners can delete their own offers" ON public.subscription_o
 
 CREATE POLICY "Admins have full access to offers" ON public.subscription_offers
     FOR ALL USING ((SELECT role FROM public.profiles WHERE id = auth.uid()) = 'admin');
+
+-- Create customer_subscriptions table
+CREATE TABLE IF NOT EXISTS public.customer_subscriptions (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    customer_id UUID REFERENCES public.customers(id) ON DELETE CASCADE NOT NULL,
+    offer_id UUID REFERENCES public.subscription_offers(id) ON DELETE CASCADE NOT NULL,
+    shop_owner_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+    status TEXT DEFAULT 'active' CHECK (status IN ('active', 'expired')),
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Enable RLS
+ALTER TABLE public.customer_subscriptions ENABLE ROW LEVEL SECURITY;
+
+-- Policies for customer_subscriptions
+CREATE POLICY "Shop owners can view their customers' subscriptions" ON public.customer_subscriptions
+    FOR SELECT USING (auth.uid() = shop_owner_id);
+
+CREATE POLICY "Shop owners can manage their customers' subscriptions" ON public.customer_subscriptions
+    FOR ALL USING (auth.uid() = shop_owner_id);
+
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS login_password TEXT;
+CREATE TABLE IF NOT EXISTS otp_codes (id UUID PRIMARY KEY DEFAULT uuid_generate_v4(), phone TEXT NOT NULL, code TEXT NOT NULL, created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(), expires_at TIMESTAMP WITH TIME ZONE NOT NULL);

@@ -9,8 +9,11 @@ import {
   X,
   User,
   Smartphone,
-  Calendar
+  Calendar,
+  AlertCircle,
+  CheckCircle2
 } from 'lucide-vue-next'
+
 
 definePageMeta({
   layout: 'merchant'
@@ -52,6 +55,11 @@ const form = ref({
   note: ''
 })
 const submittng = ref(false)
+const showErrorModal = ref(false)
+const showSuccessModal = ref(false)
+const errorMsg = ref('')
+const successMsg = ref('')
+
 
 const getDateRangeParams = () => {
   const now = new Date()
@@ -240,14 +248,17 @@ const handleAddTransaction = async () => {
     showAddModal.value = false
     form.value = { customer_id: '', type: 'deposit', amount: 0, note: '' }
     fetchData()
-    alert('تم تنفيذ العملية بنجاح وإرسال الإشعار للعميل.')
+    successMsg.value = 'تم تنفيذ العملية بنجاح وإرسال الإشعار للعميل.'
+    showSuccessModal.value = true
 
   } catch (e: any) {
-    alert(e.message)
+    errorMsg.value = e.message
+    showErrorModal.value = true
   } finally {
     submittng.value = false
   }
 }
+
 
 onMounted(async () => {
   await fetchData()
@@ -539,5 +550,47 @@ watch([filterType, searchQuery], fetchData)
         </form>
       </div>
     </div>
+
+    <!-- Modal: Success Notification -->
+    <div v-if="showSuccessModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-slate-950/40 backdrop-blur-sm" @click="showSuccessModal = false"></div>
+      <div class="relative bg-white dark:bg-slate-900 w-full max-w-sm rounded-[32px] shadow-2xl border border-emerald-500/10 overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div class="p-8 text-center space-y-4">
+          <div class="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-2xl flex items-center justify-center mx-auto">
+            <CheckCircle2 class="w-8 h-8" />
+          </div>
+          <h3 class="text-xl font-bold text-slate-900 dark:text-white">تمت العملية بنجاح</h3>
+          <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{{ successMsg }}</p>
+          <button 
+            @click="showSuccessModal = false"
+            class="w-full bg-emerald-500 text-slate-950 font-bold py-3 rounded-xl mt-4 transition-all active:scale-95"
+          >
+            ممتاز
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Error Notification -->
+    <div v-if="showErrorModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-slate-950/40 backdrop-blur-sm" @click="showErrorModal = false"></div>
+      <div class="relative bg-white dark:bg-slate-900 w-full max-w-sm rounded-[32px] shadow-2xl border border-red-500/10 overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div class="p-8 text-center space-y-4">
+          <div class="w-16 h-16 bg-red-500/10 text-red-500 rounded-2xl flex items-center justify-center mx-auto">
+            <AlertCircle class="w-8 h-8" />
+          </div>
+          <h3 class="text-xl font-bold text-slate-900 dark:text-white">عذراً، حدث خطأ</h3>
+          <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{{ errorMsg }}</p>
+          <button 
+            @click="showErrorModal = false"
+            class="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold py-3 rounded-xl mt-4 transition-all active:scale-95"
+          >
+            حسناً، فهمت
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
+

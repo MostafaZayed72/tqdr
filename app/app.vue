@@ -1,14 +1,9 @@
 <script setup lang="ts">
 const { locale } = useI18n()
-const isDark = ref(true)
-
-onMounted(() => {
-  const dark = useDark()
-  isDark.value = dark.value
-  
-  const stored = localStorage.getItem('vueuse-color-scheme')
-  if (!stored) dark.value = true
+const isDark = useDark({
+  initialValue: 'dark'
 })
+
 
 useHead({
   htmlAttrs: {

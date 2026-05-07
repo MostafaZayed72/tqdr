@@ -21,6 +21,8 @@ import {
   DollarSign
 } from 'lucide-vue-next'
 
+
+
 definePageMeta({
   layout: 'merchant'
 })
@@ -37,6 +39,14 @@ const showAddModal = ref(false)
 const showHistoryModal = ref(false)
 const selectedCustomer = ref(null)
 const customerHistory = ref([])
+const availableOffers = ref([])
+const showDeleteModal = ref(false)
+const customerToDelete = ref(null)
+const showErrorModal = ref(false)
+const errorMsg = ref('')
+
+
+
 
 // Pagination
 const currentPage = ref(1)
@@ -52,20 +62,27 @@ const form = ref({
   name: '',
   mobile_number: '',
   paid_amount: 0,
-  added_balance: 0
+  added_balance: 0,
+  offer_id: ''
 })
+
+
+
 
 const txForm = ref({
   type: 'deposit' as 'deposit' | 'withdrawal',
   amount: 0,
   paid_amount: 0,
   saved_amount: 0,
-  note: ''
+  note: '',
+  offer_id: ''
 })
+
 
 const showTxModal = ref(false)
 
 const fetchCustomers = async () => {
+
   try {
     loading.value = true
     
@@ -99,6 +116,24 @@ const fetchCustomers = async () => {
   }
 }
 
+const fetchOffers = async () => {
+  try {
+    const { data: { user: currentUser } } = await client.auth.getUser()
+    if (!currentUser) return
+
+    const { data, error } = await client
+      .from('subscription_offers')
+      .select('*')
+      .eq('shop_owner_id', currentUser.id)
+    
+    if (error) throw error
+    availableOffers.value = data || []
+  } catch (e) {
+    console.error('Error fetching offers:', e)
+  }
+}
+
+
 const handleAddCustomer = async () => {
   try {
     loading.value = true
@@ -109,11 +144,13 @@ const handleAddCustomer = async () => {
 
     // 1. Create Customer
     const { data: customer, error: custError } = await client.from('customers').insert({
-      name: form.value.name,
+      name: form.value.name || 'عميل جديد',
       mobile_number: form.value.mobile_number,
       balance: form.value.added_balance,
       shop_owner_id: currentUser.id
     }).select().single()
+
+
 
     if (custError) throw custError
 
@@ -129,16 +166,63 @@ const handleAddCustomer = async () => {
         note: 'افتتاح حساب عميل جديد'
       })
     }
+
+    // 3. Handle Subscription (if selected)
+    let duration = 0
+    if (form.value.offer_id) {
+      const offer = availableOffers.value.find(o => o.id === form.value.offer_id)
+      if (offer) {
+        duration = offer.duration
+        const expiresAt = new Date()
+        expiresAt.setDate(expiresAt.getDate() + offer.duration)
+
+        const { error: subError } = await client.from('customer_subscriptions').insert({
+          customer_id: customer.id,
+          offer_id: offer.id,
+          shop_owner_id: currentUser.id,
+          expires_at: expiresAt.toISOString()
+        })
+        if (subError) throw subError
+      }
+    }
     
+    // 4. Send Welcome SMS
+    try {
+      const shopName = profile.value?.shop_name || 'تقدر'
+      let smsMessage = `مرحباً .. تم تسجيلك في ${shopName} ورصيدك الحالي ${form.value.added_balance} ر.س`
+      if (duration > 0) {
+        smsMessage += ` لمدة ${duration} يوماً`
+      }
+      smsMessage += `. للاطلاع على التفاصيل: tqdr.me/my`
+
+
+
+      await $fetch('/api/sms/send', {
+        method: 'POST',
+        body: {
+          phone: form.value.mobile_number,
+          message: smsMessage
+        }
+      })
+
+    } catch (smsErr) {
+      console.error('Failed to send welcome SMS:', smsErr)
+    }
+
     showAddModal.value = false
-    form.value = { name: '', mobile_number: '', paid_amount: 0, added_balance: 0 }
+    form.value = { name: '', mobile_number: '', paid_amount: 0, added_balance: 0, offer_id: '' }
     await fetchCustomers()
+
+
   } catch (e: any) {
-    if (import.meta.client) alert(e.message)
+    errorMsg.value = e.message
+    showErrorModal.value = true
   } finally {
     loading.value = false
   }
 }
+
+
 
 const handleQuickTx = async () => {
   try {
@@ -178,67 +262,114 @@ const handleQuickTx = async () => {
     })
 
     showTxModal.value = false
-    txForm.value = { type: 'deposit', amount: 0, paid_amount: 0, saved_amount: 0, note: '' }
+    
+    // 3. Handle Subscription (if selected during deposit)
+    if (txForm.value.type === 'deposit' && txForm.value.offer_id) {
+      const offer = availableOffers.value.find(o => o.id === txForm.value.offer_id)
+      if (offer) {
+        const expiresAt = new Date()
+        expiresAt.setDate(expiresAt.getDate() + offer.duration)
+
+        await client.from('customer_subscriptions').insert({
+          customer_id: customer.id,
+          offer_id: offer.id,
+          shop_owner_id: currentUser.id,
+          expires_at: expiresAt.toISOString()
+        })
+
+        // Send SMS for subscription
+        try {
+          const shopName = profile.value?.shop_name || 'تقدر'
+          const smsMessage = `تم تفعيل اشتراك (${offer.name}) بنجاح في ${shopName}. رصيدك الجديد ${balanceAfter} ر.س صالح لمدة ${offer.duration} يوماً. شكراً لثقتك!`
+          
+          await $fetch('/api/sms/send', {
+            method: 'POST',
+            body: {
+              phone: customer.mobile_number,
+              message: smsMessage
+            }
+          })
+        } catch (smsErr) {
+          console.error('Failed to send subscription SMS:', smsErr)
+        }
+      }
+    }
+
+    showTxModal.value = false
+    txForm.value = { type: 'deposit', amount: 0, paid_amount: 0, saved_amount: 0, note: '', offer_id: '' }
     await fetchCustomers()
+
   } catch (e: any) {
-    if (import.meta.client) alert(e.message)
+    errorMsg.value = e.message
+    showErrorModal.value = true
   } finally {
     loading.value = false
   }
 }
 
-const showEditModal = ref(false)
 
 const handleUpdateCustomer = async () => {
   try {
     loading.value = true
-    const { error } = await client
-      .from('customers')
-      .update({
-        name: form.value.name,
-        mobile_number: form.value.mobile_number
-      })
-      .eq('id', selectedCustomer.value.id)
+    const { error } = await client.from('customers').update({
+      name: form.value.name,
+      mobile_number: form.value.mobile_number
+    }).eq('id', selectedCustomer.value.id)
+
 
     if (error) throw error
     
     showEditModal.value = false
-    form.value = { name: '', mobile_number: '', paid_amount: 0, added_balance: 0 }
+    form.value = { name: '', mobile_number: '', paid_amount: 0, added_balance: 0, offer_id: '' }
     await fetchCustomers()
   } catch (e: any) {
+
     if (import.meta.client) alert(e.message)
   } finally {
     loading.value = false
   }
 }
 
-const handleDeleteCustomer = async (id: string) => {
-  if (!confirm('هل أنت متأكد من حذف هذا العميل؟ سيتم حذف جميع سجلات العمليات المرتبطة به.')) return
+const confirmDelete = async () => {
+  if (!customerToDelete.value) return
   
   try {
     loading.value = true
-    // 1. Delete transactions first (due to FK)
+    const id = customerToDelete.value.id
+    
     await client.from('transactions').delete().eq('customer_id', id)
     
-    // 2. Delete customer
     const { error } = await client.from('customers').delete().eq('id', id)
     if (error) throw error
     
+    showDeleteModal.value = false
+    customerToDelete.value = null
     await fetchCustomers()
   } catch (e: any) {
-    if (import.meta.client) alert(e.message)
+    errorMsg.value = e.message
+    showErrorModal.value = true
   } finally {
     loading.value = false
   }
 }
+
+
+const handleDeleteCustomer = (customer: any) => {
+  customerToDelete.value = customer
+  showDeleteModal.value = true
+}
+
 
 const openEditModal = (customer: any) => {
   selectedCustomer.value = customer
   form.value = {
     name: customer.name,
     mobile_number: customer.mobile_number,
+    login_password: '',
     paid_amount: 0,
-    added_balance: 0
+
+    added_balance: 0,
+    offer_id: ''
   }
   showEditModal.value = true
 }
@@ -262,6 +393,8 @@ const viewHistory = async (customer: any) => {
 
 onMounted(async () => {
   await fetchCustomers()
+  await fetchOffers()
+
   
   const { data: { user: currentUser } } = await client.auth.getUser()
   if (currentUser) {
@@ -320,9 +453,10 @@ watch(searchQuery, fetchCustomers)
           <tbody class="divide-y divide-slate-100 dark:divide-white/5">
             <tr v-for="customer in customers" :key="customer.id" class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group">
               <td class="px-6 py-5">
-                <div class="font-bold text-slate-900 dark:text-white text-lg">{{ customer.name }}</div>
-                <div class="text-xs text-slate-400">منذ {{ new Date(customer.created_at).toLocaleDateString('ar-EG') }}</div>
+                <div class="font-black text-slate-900 dark:text-white text-lg">{{ customer.name }}</div>
+                <div class="text-[10px] text-slate-400 mt-0.5">منذ {{ new Date(customer.created_at).toLocaleDateString('ar-EG') }}</div>
               </td>
+
               <td class="px-6 py-5">
                 <div class="flex items-center gap-2 text-slate-600 dark:text-slate-400">
                   <Smartphone class="w-4 h-4 text-emerald-500" />
@@ -369,9 +503,10 @@ watch(searchQuery, fetchCustomers)
                     <button @click="openEditModal(customer)" class="p-2 text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 rounded-xl transition-all active:scale-90" title="تعديل">
                       <Edit2 class="w-5 h-5" />
                     </button>
-                    <button @click="handleDeleteCustomer(customer.id)" class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-500/10 rounded-xl transition-all active:scale-90" title="حذف">
+                    <button @click="handleDeleteCustomer(customer)" class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-500/10 rounded-xl transition-all active:scale-90" title="حذف">
                       <Trash2 class="w-5 h-5" />
                     </button>
+
                   </div>
                 </div>
               </td>
@@ -467,6 +602,8 @@ watch(searchQuery, fetchCustomers)
             </div>
           </div>
 
+
+
           <button type="submit" class="w-full bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 font-black py-5 rounded-[24px] text-lg hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-amber-500/10">
             تحديث البيانات
           </button>
@@ -497,9 +634,9 @@ watch(searchQuery, fetchCustomers)
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="space-y-2">
               <label class="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                <User class="w-4 h-4 text-emerald-500" /> اسم العميل
+                <User class="w-4 h-4 text-emerald-500" /> اسم العميل (اختياري)
               </label>
-              <input v-model="form.name" type="text" required placeholder="محمد علي..." class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl px-5 py-4 focus:ring-2 focus:ring-emerald-500" />
+              <input v-model="form.name" type="text" placeholder="محمد علي..." class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl px-5 py-4 focus:ring-2 focus:ring-emerald-500" />
             </div>
             <div class="space-y-2">
               <label class="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
@@ -508,6 +645,37 @@ watch(searchQuery, fetchCustomers)
               <input v-model="form.mobile_number" type="tel" required placeholder="05xxxxxxxx" class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl px-5 py-4 focus:ring-2 focus:ring-emerald-500" />
             </div>
           </div>
+
+
+
+          <!-- Subscription Offers -->
+          <div class="space-y-4">
+            <label class="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+              <DollarSign class="w-4 h-4 text-emerald-500" /> اختيار العرض / الاشتراك
+            </label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button 
+                type="button"
+                @click="form.offer_id = ''"
+                :class="form.offer_id === '' ? 'bg-emerald-500 text-slate-950 border-emerald-500' : 'bg-slate-100 dark:bg-white/5 text-slate-500 border-transparent'"
+                class="px-4 py-3 rounded-2xl border-2 text-sm font-bold transition-all text-center"
+              >
+                بدون عرض (دفع مقدم فقط)
+              </button>
+              <button 
+                v-for="offer in availableOffers" 
+                :key="offer.id"
+                type="button"
+                @click="form.offer_id = offer.id; form.added_balance = offer.price; form.paid_amount = offer.price"
+                :class="form.offer_id === offer.id ? 'bg-emerald-500 text-slate-950 border-emerald-500' : 'bg-slate-100 dark:bg-white/5 text-slate-500 border-transparent'"
+                class="px-4 py-3 rounded-2xl border-2 text-sm font-bold transition-all text-center flex flex-col items-center gap-1"
+              >
+                <span>{{ offer.name }}</span>
+                <span class="text-[10px] opacity-70">{{ offer.price }} ر.س - {{ offer.duration }} يوم</span>
+              </button>
+            </div>
+          </div>
+
 
           <div class="bg-emerald-500/5 p-8 rounded-[32px] border border-emerald-500/10 space-y-6">
             <div class="flex items-center gap-2 text-emerald-600 font-black mb-2">
@@ -526,9 +694,15 @@ watch(searchQuery, fetchCustomers)
             </div>
           </div>
 
-          <button type="submit" class="w-full bg-slate-900 dark:bg-emerald-500 text-white dark:text-slate-950 font-black py-5 rounded-[24px] text-lg hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-emerald-500/10">
-            حفظ العميل والاشتراك
+          <button 
+            type="submit" 
+            :disabled="loading"
+            class="w-full bg-slate-900 dark:bg-emerald-500 text-white dark:text-slate-950 font-black py-5 rounded-[24px] text-lg hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-emerald-500/10 flex items-center justify-center gap-3"
+          >
+            <span v-if="loading" class="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></span>
+            <span>حفظ العميل والاشتراك</span>
           </button>
+
         </form>
       </div>
     </div>
@@ -566,6 +740,24 @@ watch(searchQuery, fetchCustomers)
             />
           </div>
 
+          <!-- Subscription Selection in Tx Modal -->
+          <div v-if="txForm.type === 'deposit' && availableOffers.length > 0" class="space-y-3">
+            <label class="text-xs font-bold text-slate-500 px-2 uppercase">ربط بعملية اشتراك (اختياري)</label>
+            <div class="flex flex-wrap gap-2">
+              <button 
+                type="button"
+                v-for="offer in availableOffers" 
+                :key="offer.id"
+                @click="txForm.offer_id = txForm.offer_id === offer.id ? '' : offer.id; if(txForm.offer_id) { txForm.amount = offer.price; txForm.paid_amount = offer.price; }"
+                :class="txForm.offer_id === offer.id ? 'bg-amber-500 text-slate-950 border-amber-500' : 'bg-slate-100 dark:bg-white/5 text-slate-500 border-transparent'"
+                class="px-4 py-2 rounded-xl border-2 text-xs font-bold transition-all"
+              >
+                {{ offer.name }} ({{ offer.price }} ر.س)
+              </button>
+            </div>
+          </div>
+
+
           <div class="grid grid-cols-2 gap-4">
             <div class="space-y-2">
               <label class="text-[10px] font-bold text-slate-500 px-2 uppercase">المبلغ المدفوع كاش</label>
@@ -590,11 +782,14 @@ watch(searchQuery, fetchCustomers)
 
           <button 
             type="submit" 
+            :disabled="loading"
             :class="txForm.type === 'deposit' ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-red-500 shadow-red-500/20'"
-            class="w-full text-slate-950 font-black py-6 rounded-[28px] text-xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl"
+            class="w-full text-slate-950 font-black py-6 rounded-[28px] text-xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl flex items-center justify-center gap-3"
           >
-            تأكيد العملية الآن
+            <span v-if="loading" class="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></span>
+            <span>تأكيد العملية الآن</span>
           </button>
+
         </form>
       </div>
     </div>
@@ -642,8 +837,71 @@ watch(searchQuery, fetchCustomers)
       </div>
     </div>
 
+
+
+    <!-- Modal: Delete Confirmation -->
+    <div v-if="showDeleteModal" class="fixed inset-0 z-[110] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-md" @click="showDeleteModal = false"></div>
+      <div class="relative bg-white dark:bg-slate-900 w-full max-w-md rounded-[40px] shadow-2xl border border-white/10 overflow-hidden animate-in fade-in zoom-in duration-300">
+        <div class="p-8 text-center space-y-6">
+          <div class="w-20 h-20 bg-red-500/10 text-red-500 rounded-3xl flex items-center justify-center mx-auto ring-8 ring-red-500/5">
+            <Trash2 class="w-10 h-10" />
+          </div>
+          
+          <div class="space-y-2">
+            <h3 class="text-2xl font-black text-slate-900 dark:text-white">حذف العميل؟</h3>
+            <p class="text-slate-500 dark:text-slate-400 leading-relaxed px-4">
+              هل أنت متأكد من حذف <strong>{{ customerToDelete?.name }}</strong>؟ 
+              <br/>
+              <span class="text-red-500 text-xs font-bold">تحذير: سيتم حذف جميع سجلات العمليات المرتبطة به نهائياً.</span>
+            </p>
+          </div>
+
+          <div class="flex flex-col gap-3 pt-4">
+            <button 
+              @click="confirmDelete"
+              :disabled="loading"
+              class="w-full bg-red-500 text-white font-black py-4 rounded-2xl hover:bg-red-600 transition-all shadow-xl shadow-red-500/20 flex items-center justify-center gap-3"
+            >
+              <span v-if="loading" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+              <span>تأكيد الحذف النهائي</span>
+            </button>
+            <button 
+              @click="showDeleteModal = false"
+              :disabled="loading"
+              class="w-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 font-bold py-4 rounded-2xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all"
+            >
+              إلغاء
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Error Notification -->
+    <div v-if="showErrorModal" class="fixed inset-0 z-[120] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-slate-950/40 backdrop-blur-sm" @click="showErrorModal = false"></div>
+      <div class="relative bg-white dark:bg-slate-900 w-full max-w-sm rounded-[32px] shadow-2xl border border-red-500/10 overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div class="p-8 text-center space-y-4">
+          <div class="w-16 h-16 bg-red-500/10 text-red-500 rounded-2xl flex items-center justify-center mx-auto">
+            <AlertCircle class="w-8 h-8" />
+          </div>
+          <h3 class="text-xl font-bold text-slate-900 dark:text-white">عذراً، حدث خطأ</h3>
+          <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{{ errorMsg }}</p>
+          <button 
+            @click="showErrorModal = false"
+            class="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold py-3 rounded-xl mt-4 transition-all active:scale-95"
+          >
+            حسناً، فهمت
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
+
+
 
 <style scoped>
 .animate-fade-in {

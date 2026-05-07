@@ -11,13 +11,15 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // Format phone number (ensure it starts with 966)
-  let formattedPhone = phone.trim()
+  // Format phone number (ensure it starts with 966 and contains only digits)
+  let formattedPhone = phone.toString().replace(/\D/g, '')
+  
   if (formattedPhone.startsWith('05')) {
     formattedPhone = '966' + formattedPhone.substring(1)
-  } else if (formattedPhone.startsWith('5')) {
+  } else if (formattedPhone.startsWith('5') && formattedPhone.length === 9) {
     formattedPhone = '966' + formattedPhone
   }
+
 
   const username = process.env.SMS_USERNAME || config.smsUsername
   const password = process.env.SMS_PASSWORD || config.smsPassword

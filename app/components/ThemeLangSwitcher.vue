@@ -1,15 +1,10 @@
 <script setup lang="ts">
 import { Languages, Sun, Moon } from 'lucide-vue-next'
 
-const { locale, locales, setLocale } = useI18n()
-const isDark = ref(false)
-let toggleDark: any = () => {}
+const { locale, setLocale } = useI18n()
+const isDark = useDark()
+const toggleDark = useToggle(isDark)
 
-onMounted(() => {
-  const dark = useDark()
-  isDark.value = dark.value
-  toggleDark = useToggle(dark)
-})
 
 const toggleLanguage = () => {
   const nextLocale = locale.value === 'ar' ? 'en' : 'ar'
