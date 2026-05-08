@@ -7,7 +7,10 @@
     "cancel": "Cancel",
     "delete": "Delete",
     "edit": "Edit",
-    "search": "Search..."
+    "search": "Search...",
+    "showing": "Showing",
+    "to": "to",
+    "of": "of"
   },
   "auth": {
     "login": "Login",
@@ -74,9 +77,17 @@
   "transactions": {
     "title": "Financial Transactions",
     "deposit": "Deposit",
-    "withdraw": "Withdraw",
+    "withdraw": "Withdrawal",
     "amount": "Amount",
     "date": "Date",
-    "status": "Status"
+    "status": "Status",
+    "types": {
+      "deposit": "Deposit",
+      "withdrawal": "Withdrawal"
+    },
+    "status_labels": {
+      "completed": "Completed",
+      "pending": "Pending"
+    }
   }
 }

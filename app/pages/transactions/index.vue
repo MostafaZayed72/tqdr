@@ -382,6 +382,23 @@ onMounted(async () => {
           </div>
         </div>
 
+        <!-- Offer Filter Dropdown -->
+        <div class="relative min-w-[200px]">
+          <select 
+            v-model="offerFilter"
+            class="w-full bg-slate-50 dark:bg-white/5 border border-transparent hover:border-emerald-500/30 rounded-2xl px-6 py-4 font-bold text-slate-700 dark:text-slate-300 focus:ring-0 appearance-none cursor-pointer"
+          >
+            <option value="all">كل العروض / الكل</option>
+            <option value="prepaid">الدفع المقدم فقط</option>
+            <option v-for="offer in availableOffers" :key="offer.id" :value="offer.id">
+              {{ offer.name }}
+            </option>
+          </select>
+          <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-400">
+            <ChevronDown class="w-4 h-4" />
+          </div>
+        </div>
+
         <select 
           v-model="filterType"
           class="bg-slate-50 dark:bg-white/5 border border-transparent hover:border-emerald-500/30 rounded-2xl px-6 py-4 font-bold text-slate-700 dark:text-slate-300 focus:ring-0 appearance-none min-w-[140px]"
@@ -496,7 +513,7 @@ onMounted(async () => {
                 </td>
                 <td class="px-8 py-5 text-center">
                   <span class="px-4 py-1.5 bg-emerald-500/10 text-emerald-500 rounded-full text-xs font-black shadow-sm ring-1 ring-emerald-500/20">
-                    {{ t('transactions.status.completed') }}
+                    {{ t('transactions.status_labels.completed') }}
                   </span>
                 </td>
               </tr>

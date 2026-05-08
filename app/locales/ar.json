@@ -7,7 +7,10 @@
     "cancel": "إلغاء",
     "delete": "حذف",
     "edit": "تعديل",
-    "search": "بحث..."
+    "search": "بحث...",
+    "showing": "عرض",
+    "to": "إلى",
+    "of": "من أصل"
   },
   "auth": {
     "login": "تسجيل الدخول",
@@ -77,7 +80,15 @@
     "withdraw": "سحب رصيد",
     "amount": "المبلغ",
     "date": "التاريخ",
-    "status": "الحالة"
+    "status": "الحالة",
+    "types": {
+      "deposit": "شحن رصيد",
+      "withdrawal": "سحب / خصم"
+    },
+    "status_labels": {
+      "completed": "مكتمل",
+      "pending": "معلق"
+    }
   },
   "landing": {
     "hero": {
