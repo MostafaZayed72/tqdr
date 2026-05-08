@@ -215,6 +215,20 @@ const handleAddSubscriber = async (customerId: string) => {
 
 
     if (error) throw error
+
+    // 3. Create Transaction for tracking (even if free)
+    const { data: custProfile } = await client.from('customers').select('balance').eq('id', customerId).single()
+    await client.from('transactions').insert({
+      customer_id: customerId,
+      shop_owner_id: authUser.id,
+      offer_id: offer.id,
+      type: 'deposit',
+      amount: 0,
+      balance_before: custProfile?.balance || 0,
+      balance_after: custProfile?.balance || 0,
+      note: `اشتراك في عرض: ${offer.name}`
+    })
+
     await fetchSubscribers(offer.id)
     
     // Optional: Send SMS

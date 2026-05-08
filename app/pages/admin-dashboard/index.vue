@@ -40,7 +40,7 @@ const customersByType = ref({
   series: [0, 0], // [Prepaid, Subscribed]
   options: {
     chart: { type: 'donut', fontFamily: 'Tajawal, sans-serif' },
-    labels: ['دفع مقدم فقط', 'مشتركين في عروض'],
+    labels: ['عملاء الدفع المسبق', 'المشتركين في العروض'],
     colors: ['#6366f1', '#10b981'],
     legend: { position: 'bottom', labels: { colors: '#94a3b8' } },
     dataLabels: { enabled: false },
@@ -176,10 +176,14 @@ const fetchStats = async () => {
 
     // 3. Detailed Customer Breakdown
     const { data: allCust } = await client.from('customers').select('id')
-    const { data: activeSubs } = await client.from('customer_subscriptions').select('customer_id')
     
-    // Count unique customers who have at least one entry in customer_subscriptions
-    const subCustIds = new Set((activeSubs || []).map(s => s.customer_id))
+    // Use transactions with offer_id as the source (kept in sync with active subscriptions)
+    const { data: txSubs } = await client
+      .from('transactions')
+      .select('customer_id')
+      .not('offer_id', 'is', null)
+    
+    const subCustIds = new Set((txSubs || []).map(t => t.customer_id))
     const subCount = subCustIds.size
     const prepaidCount = Math.max(0, (allCust?.length || 0) - subCount)
     

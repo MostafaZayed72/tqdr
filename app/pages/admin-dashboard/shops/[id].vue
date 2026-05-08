@@ -10,7 +10,9 @@ import {
   Calendar,
   Smartphone,
   CreditCard,
-  CheckCircle2
+  CheckCircle2,
+  ChevronRight,
+  ChevronLeft
 } from 'lucide-vue-next'
 
 definePageMeta({
@@ -27,6 +29,13 @@ const transactions = ref([])
 const subscriptionOffers = ref([])
 const loading = ref(true)
 const updatingSubscriptions = ref(false)
+
+// Pagination State
+const txPage = ref(1)
+const totalTx = ref(0)
+const custPage = ref(1)
+const totalCust = ref(0)
+const pageSize = 10
 
 const stats = ref([
   { label: 'إجمالي العملاء', value: '0', icon: Users, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
@@ -57,9 +66,11 @@ const fetchData = async () => {
       .from('customers')
       .select('*', { count: 'exact' })
       .eq('shop_owner_id', shopId)
+      .range((custPage.value - 1) * pageSize, custPage.value * pageSize - 1)
     
     if (custErr) throw custErr
     customers.value = custData || []
+    totalCust.value = custCount || 0
     
     // 3. Fetch Transactions
     const { data: txData, count: txCount, error: txErr } = await client
@@ -67,9 +78,11 @@ const fetchData = async () => {
       .select('*, customer:customers(name, mobile_number)', { count: 'exact' })
       .eq('shop_owner_id', shopId)
       .order('created_at', { ascending: false })
+      .range((txPage.value - 1) * pageSize, txPage.value * pageSize - 1)
     
     if (txErr) throw txErr
     transactions.value = txData || []
+    totalTx.value = txCount || 0
 
     // 4. Fetch Subscription Offers
     const { data: offersData, error: offersErr } = await client
@@ -83,9 +96,9 @@ const fetchData = async () => {
     // 5. Calculate Stats
     const totalBalance = customers.value.reduce((acc, curr) => acc + (Number(curr.balance) || 0), 0)
     
-    stats.value[0].value = custCount?.toString() || '0'
+    stats.value[0].value = totalCust.value.toString()
     stats.value[1].value = `${totalBalance.toLocaleString()} ${t('common.currency')}`
-    stats.value[2].value = txCount?.toString() || '0'
+    stats.value[2].value = totalTx.value.toString()
 
     console.log('Shop data loaded successfully')
   } catch (e: any) {
@@ -93,6 +106,28 @@ const fetchData = async () => {
   } finally {
     loading.value = false
   }
+}
+
+// Partial fetchers for pagination
+const fetchTx = async () => {
+  const shopId = route.params.id
+  const { data } = await client
+    .from('transactions')
+    .select('*, customer:customers(name, mobile_number)')
+    .eq('shop_owner_id', shopId)
+    .order('created_at', { ascending: false })
+    .range((txPage.value - 1) * pageSize, txPage.value * pageSize - 1)
+  transactions.value = data || []
+}
+
+const fetchCust = async () => {
+  const shopId = route.params.id
+  const { data } = await client
+    .from('customers')
+    .select('*')
+    .eq('shop_owner_id', shopId)
+    .range((custPage.value - 1) * pageSize, custPage.value * pageSize - 1)
+  customers.value = data || []
 }
 
 const toggleSubscriptions = async () => {
@@ -248,6 +283,35 @@ onMounted(fetchData)
               </tbody>
             </table>
           </div>
+
+          <!-- Transactions Pagination -->
+          <div v-if="totalTx > pageSize" class="p-6 bg-slate-50/50 dark:bg-white/5 border-t border-slate-100 dark:border-white/5 flex items-center justify-between">
+            <button 
+              @click="txPage--; fetchTx()" 
+              :disabled="txPage === 1" 
+              class="w-10 h-10 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-500 disabled:opacity-30 transition-all shadow-sm flex items-center justify-center hover:text-emerald-500"
+            >
+              <ChevronRight v-if="locale === 'ar'" class="w-5 h-5" />
+              <ChevronLeft v-else class="w-5 h-5" />
+            </button>
+            
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-black text-slate-400">صفحة</span>
+              <span class="w-8 h-8 bg-emerald-500 text-slate-950 rounded-lg flex items-center justify-center text-sm font-black shadow-lg shadow-emerald-500/20">
+                {{ txPage }}
+              </span>
+              <span class="text-xs font-black text-slate-400">من {{ Math.ceil(totalTx / pageSize) }}</span>
+            </div>
+
+            <button 
+              @click="txPage++; fetchTx()" 
+              :disabled="txPage >= Math.ceil(totalTx / pageSize)" 
+              class="w-10 h-10 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-500 disabled:opacity-30 transition-all shadow-sm flex items-center justify-center hover:text-emerald-500"
+            >
+              <ChevronLeft v-if="locale === 'ar'" class="w-5 h-5" />
+              <ChevronRight v-else class="w-5 h-5" />
+            </button>
+          </div>
         </BaseCard>
       </div>
 
@@ -287,7 +351,7 @@ onMounted(fetchData)
           </h3>
           
           <div class="space-y-3">
-            <BaseCard v-for="customer in customers.slice(0, 8)" :key="customer.id" class="!p-4 group hover:border-indigo-500/30 transition-all">
+            <BaseCard v-for="customer in customers" :key="customer.id" class="!p-4 group hover:border-indigo-500/30 transition-all">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
                   <div class="w-10 h-10 bg-slate-100 dark:bg-white/5 rounded-xl flex items-center justify-center font-bold text-slate-400 group-hover:bg-indigo-500 group-hover:text-white transition-all">
@@ -303,9 +367,30 @@ onMounted(fetchData)
                 </div>
               </div>
             </BaseCard>
-            <div v-if="customers.length > 8" class="text-center">
-              <p class="text-xs text-slate-400">و {{ customers.length - 8 }} عملاء آخرين</p>
+            
+            <!-- Customers Pagination -->
+            <div v-if="totalCust > pageSize" class="p-4 bg-slate-50/50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 flex items-center justify-between">
+              <button 
+                @click="custPage--; fetchCust()" 
+                :disabled="custPage === 1" 
+                class="w-8 h-8 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-400 disabled:opacity-30 flex items-center justify-center hover:text-indigo-500"
+              >
+                <ChevronRight v-if="locale === 'ar'" class="w-4 h-4" />
+                <ChevronLeft v-else class="w-4 h-4" />
+              </button>
+              
+              <span class="text-[10px] font-black text-slate-500">{{ custPage }} / {{ Math.ceil(totalCust / pageSize) }}</span>
+
+              <button 
+                @click="custPage++; fetchCust()" 
+                :disabled="custPage >= Math.ceil(totalCust / pageSize)" 
+                class="w-8 h-8 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-400 disabled:opacity-30 flex items-center justify-center hover:text-indigo-500"
+              >
+                <ChevronLeft v-if="locale === 'ar'" class="w-4 h-4" />
+                <ChevronRight v-else class="w-4 h-4" />
+              </button>
             </div>
+
             <div v-if="customers.length === 0" class="text-center py-8">
               <p class="text-slate-400 text-sm">لا يوجد عملاء مضافين.</p>
             </div>

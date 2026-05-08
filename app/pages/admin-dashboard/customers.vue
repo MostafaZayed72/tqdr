@@ -12,6 +12,7 @@ import {
   Trash2,
   Edit2,
   X,
+  Store,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -30,6 +31,7 @@ const shops = ref([])
 const loading = ref(true)
 const searchQuery = ref('')
 const selectedShopId = ref('all')
+const subFilter = ref('all') // all, subscribed, prepaid
 const showDeleteModal = ref(false)
 const customerToDelete = ref<string | null>(null)
 const currentPage = ref(1)
@@ -70,6 +72,29 @@ const fetchAllCustomers = async () => {
 
     if (searchQuery.value) {
       query = query.or(`name.ilike.%${searchQuery.value}%,mobile_number.ilike.%${searchQuery.value}%`)
+    }
+
+    // Subscription Filter
+    if (subFilter.value !== 'all') {
+      // Use transactions with offer_id as the primary source for admin
+      const { data: txSubData } = await client
+        .from('transactions')
+        .select('customer_id')
+        .not('offer_id', 'is', null)
+      
+      const subCustIds = [...new Set((txSubData || []).map(s => s.customer_id))]
+      
+      if (subFilter.value === 'subscribed') {
+        if (subCustIds.length > 0) {
+          query = query.in('id', subCustIds)
+        } else {
+          query = query.eq('id', '00000000-0000-0000-0000-000000000000')
+        }
+      } else if (subFilter.value === 'prepaid') {
+        if (subCustIds.length > 0) {
+          query = query.not('id', 'in', `(${subCustIds.join(',')})`)
+        }
+      }
     }
 
     const { data, count, error } = await query
@@ -155,7 +180,10 @@ onMounted(() => {
   fetchAllCustomers()
   fetchShops()
 })
-watch([searchQuery, selectedShopId], fetchAllCustomers)
+watch([searchQuery, selectedShopId, subFilter], () => {
+  currentPage.value = 1
+  fetchAllCustomers()
+})
 </script>
 
 <template>
@@ -189,6 +217,19 @@ watch([searchQuery, selectedShopId], fetchAllCustomers)
         
         <div class="md:w-64 relative group">
           <Filter :class="locale === 'ar' ? 'right-4' : 'left-4'" class="absolute top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors w-5 h-5" />
+          <select 
+            v-model="subFilter"
+            :class="locale === 'ar' ? 'pr-12 pl-4' : 'pl-12 pr-4'"
+            class="w-full bg-slate-50 dark:bg-white/5 border-none rounded-2xl py-4 focus:ring-2 focus:ring-emerald-500/50 transition-all text-slate-900 dark:text-white font-bold appearance-none"
+          >
+            <option value="all">كل المشتركين</option>
+            <option value="subscribed">المشتركين في عروض</option>
+            <option value="prepaid">عملاء الدفع المسبق</option>
+          </select>
+        </div>
+
+        <div class="md:w-64 relative group">
+          <Store :class="locale === 'ar' ? 'right-4' : 'left-4'" class="absolute top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors w-5 h-5" />
           <select 
             v-model="selectedShopId"
             :class="locale === 'ar' ? 'pr-12 pl-4' : 'pl-12 pr-4'"
