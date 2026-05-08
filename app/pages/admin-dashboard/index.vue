@@ -217,21 +217,32 @@ watch([dateFilter, customRange], fetchStats)
 
     <!-- Stats Grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-      <BaseCard v-for="stat in stats" :key="stat.label" class="relative overflow-hidden group hover:scale-[1.02] transition-all duration-500 border-white/5 shadow-xl !p-8 rounded-[48px]">
-        <div class="flex items-center justify-between relative z-10">
-          <div :class="stat.color" class="p-4 text-white rounded-[24px] shadow-2xl font-bold">
-            <component :is="stat.icon" class="w-7 h-7" />
+      <template v-if="loading">
+        <BaseCard v-for="i in 4" :key="i" class="!p-8 rounded-[48px]">
+          <Skeleton roundedClass="rounded-[24px] w-14 h-14 mb-8" />
+          <div class="space-y-2">
+            <Skeleton roundedClass="rounded w-24 h-4" />
+            <Skeleton roundedClass="rounded w-32 h-10" />
           </div>
-          <div class="p-2 bg-slate-50 dark:bg-white/5 rounded-xl">
-            <TrendingUp class="w-5 h-5 text-emerald-500" />
+        </BaseCard>
+      </template>
+      <template v-else>
+        <BaseCard v-for="stat in stats" :key="stat.label" class="relative overflow-hidden group hover:scale-[1.02] transition-all duration-500 border-white/5 shadow-xl !p-8 rounded-[48px]">
+          <div class="flex items-center justify-between relative z-10">
+            <div :class="`p-4 ${stat.color} text-white rounded-[24px] shadow-2xl`">
+              <component :is="stat.icon" class="w-7 h-7" />
+            </div>
+            <div class="p-2 bg-slate-50 dark:bg-white/5 rounded-xl">
+              <TrendingUp class="w-5 h-5 text-emerald-500" />
+            </div>
           </div>
-        </div>
-        <div class="mt-8 relative z-10">
-          <p class="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-widest mb-2">{{ stat.label }}</p>
-          <h3 class="text-4xl font-black text-slate-900 dark:text-white tabular-nums">{{ stat.value }}</h3>
-        </div>
-        <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-slate-50 dark:bg-white/5 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-1000"></div>
-      </BaseCard>
+          <div class="mt-8 relative z-10">
+            <p class="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-widest mb-2">{{ stat.label }}</p>
+            <h3 class="text-4xl font-black text-slate-900 dark:text-white tabular-nums">{{ stat.value }}</h3>
+          </div>
+          <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-slate-50 dark:bg-white/5 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-1000"></div>
+        </BaseCard>
+      </template>
     </div>
 
     <!-- Charts Section -->
@@ -250,11 +261,9 @@ watch([dateFilter, customRange], fetchStats)
           </div>
         </div>
         <div class="h-[350px]">
-          <ClientOnly>
+          <Skeleton v-if="loading" roundedClass="rounded-3xl h-full w-full" />
+          <ClientOnly v-else>
             <ApexChart height="100%" width="100%" type="area" :options="volumeChart.options" :series="volumeChart.series" />
-            <template #fallback>
-              <div class="h-full flex items-center justify-center text-slate-400 font-bold italic">جاري تحميل البيانات...</div>
-            </template>
           </ClientOnly>
         </div>
       </BaseCard>
@@ -273,11 +282,9 @@ watch([dateFilter, customRange], fetchStats)
           </div>
         </div>
         <div class="h-[350px]">
-          <ClientOnly>
+          <Skeleton v-if="loading" roundedClass="rounded-3xl h-full w-full" />
+          <ClientOnly v-else>
             <ApexChart height="100%" width="100%" type="bar" :options="growthChart.options" :series="growthChart.series" />
-            <template #fallback>
-              <div class="h-full flex items-center justify-center text-slate-400 font-bold italic">جاري تحميل البيانات...</div>
-            </template>
           </ClientOnly>
         </div>
       </BaseCard>
@@ -297,25 +304,30 @@ watch([dateFilter, customRange], fetchStats)
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <BaseCard v-for="shop in recentShops" :key="shop.id" 
-          @click="navigateTo(`/admin-dashboard/shops/${shop.id}`)"
-          class="!p-6 hover:border-emerald-500/50 transition-all group cursor-pointer border-white/5 shadow-lg rounded-[32px] bg-white dark:bg-slate-900"
-        >
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-4">
-              <div class="w-14 h-14 bg-slate-100 dark:bg-white/5 rounded-2xl flex items-center justify-center font-black text-2xl text-slate-500 group-hover:bg-emerald-500 group-hover:text-slate-950 transition-all duration-500">
-                {{ shop.shop_name?.charAt(0).toUpperCase() || shop.email.charAt(0).toUpperCase() }}
+        <template v-if="loading">
+          <Skeleton v-for="i in 6" :key="i" roundedClass="rounded-[32px] h-[100px]" />
+        </template>
+        <template v-else>
+          <BaseCard v-for="shop in recentShops" :key="shop.id" 
+            @click="navigateTo(`/admin-dashboard/shops/${shop.id}`)"
+            class="!p-6 hover:border-emerald-500/50 transition-all group cursor-pointer border-white/5 shadow-lg rounded-[32px] bg-white dark:bg-slate-900"
+          >
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-4">
+                <div class="w-14 h-14 bg-slate-100 dark:bg-white/5 rounded-2xl flex items-center justify-center font-black text-2xl text-slate-500 group-hover:bg-emerald-500 group-hover:text-slate-950 transition-all duration-500">
+                  {{ shop.shop_name?.charAt(0).toUpperCase() || shop.email.charAt(0).toUpperCase() }}
+                </div>
+                <div>
+                  <h4 class="font-black text-lg text-slate-900 dark:text-white leading-tight group-hover:text-emerald-500 transition-colors">{{ shop.shop_name || shop.email.split('@')[0] }}</h4>
+                  <p class="text-xs text-slate-500 mt-1 font-bold">{{ new Date(shop.created_at).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' }) }}</p>
+                </div>
               </div>
-              <div>
-                <h4 class="font-black text-lg text-slate-900 dark:text-white leading-tight group-hover:text-emerald-500 transition-colors">{{ shop.shop_name || shop.email.split('@')[0] }}</h4>
-                <p class="text-xs text-slate-500 mt-1 font-bold">{{ new Date(shop.created_at).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' }) }}</p>
+              <div class="w-10 h-10 rounded-full bg-slate-50 dark:bg-white/5 flex items-center justify-center group-hover:bg-emerald-500/20 transition-all">
+                <ChevronRight class="w-5 h-5 text-slate-300 group-hover:text-emerald-500 rotate-180" />
               </div>
             </div>
-            <div class="w-10 h-10 rounded-full bg-slate-50 dark:bg-white/5 flex items-center justify-center group-hover:bg-emerald-500/20 transition-all">
-              <ChevronRight class="w-5 h-5 text-slate-300 group-hover:text-emerald-500 rotate-180" />
-            </div>
-          </div>
-        </BaseCard>
+          </BaseCard>
+        </template>
         
         <div v-if="recentShops.length === 0 && !loading" class="col-span-full text-center py-24 text-slate-500 font-bold bg-slate-50 dark:bg-white/5 rounded-[48px] border-2 border-dashed border-slate-200 dark:border-white/5">
           لم يتم العثور على محلات جديدة حالياً.

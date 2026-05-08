@@ -234,50 +234,61 @@ watch(searchQuery, fetchShops)
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 dark:divide-white/5">
-            <tr 
-              v-for="shop in shops" :key="shop.id" 
-              @click="navigateTo(`/admin-dashboard/shops/${shop.id}`)"
-              class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group cursor-pointer"
-            >
-              <td class="px-6 py-4">
-                <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center font-bold text-emerald-600">
-                    {{ shop.email.charAt(0).toUpperCase() }}
+            <template v-if="loading">
+              <tr v-for="i in 6" :key="i">
+                <td class="px-6 py-4"><Skeleton roundedClass="rounded w-32 h-6" /></td>
+                <td class="px-6 py-4"><Skeleton roundedClass="rounded w-24 h-6" /></td>
+                <td class="px-6 py-4"><Skeleton roundedClass="rounded w-28 h-6" /></td>
+                <td class="px-6 py-4"><Skeleton roundedClass="rounded-full w-16 h-6" /></td>
+                <td class="px-6 py-4"><Skeleton roundedClass="rounded-xl w-20 h-8 mx-auto" /></td>
+              </tr>
+            </template>
+            <template v-else>
+              <tr 
+                v-for="shop in shops" :key="shop.id" 
+                @click="navigateTo(`/admin-dashboard/shops/${shop.id}`)"
+                class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group cursor-pointer"
+              >
+                <td class="px-6 py-4">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center font-bold text-emerald-600">
+                      {{ shop.email.charAt(0).toUpperCase() }}
+                    </div>
+                    <div class="font-bold text-slate-900 dark:text-white">{{ shop.email }}</div>
                   </div>
-                  <div class="font-bold text-slate-900 dark:text-white">{{ shop.email }}</div>
-                </div>
-              </td>
-              <td class="px-6 py-4 text-slate-600 dark:text-slate-400 font-medium">
-                {{ shop.shop_name || '-' }}
-              </td>
-              <td class="px-6 py-4 text-slate-500">
-                {{ new Date(shop.created_at).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US') }}
-              </td>
-              <td class="px-6 py-4">
-                <span class="px-3 py-1 bg-emerald-500/10 text-emerald-500 rounded-full text-xs font-bold">نشط</span>
-              </td>
-              <td class="px-6 py-4" @click.stop>
-                <div class="flex items-center justify-center gap-2">
-                  <button 
-                    @click="handleEditShop(shop)"
-                    class="p-2 text-amber-500 hover:bg-amber-500/10 rounded-xl transition-colors"
-                  >
-                    <Edit2 class="w-5 h-5" />
-                  </button>
-                  <button 
-                    @click="confirmDeleteShop(shop.id)"
-                    class="p-2 text-red-500 hover:bg-red-500/10 rounded-xl transition-colors"
-                  >
-                    <Trash2 class="w-5 h-5" />
-                  </button>
-                </div>
-              </td>
-            </tr>
-            <tr v-if="shops.length === 0 && !loading">
-              <td colspan="5" class="px-6 py-12 text-center text-slate-500">
-                {{ $t('common.no_data') }}
-              </td>
-            </tr>
+                </td>
+                <td class="px-6 py-4 text-slate-600 dark:text-slate-400 font-medium">
+                  {{ shop.shop_name || '-' }}
+                </td>
+                <td class="px-6 py-4 text-slate-500">
+                  {{ new Date(shop.created_at).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US') }}
+                </td>
+                <td class="px-6 py-4">
+                  <span class="px-3 py-1 bg-emerald-500/10 text-emerald-500 rounded-full text-xs font-bold">نشط</span>
+                </td>
+                <td class="px-6 py-4" @click.stop>
+                  <div class="flex items-center justify-center gap-2">
+                    <button 
+                      @click="handleEditShop(shop)"
+                      class="p-2 text-amber-500 hover:bg-amber-500/10 rounded-xl transition-colors"
+                    >
+                      <Edit2 class="w-5 h-5" />
+                    </button>
+                    <button 
+                      @click="confirmDeleteShop(shop.id)"
+                      class="p-2 text-red-500 hover:bg-red-500/10 rounded-xl transition-colors"
+                    >
+                      <Trash2 class="w-5 h-5" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr v-if="shops.length === 0 && !loading">
+                <td colspan="5" class="px-6 py-12 text-center text-slate-500">
+                  {{ $t('common.no_data') }}
+                </td>
+              </tr>
+            </template>
           </tbody>
         </table>
       </div>

@@ -687,11 +687,11 @@ watch(searchQuery, fetchCustomers)
             <div class="grid grid-cols-2 gap-6">
               <div class="space-y-2">
                 <label class="text-[10px] uppercase font-bold text-slate-500">المبلغ المدفوع (كاش)</label>
-                <input v-model="form.paid_amount" type="number" step="0.01" class="w-full bg-white dark:bg-slate-900 border-none rounded-2xl px-4 py-3 font-bold text-lg focus:ring-2 focus:ring-emerald-500" />
+                <input v-model="form.paid_amount" type="number" step="0.01" :readonly="form.offer_id !== ''" :class="form.offer_id !== '' ? 'opacity-50 cursor-not-allowed' : ''" class="w-full bg-white dark:bg-slate-900 border-none rounded-2xl px-4 py-3 font-bold text-lg focus:ring-2 focus:ring-emerald-500" />
               </div>
               <div class="space-y-2">
                 <label class="text-[10px] uppercase font-bold text-slate-500">الرصيد المضاف</label>
-                <input v-model="form.added_balance" type="number" step="0.01" class="w-full bg-white dark:bg-slate-900 border-none rounded-2xl px-4 py-3 font-bold text-lg text-emerald-500 focus:ring-2 focus:ring-emerald-500" />
+                <input v-model="form.added_balance" type="number" step="0.01" :readonly="form.offer_id !== ''" :class="form.offer_id !== '' ? 'opacity-50 cursor-not-allowed' : ''" class="w-full bg-white dark:bg-slate-900 border-none rounded-2xl px-4 py-3 font-bold text-lg text-emerald-500 focus:ring-2 focus:ring-emerald-500" />
               </div>
             </div>
           </div>
@@ -739,6 +739,8 @@ watch(searchQuery, fetchCustomers)
               step="0.01" 
               placeholder="0.00"
               class="w-full bg-transparent border-none text-center text-6xl font-black text-slate-900 dark:text-white focus:ring-0 placeholder:text-slate-200 dark:placeholder:text-slate-800" 
+              :readonly="txForm.offer_id !== ''"
+              :class="txForm.offer_id !== '' ? 'opacity-50 cursor-not-allowed' : ''"
             />
           </div>
 
@@ -765,7 +767,7 @@ watch(searchQuery, fetchCustomers)
               <label class="text-[10px] font-bold text-slate-500 px-2 uppercase">المبلغ المدفوع كاش</label>
               <div class="relative">
                 <DollarSign class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input v-model="txForm.paid_amount" type="number" step="0.01" class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl pl-10 pr-4 py-4 font-bold focus:ring-2 focus:ring-emerald-500" />
+                <input v-model="txForm.paid_amount" type="number" step="0.01" :readonly="txForm.offer_id !== ''" :class="txForm.offer_id !== '' ? 'opacity-50 cursor-not-allowed' : ''" class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl pl-10 pr-4 py-4 font-bold focus:ring-2 focus:ring-emerald-500" />
               </div>
             </div>
             <div class="space-y-2">

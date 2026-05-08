@@ -11,7 +11,8 @@ import {
   BarChart3,
   Calendar,
   Layers,
-  Sparkles
+  Sparkles,
+  ChevronDown
 } from 'lucide-vue-next'
 
 const ApexChart = defineAsyncComponent(() => import('vue3-apexcharts'))
@@ -33,8 +34,18 @@ const stats = ref([
 ])
 
 const recentTransactions = ref([])
+const availableOffers = ref([])
+const txFilter = ref('all')
 const offerStats = ref([])
 const loading = ref(true)
+
+const filteredTransactions = computed(() => {
+  if (txFilter.value === 'all') return recentTransactions.value.slice(0, 4)
+  if (txFilter.value === 'prepaid') return recentTransactions.value.filter(tx => !tx.offer_id).slice(0, 4)
+  return recentTransactions.value
+    .filter(tx => tx.offer_id === txFilter.value)
+    .slice(0, 4)
+})
 
 // Chart Data
 const customerChart = ref({
@@ -176,14 +187,15 @@ const fetchDashboardData = async () => {
     activityChart.value.series[1].data = withdrawals
     activityChart.value.options.xaxis.categories = days
 
-    // 6. Recent Transactions
+    // 6. Recent Transactions (Fetch a bit more to allow local filtering)
     const { data: recentTxs } = await client
       .from('transactions')
       .select('*, customer:customers(name)')
       .eq('shop_owner_id', currentUser.id)
       .order('created_at', { ascending: false })
-      .limit(4)
+      .limit(20)
     recentTransactions.value = recentTxs || []
+    availableOffers.value = offers || []
 
   } catch (e) {
     console.error('Dashboard Fetch Error:', e)
@@ -215,58 +227,72 @@ onMounted(fetchDashboardData)
       </div>
     </div>
 
-    <!-- Main Stats Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-      <div v-for="stat in stats" :key="stat.label" class="bg-white dark:bg-slate-900 p-10 rounded-[48px] border border-slate-100 dark:border-white/5 shadow-sm hover:shadow-2xl hover:border-emerald-500/20 transition-all duration-500 relative overflow-hidden group">
-        <div :class="stat.bg" class="absolute -right-8 -top-8 w-32 h-32 rounded-full opacity-5 group-hover:scale-150 transition-transform duration-1000"></div>
-        <div class="relative z-10">
-          <div :class="stat.bg" class="w-16 h-16 rounded-3xl flex items-center justify-center mb-8 transition-all group-hover:rotate-12 group-hover:scale-110 shadow-lg">
-            <component :is="stat.icon" :class="stat.color" class="w-8 h-8" />
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <template v-if="loading">
+        <BaseCard v-for="i in 4" :key="i" class="relative overflow-hidden group">
+          <div class="flex items-center justify-between">
+            <Skeleton roundedClass="rounded-2xl w-12 h-12" />
+            <Skeleton roundedClass="rounded-lg w-5 h-5" />
           </div>
-          <h3 class="text-slate-400 dark:text-slate-500 font-bold mb-3 text-xs uppercase tracking-[0.2em]">{{ stat.label }}</h3>
-          <p class="text-4xl font-black text-slate-900 dark:text-white tabular-nums">{{ stat.value }}</p>
-        </div>
-      </div>
+          <div class="mt-4 space-y-2">
+            <Skeleton roundedClass="rounded w-24 h-4" />
+            <Skeleton roundedClass="rounded w-32 h-8" />
+          </div>
+        </BaseCard>
+      </template>
+      <template v-else>
+        <BaseCard v-for="stat in stats" :key="stat.label" class="relative overflow-hidden group hover:scale-[1.02] transition-all duration-300">
+          <div class="flex items-center justify-between">
+            <div :class="`p-3 ${stat.bg} ${stat.color} rounded-2xl`">
+              <component :is="stat.icon" class="w-6 h-6" />
+            </div>
+            <ArrowUpRight class="w-5 h-5 text-slate-300 group-hover:text-emerald-500 transition-colors" />
+          </div>
+          <div class="mt-4">
+            <p class="text-slate-500 dark:text-slate-400 font-medium text-sm">{{ stat.label }}</p>
+            <h3 class="text-2xl font-black text-slate-900 dark:text-white mt-1">{{ stat.value }}</h3>
+          </div>
+        </BaseCard>
+      </template>
     </div>
 
-    <!-- Detailed Offer Cards Section -->
-    <div v-if="offerStats.length > 0" class="space-y-6">
-      <div class="flex items-center gap-3 px-2">
+    <!-- Active Offers Details -->
+    <div class="space-y-6">
+      <h2 class="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
         <Sparkles class="w-6 h-6 text-amber-500" />
-        <h2 class="text-2xl font-black text-slate-900 dark:text-white">تفاصيل الاشتراكات النشطة</h2>
-      </div>
-      
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        <div 
-          v-for="offer in offerStats" 
-          :key="offer.id" 
-          class="bg-gradient-to-br from-slate-900 to-slate-800 p-10 rounded-[48px] border border-white/5 shadow-2xl relative overflow-hidden group hover:scale-[1.02] transition-all duration-500"
-        >
-          <div class="absolute -right-12 -top-12 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl group-hover:bg-emerald-500/20 transition-colors"></div>
-          
-          <div class="relative z-10 flex flex-col h-full">
-            <div class="flex justify-between items-start mb-8">
-              <div class="p-4 bg-white/5 rounded-3xl border border-white/10 group-hover:bg-emerald-500 group-hover:text-slate-950 transition-all duration-500">
-                <Layers class="w-6 h-6" />
+        تفاصيل الاشتراكات النشطة
+      </h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <template v-if="loading">
+          <Skeleton v-for="i in 3" :key="i" roundedClass="rounded-[40px] h-[200px]" />
+        </template>
+        <template v-else>
+          <div v-for="offer in offerStats" :key="offer.id" class="relative group cursor-pointer">
+            <div class="absolute inset-0 bg-slate-900 rounded-[40px] shadow-2xl transition-transform group-hover:scale-[1.02]"></div>
+            <div class="relative p-8 text-white space-y-6">
+              <div class="flex justify-between items-start">
+                <div class="p-3 bg-white/10 rounded-2xl backdrop-blur-sm">
+                  <Layers class="w-8 h-8" />
+                </div>
+                <div class="bg-emerald-500/20 text-emerald-400 px-4 py-1.5 rounded-full text-xs font-black ring-1 ring-emerald-500/50">نشط الآن</div>
               </div>
-              <span class="px-5 py-2 bg-emerald-500/10 text-emerald-500 rounded-full text-xs font-black ring-1 ring-emerald-500/30">نشط الآن</span>
-            </div>
-
-            <h3 class="text-2xl font-black text-white mb-2">{{ offer.name }}</h3>
-            <p class="text-slate-400 text-sm font-medium mb-8">توزيع حقيقي لبيانات العرض</p>
-
-            <div class="grid grid-cols-2 gap-6 mt-auto">
-              <div class="p-6 bg-white/5 rounded-[32px] border border-white/5">
-                <p class="text-[10px] text-slate-500 font-bold uppercase mb-2">المشتركين</p>
-                <p class="text-3xl font-black text-white">{{ offer.subCount }}</p>
+              <div>
+                <h3 class="text-2xl font-black mb-1">{{ offer.name }}</h3>
               </div>
-              <div class="p-6 bg-white/5 rounded-[32px] border border-white/5">
-                <p class="text-[10px] text-slate-500 font-bold uppercase mb-2">الرصيد</p>
-                <p class="text-2xl font-black text-emerald-400">{{ offer.balance.toLocaleString() }} <span class="text-[10px] opacity-60">ر.س</span></p>
+              <div class="grid grid-cols-2 gap-4 pt-4">
+                <div class="bg-white/5 p-4 rounded-3xl border border-white/5">
+                  <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">المشتركين</p>
+                  <div class="text-2xl font-black">{{ offer.subCount }}</div>
+                </div>
+                <div class="bg-white/5 p-4 rounded-3xl border border-white/5">
+                  <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">الرصيد</p>
+                  <div class="text-2xl font-black text-emerald-400">{{ offer.balance }} <span class="text-xs opacity-60">ر.س</span></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </template>
       </div>
     </div>
 
@@ -286,7 +312,8 @@ onMounted(fetchDashboardData)
           </div>
         </div>
         <div class="h-[400px]">
-          <ClientOnly>
+          <Skeleton v-if="loading" roundedClass="rounded-3xl h-full w-full" />
+          <ClientOnly v-else>
             <ApexChart 
               height="100%" 
               width="100%"
@@ -294,9 +321,6 @@ onMounted(fetchDashboardData)
               :options="activityChart.options" 
               :series="activityChart.series" 
             />
-            <template #fallback>
-              <div class="h-full flex items-center justify-center text-slate-400 font-bold italic">جاري معالجة البيانات وتحميل الرسم...</div>
-            </template>
           </ClientOnly>
         </div>
       </BaseCard>
@@ -313,7 +337,14 @@ onMounted(fetchDashboardData)
           </div>
         </div>
         <div class="h-[300px]">
-          <ClientOnly>
+          <template v-if="loading">
+             <Skeleton roundedClass="rounded-full w-48 h-48 mx-auto" />
+             <div class="flex justify-center gap-4 mt-6">
+                <Skeleton roundedClass="rounded w-16 h-4" />
+                <Skeleton roundedClass="rounded w-16 h-4" />
+             </div>
+          </template>
+          <ClientOnly v-else>
             <ApexChart 
               height="100%" 
               width="100%"
@@ -361,7 +392,7 @@ onMounted(fetchDashboardData)
 
     <!-- Recent Transactions Section -->
     <BaseCard class="!p-0 overflow-hidden border-white/5 shadow-2xl">
-      <div class="p-10 border-b border-slate-100 dark:border-white/5 flex items-center justify-between bg-slate-50/50 dark:bg-white/5">
+      <div class="p-10 border-b border-slate-100 dark:border-white/5 flex flex-col lg:flex-row items-center justify-between gap-8 bg-slate-50/50 dark:bg-white/5">
         <div class="flex items-center gap-5">
           <div class="p-4 bg-emerald-500/10 rounded-[24px]">
             <Activity class="w-7 h-7 text-emerald-500" />
@@ -371,9 +402,29 @@ onMounted(fetchDashboardData)
             <p class="text-base text-slate-500 font-medium">متابعة لحظية وشاملة لآخر حركات المتجر</p>
           </div>
         </div>
-        <NuxtLink to="/transactions" class="px-8 py-4 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-black text-sm rounded-[20px] border border-slate-200 dark:border-white/10 hover:bg-slate-50 transition-all shadow-sm">
-          عرض سجل العمليات الكامل
-        </NuxtLink>
+
+        <div class="flex flex-wrap items-center gap-4">
+          <!-- Offer Filter Dropdown -->
+          <div class="relative min-w-[200px]">
+            <select 
+              v-model="txFilter"
+              class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-[18px] px-6 py-4 text-sm font-black text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-emerald-500/50 appearance-none cursor-pointer shadow-sm"
+            >
+              <option value="all">كل العمليات</option>
+              <option value="prepaid">الدفع المقدم فقط</option>
+              <option v-for="offer in availableOffers" :key="offer.id" :value="offer.id">
+                {{ offer.name }}
+              </option>
+            </select>
+            <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-400">
+              <ChevronDown class="w-5 h-5" />
+            </div>
+          </div>
+
+          <NuxtLink to="/transactions" class="px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-950 font-black text-sm rounded-[20px] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg">
+            عرض سجل العمليات الكامل
+          </NuxtLink>
+        </div>
       </div>
       
       <div class="overflow-x-auto">
@@ -381,10 +432,10 @@ onMounted(fetchDashboardData)
           <div class="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-8"></div>
           <p class="font-black text-xl">جاري مزامنة أحدث البيانات...</p>
         </div>
-        <div v-else-if="recentTransactions.length === 0" class="p-24 text-center text-slate-500">
+        <div v-else-if="filteredTransactions.length === 0" class="p-24 text-center text-slate-500">
           <div class="flex flex-col items-center gap-6 opacity-30">
             <Activity class="w-24 h-24" />
-            <p class="text-2xl font-bold">لا توجد عمليات مسجلة حالياً.</p>
+            <p class="text-2xl font-bold">لا توجد عمليات مسجلة لهذا الفلتر.</p>
           </div>
         </div>
         <div v-else class="min-w-[1000px]">
@@ -399,7 +450,7 @@ onMounted(fetchDashboardData)
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 dark:divide-white/5">
-              <tr v-for="tx in recentTransactions" :key="tx.id" class="hover:bg-slate-50 dark:hover:bg-white/5 transition-all group">
+              <tr v-for="tx in filteredTransactions" :key="tx.id" class="hover:bg-slate-50 dark:hover:bg-white/5 transition-all group">
                 <td class="px-10 py-8">
                   <p class="font-black text-slate-900 dark:text-white text-lg">{{ tx.customer?.name || 'عميل' }}</p>
                 </td>

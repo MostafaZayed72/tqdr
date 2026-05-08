@@ -215,58 +215,69 @@ watch([searchQuery, selectedShopId], fetchAllCustomers)
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 dark:divide-white/5">
-            <tr v-for="customer in customers" :key="customer.id" class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group">
-              <td class="px-6 py-4">
-                <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center font-bold text-emerald-600">
-                    {{ customer.name.charAt(0).toUpperCase() }}
+            <template v-if="loading">
+              <tr v-for="i in 6" :key="i">
+                <td class="px-6 py-4"><Skeleton roundedClass="rounded w-32 h-6" /></td>
+                <td class="px-6 py-4"><Skeleton roundedClass="rounded w-24 h-6" /></td>
+                <td class="px-6 py-4"><Skeleton roundedClass="rounded w-28 h-6" /></td>
+                <td class="px-6 py-4"><Skeleton roundedClass="rounded-full w-16 h-6" /></td>
+                <td class="px-6 py-4"><Skeleton roundedClass="rounded-xl w-20 h-8 mx-auto" /></td>
+              </tr>
+            </template>
+            <template v-else>
+              <tr 
+                v-for="customer in customers" :key="customer.id" 
+                class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group"
+              >
+                <td class="px-6 py-4">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center font-bold text-emerald-600">
+                      {{ customer.name.charAt(0).toUpperCase() }}
+                    </div>
+                    <div>
+                      <div class="font-bold text-slate-900 dark:text-white">{{ customer.name }}</div>
+                      <div class="text-[10px] text-slate-500">{{ customer.mobile_number }}</div>
+                    </div>
                   </div>
-                  <div>
-                    <div class="font-bold text-slate-900 dark:text-white">{{ customer.name }}</div>
-                    <div class="text-[10px] text-slate-500">{{ customer.mobile_number }}</div>
+                </td>
+                <td class="px-6 py-4">
+                  <div class="font-medium text-slate-700 dark:text-slate-300 text-sm">
+                    {{ customer.shop?.shop_name || 'غير محدد' }}
                   </div>
-                </div>
-              </td>
-              <td class="px-6 py-4">
-                <div class="font-medium text-slate-700 dark:text-slate-300 text-sm">
-                  {{ customer.shop?.shop_name || 'غير محدد' }}
-                </div>
-                <div class="text-[10px] text-slate-400">{{ customer.shop?.email }}</div>
-              </td>
-              <td class="px-6 py-4">
-                <div class="flex items-center gap-1 font-black text-emerald-500">
-                  <Wallet class="w-4 h-4" />
-                  <span>{{ customer.balance }} {{ $t('common.currency') }}</span>
-                </div>
-              </td>
-              <td class="px-6 py-4 text-sm text-slate-500">
-                {{ new Date(customer.created_at).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US') }}
-              </td>
-              <td class="px-6 py-4">
-                <div class="flex items-center justify-center gap-2">
-                  <button 
-                    @click="handleEditCustomer(customer)"
-                    class="p-2 text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 rounded-xl transition-all"
-                    title="تعديل"
-                  >
-                    <Edit2 class="w-5 h-5" />
-                  </button>
-                  <button 
-                    @click="confirmDeleteCustomer(customer.id)"
-                    class="p-2 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
-                    title="حذف"
-                  >
-                    <Trash2 class="w-5 h-5" />
-                  </button>
-                </div>
-              </td>
-            </tr>
-            <tr v-if="customers.length === 0 && !loading">
-              <td colspan="5" class="px-6 py-20 text-center text-slate-500">
-                <Users class="w-16 h-16 mx-auto mb-4 opacity-10" />
-                لم يتم العثور على عملاء في النظام.
-              </td>
-            </tr>
+                  <div class="text-[10px] text-slate-400">{{ customer.shop?.email }}</div>
+                </td>
+                <td class="px-6 py-4">
+                  <div class="flex items-center gap-1 font-black text-emerald-500">
+                    <Wallet class="w-4 h-4" />
+                    <span>{{ customer.balance }} {{ $t('common.currency') }}</span>
+                  </div>
+                </td>
+                <td class="px-6 py-4 text-sm text-slate-500">
+                  {{ new Date(customer.created_at).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US') }}
+                </td>
+                <td class="px-6 py-4">
+                  <div class="flex items-center justify-center gap-2">
+                    <button 
+                      @click="handleEditCustomer(customer)"
+                      class="p-2 text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 rounded-xl transition-all"
+                    >
+                      <Edit2 class="w-5 h-5" />
+                    </button>
+                    <button 
+                      @click="confirmDeleteCustomer(customer.id)"
+                      class="p-2 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
+                    >
+                      <Trash2 class="w-5 h-5" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr v-if="customers.length === 0 && !loading">
+                <td colspan="5" class="px-6 py-20 text-center text-slate-500">
+                  لم يتم العثور على عملاء في النظام.
+                </td>
+              </tr>
+            </template>
           </tbody>
         </table>
       </div>

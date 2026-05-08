@@ -15,7 +15,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
-  ChevronsRight
+  ChevronsRight,
+  ChevronDown
 } from 'lucide-vue-next'
 
 
@@ -35,6 +36,7 @@ const showAddModal = ref(false)
 const searchQuery = ref('')
 const filterType = ref('all')
 const dateRange = ref('all') // today, week, month, custom, all
+const offerFilter = ref('all') // all, prepaid, or offer_id
 const customDateStart = ref('')
 const customDateEnd = ref('')
 const showDateDropdown = ref(false)
@@ -56,6 +58,14 @@ const displayedPages = computed(() => {
   if (end - start + 1 < maxVisible) start = Math.max(1, end - maxVisible + 1)
   for (let i = start; i <= end; i++) pages.push(i)
   return pages
+})
+
+const offerMap = computed(() => {
+  const map: Record<string, string> = {}
+  availableOffers.value.forEach(o => {
+    map[o.id] = o.name
+  })
+  return map
 })
 
 // Stats
@@ -144,6 +154,16 @@ const fetchData = async () => {
 
     if (filterType.value !== 'all') {
       txQuery = txQuery.eq('type', filterType.value)
+    }
+
+    if (offerFilter.value !== 'all') {
+      if (offerFilter.value === 'prepaid') {
+        statsQuery = statsQuery.is('offer_id', null)
+        txQuery = txQuery.is('offer_id', null)
+      } else {
+        statsQuery = statsQuery.eq('offer_id', offerFilter.value)
+        txQuery = txQuery.eq('offer_id', offerFilter.value)
+      }
     }
 
     if (searchQuery.value) {
@@ -289,7 +309,10 @@ const handleAddTransaction = async () => {
 onMounted(async () => {
   await fetchData()
 })
-watch([filterType, searchQuery], fetchData)
+  watch([filterType, dateRange, searchQuery, offerFilter], () => {
+    currentPage.value = 1
+    fetchData()
+  })
 </script>
 
 <template>
@@ -413,50 +436,81 @@ watch([filterType, searchQuery], fetchData)
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 dark:divide-white/5">
-            <tr v-for="tx in transactions" :key="tx.id" class="hover:bg-slate-50 dark:hover:bg-white/5 transition-all group">
-              <td class="px-8 py-5">
-                <div class="font-black text-slate-900 dark:text-white text-lg">{{ tx.customer?.name || 'عميل محذوف' }}</div>
-                <div class="text-xs text-slate-400 mt-0.5 flex items-center gap-1">
-                  <Smartphone class="w-3 h-3" /> {{ tx.customer?.mobile_number }}
-                </div>
-              </td>
-              <td class="px-8 py-5">
-                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl font-bold text-sm" :class="tx.type === 'deposit' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-600'">
-                  <component :is="tx.type === 'deposit' ? ArrowUpCircle : ArrowDownCircle" class="w-4 h-4" />
-                  {{ tx.type === 'deposit' ? 'شحن رصيد' : 'سحب / خصم' }}
-                </div>
-              </td>
-              <td class="px-8 py-5">
-                <div class="font-black text-xl" :class="tx.type === 'deposit' ? 'text-emerald-500' : 'text-red-500'">
-                  {{ tx.type === 'deposit' ? '+' : '-' }}{{ tx.amount }} <span class="text-xs opacity-60 font-bold">ر.س</span>
-                </div>
-                <div class="text-[10px] text-slate-400 mt-1">الرصيد بعد: {{ tx.balance_after }} ر.س</div>
-              </td>
-              <td class="px-8 py-5">
-                <div class="text-sm font-bold text-slate-700 dark:text-slate-300">
-                  {{ new Date(tx.created_at).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US') }}
-                </div>
-                <div class="text-[10px] text-slate-500">
-                  {{ new Date(tx.created_at).toLocaleTimeString(locale === 'ar' ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' }) }}
-                </div>
-              </td>
-              <td class="px-8 py-5">
-                <div class="flex justify-center">
-                  <span class="px-4 py-1.5 bg-emerald-500/10 text-emerald-500 rounded-full text-xs font-black ring-1 ring-emerald-500/20">مكتمل</span>
-                </div>
-              </td>
-            </tr>
-            <tr v-if="transactions.length === 0 && !loading">
-              <td colspan="5" class="px-8 py-24 text-center text-slate-500">
-                <div class="flex flex-col items-center gap-6 opacity-30">
-                  <History class="w-20 h-20" />
-                  <div class="space-y-1">
-                    <p class="text-2xl font-black">لا توجد سجلات</p>
-                    <p class="text-sm">لم يتم العثور على أي عمليات في هذه الفترة</p>
+            <template v-if="loading">
+              <tr v-for="i in 6" :key="i">
+                <td class="px-8 py-5"><Skeleton roundedClass="rounded w-32 h-6" /></td>
+                <td class="px-8 py-5"><Skeleton roundedClass="rounded w-24 h-6" /></td>
+                <td class="px-8 py-5"><Skeleton roundedClass="rounded w-20 h-6" /></td>
+                <td class="px-8 py-5"><Skeleton roundedClass="rounded w-28 h-6" /></td>
+                <td class="px-8 py-5"><Skeleton roundedClass="rounded-full w-16 h-6 mx-auto" /></td>
+              </tr>
+            </template>
+            <template v-else>
+              <tr 
+                v-for="tx in transactions" :key="tx.id" 
+                class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group"
+              >
+                <td class="px-8 py-5">
+                  <div class="flex flex-col">
+                    <span class="font-bold text-slate-900 dark:text-white">{{ tx.customer?.name }}</span>
+                    <span class="text-[10px] text-slate-400 font-medium">{{ tx.customer?.mobile_number }}</span>
                   </div>
-                </div>
-              </td>
-            </tr>
+                </td>
+                <td class="px-8 py-5">
+                  <div class="flex flex-col">
+                    <span 
+                      class="inline-flex items-center gap-1.5 font-bold text-sm"
+                      :class="tx.type === 'deposit' ? 'text-emerald-500' : 'text-red-500'"
+                    >
+                      <Plus v-if="tx.type === 'deposit'" class="w-4 h-4" />
+                      <Activity v-else class="w-4 h-4" />
+                      {{ tx.type === 'deposit' ? t('transactions.types.deposit') : t('transactions.types.withdrawal') }}
+                    </span>
+                    <span v-if="tx.offer_id" class="text-[10px] text-slate-400 font-bold mt-1">
+                      (اشتراك: {{ offerMap[tx.offer_id] || 'جاري التحميل...' }})
+                    </span>
+                    <span v-else class="text-[10px] text-slate-400 font-bold mt-1">
+                      (رصيد عام)
+                    </span>
+                  </div>
+                </td>
+                <td class="px-8 py-5">
+                  <div class="flex flex-col">
+                    <span class="text-lg font-black text-slate-900 dark:text-white">
+                      {{ tx.type === 'deposit' ? '+' : '-' }}{{ tx.amount }}
+                      <span class="text-xs font-bold opacity-50">{{ t('common.currency') }}</span>
+                    </span>
+                    <span class="text-[10px] text-slate-400 font-bold mt-1">الرصيد بعد: {{ tx.balance_after }} ر.س</span>
+                  </div>
+                </td>
+                <td class="px-8 py-5">
+                  <div class="flex flex-col">
+                    <div class="flex items-center gap-2 text-slate-600 dark:text-slate-400 font-bold">
+                      <Calendar class="w-3.5 h-3.5 text-emerald-500" />
+                      <span>{{ new Date(tx.created_at).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }) }}</span>
+                    </div>
+                    <div class="text-[10px] text-slate-400 font-bold mt-1 mr-5">
+                      {{ new Date(tx.created_at).toLocaleTimeString(locale === 'ar' ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' }) }}
+                    </div>
+                  </div>
+                </td>
+                <td class="px-8 py-5 text-center">
+                  <span class="px-4 py-1.5 bg-emerald-500/10 text-emerald-500 rounded-full text-xs font-black shadow-sm ring-1 ring-emerald-500/20">
+                    {{ t('transactions.status.completed') }}
+                  </span>
+                </td>
+              </tr>
+              <tr v-if="transactions.length === 0 && !loading">
+                <td colspan="5" class="px-8 py-20 text-center">
+                  <div class="flex flex-col items-center justify-center space-y-4">
+                    <div class="w-16 h-16 bg-slate-50 dark:bg-white/5 rounded-3xl flex items-center justify-center">
+                      <AlertCircle class="w-8 h-8 text-slate-300" />
+                    </div>
+                    <p class="text-slate-500 font-bold">{{ t('common.no_data') }}</p>
+                  </div>
+                </td>
+              </tr>
+            </template>
           </tbody>
         </table>
       </div>
@@ -542,6 +596,23 @@ watch([filterType, searchQuery], fetchData)
                   {{ c.name }} ({{ c.mobile_number }})
                 </option>
               </select>
+            </div>
+          </div>
+
+          <!-- Offer Filter Dropdown -->
+          <div class="relative min-w-[200px]">
+            <select 
+              v-model="offerFilter"
+              class="w-full bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-2xl px-6 py-4 text-xs font-black text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-emerald-500/50 appearance-none cursor-pointer"
+            >
+              <option value="all">كل العروض</option>
+              <option value="prepaid">الدفع المقدم فقط</option>
+              <option v-for="offer in availableOffers" :key="offer.id" :value="offer.id">
+                {{ offer.name }}
+              </option>
+            </select>
+            <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-400">
+              <ChevronDown class="w-4 h-4" />
             </div>
           </div>
 
