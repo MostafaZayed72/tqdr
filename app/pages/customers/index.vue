@@ -236,6 +236,10 @@ const handleQuickTx = async () => {
     const balanceBefore = Number(customer.balance)
     let balanceAfter = balanceBefore
 
+    if (txForm.value.type === 'deposit' && !txForm.value.offer_id) {
+      throw new Error('يرجى اختيار عرض شحن أولاً')
+    }
+
     if (txForm.value.type === 'deposit') {
       balanceAfter += Number(txForm.value.amount)
     } else {
@@ -447,7 +451,7 @@ watch(searchQuery, fetchCustomers)
             <tr class="bg-slate-50 dark:bg-white/5 border-b border-slate-100 dark:border-white/5">
               <th class="px-6 py-5 text-sm font-bold text-slate-500">اسم العميل</th>
               <th class="px-6 py-5 text-sm font-bold text-slate-500">رقم الجوال</th>
-              <th class="px-6 py-5 text-sm font-bold text-slate-500">الرصيد الحقيقي</th>
+              <th class="px-6 py-5 text-sm font-bold text-slate-500">الرصيد</th>
               <th class="px-6 py-5 text-sm font-bold text-slate-500">إجمالي التوفير</th>
               <th class="px-6 py-5 text-sm font-bold text-slate-500 text-center">الإجراءات السريعة</th>
             </tr>
@@ -739,50 +743,35 @@ watch(searchQuery, fetchCustomers)
               step="0.01" 
               placeholder="0.00"
               class="w-full bg-transparent border-none text-center text-6xl font-black text-slate-900 dark:text-white focus:ring-0 placeholder:text-slate-200 dark:placeholder:text-slate-800" 
-              :readonly="txForm.offer_id !== ''"
-              :class="txForm.offer_id !== '' ? 'opacity-50 cursor-not-allowed' : ''"
+              :readonly="txForm.type === 'deposit'"
+              :class="txForm.type === 'deposit' ? 'opacity-50 cursor-not-allowed' : ''"
             />
           </div>
 
-          <!-- Subscription Selection in Tx Modal -->
-          <div v-if="txForm.type === 'deposit' && availableOffers.length > 0" class="space-y-3">
-            <label class="text-xs font-bold text-slate-500 px-2 uppercase">ربط بعملية اشتراك (اختياري)</label>
-            <div class="flex flex-wrap gap-2">
+          <!-- Subscription Selection in Tx Modal (MANDATORY for deposit) -->
+          <div v-if="txForm.type === 'deposit' && availableOffers.length > 0" class="space-y-4">
+            <label class="text-center block text-sm font-bold text-slate-500 uppercase tracking-widest">اختر عرض الشحن</label>
+            <div class="grid grid-cols-1 gap-3">
               <button 
                 type="button"
                 v-for="offer in availableOffers" 
                 :key="offer.id"
-                @click="txForm.offer_id = txForm.offer_id === offer.id ? '' : offer.id; if(txForm.offer_id) { txForm.amount = offer.price; txForm.paid_amount = offer.price; }"
-                :class="txForm.offer_id === offer.id ? 'bg-amber-500 text-slate-950 border-amber-500' : 'bg-slate-100 dark:bg-white/5 text-slate-500 border-transparent'"
-                class="px-4 py-2 rounded-xl border-2 text-xs font-bold transition-all"
+                @click="txForm.offer_id = offer.id; txForm.amount = offer.price; txForm.paid_amount = offer.price;"
+                :class="txForm.offer_id === offer.id ? 'bg-emerald-500 text-slate-950 border-emerald-500 scale-105 shadow-lg' : 'bg-slate-100 dark:bg-white/5 text-slate-500 border-transparent hover:bg-slate-200'"
+                class="px-6 py-5 rounded-[24px] border-2 text-base font-black transition-all flex items-center justify-between group"
               >
-                {{ offer.name }} ({{ offer.price }} ر.س)
+                <div class="flex items-center gap-4">
+                  <div :class="txForm.offer_id === offer.id ? 'bg-white/20' : 'bg-emerald-500/10'" class="w-10 h-10 rounded-xl flex items-center justify-center">
+                    <Sparkles class="w-5 h-5 text-emerald-500" />
+                  </div>
+                  <span>{{ offer.name }}</span>
+                </div>
+                <div class="text-lg font-black">{{ offer.price }} ر.س</div>
               </button>
             </div>
           </div>
 
 
-          <div class="grid grid-cols-2 gap-4">
-            <div class="space-y-2">
-              <label class="text-[10px] font-bold text-slate-500 px-2 uppercase">المبلغ المدفوع كاش</label>
-              <div class="relative">
-                <DollarSign class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input v-model="txForm.paid_amount" type="number" step="0.01" :readonly="txForm.offer_id !== ''" :class="txForm.offer_id !== '' ? 'opacity-50 cursor-not-allowed' : ''" class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl pl-10 pr-4 py-4 font-bold focus:ring-2 focus:ring-emerald-500" />
-              </div>
-            </div>
-            <div class="space-y-2">
-              <label class="text-[10px] font-bold text-slate-500 px-2 uppercase">المبلغ المخفّض (توفير)</label>
-              <div class="relative">
-                <Save class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input v-model="txForm.saved_amount" type="number" step="0.01" class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl pl-10 pr-4 py-4 font-bold text-blue-500 focus:ring-2 focus:ring-blue-500" />
-              </div>
-            </div>
-          </div>
-
-          <div class="space-y-2">
-            <label class="text-xs font-bold text-slate-500 px-2">ملاحظات العملية</label>
-            <input v-model="txForm.note" type="text" placeholder="مثلاً: عرض نهاية الشهر..." class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl px-5 py-4 focus:ring-2 focus:ring-emerald-500" />
-          </div>
 
           <button 
             type="submit" 
