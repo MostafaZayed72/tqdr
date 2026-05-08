@@ -45,6 +45,8 @@ const customerToDelete = ref(null)
 const showErrorModal = ref(false)
 const errorMsg = ref('')
 
+const isSuspended = computed(() => profile.value?.status === 'suspended')
+
 
 
 
@@ -136,6 +138,7 @@ const fetchOffers = async () => {
 
 const handleAddCustomer = async () => {
   try {
+    if (isSuspended.value) throw new Error('لا يمكن إضافة عملاء جدد أثناء تعليق الحساب')
     loading.value = true
     
     // Explicitly get user to avoid null shop_owner_id
@@ -147,7 +150,8 @@ const handleAddCustomer = async () => {
       name: form.value.name || 'عميل جديد',
       mobile_number: form.value.mobile_number,
       balance: form.value.added_balance,
-      shop_owner_id: currentUser.id
+      shop_owner_id: currentUser.id,
+      total_saved: form.value.offer_id ? (availableOffers.value.find(o => o.id === form.value.offer_id)?.discount || 0) : 0
     }).select().single()
 
 
@@ -190,11 +194,12 @@ const handleAddCustomer = async () => {
     // 4. Send Welcome SMS
     try {
       const shopName = profile.value?.shop_name || 'تقدر'
-      let smsMessage = `مرحباً .. تم تسجيلك في ${shopName} ورصيدك الحالي ${form.value.added_balance} ر.س`
+      let smsMessage = `أهلاً بك في ${shopName}! تم تفعيل حسابك بنجاح برصيد ${form.value.added_balance} ر.س.`
       if (duration > 0) {
-        smsMessage += ` لمدة ${duration} يوماً`
+        const offer = availableOffers.value.find(o => o.id === form.value.offer_id)
+        smsMessage += ` لقد وفرت ${offer?.discount || 0} ر.س من خلال اشتراكك في (${offer?.name}).`
       }
-      smsMessage += `. للاطلاع على التفاصيل: tqdr.me/my`
+      smsMessage += ` إجمالي توفيرك معنا هو ${customer.total_saved} ر.س. تابع رصيدك عبر: tqdr.me/my`
 
 
 
@@ -248,9 +253,19 @@ const handleQuickTx = async () => {
 
     if (balanceAfter < 0) throw new Error('رصيد العميل غير كافٍ')
 
-    // 1. Update Customer Balance
+    // 1. Calculate Saving (if offer selected)
+    let savingAmount = 0
+    if (txForm.value.type === 'deposit' && txForm.value.offer_id) {
+      const offer = availableOffers.value.find(o => o.id === txForm.value.offer_id)
+      if (offer) {
+        savingAmount = Number(offer.discount || 0)
+      }
+    }
+
+    // 2. Update Customer Balance and Total Saved
     const { error: custError } = await client.from('customers').update({
-      balance: balanceAfter
+      balance: balanceAfter,
+      total_saved: (Number(customer.total_saved) || 0) + savingAmount
     }).eq('id', customer.id)
 
     if (custError) throw custError
@@ -285,8 +300,9 @@ const handleQuickTx = async () => {
 
         // Send SMS for subscription
         try {
-          const shopName = profile.value?.shop_name || 'تقدر'
-          const smsMessage = `تم تفعيل اشتراك (${offer.name}) بنجاح في ${shopName}. رصيدك الجديد ${balanceAfter} ر.س صالح لمدة ${offer.duration} يوماً. شكراً لثقتك!`
+          const shopName = profile.value?.shop_name || 'تقدر بلس'
+          const totalSaved = (Number(customer.total_saved) || 0) + savingAmount
+          const smsMessage = `تم تفعيل اشتراك (${offer.name}) بنجاح في ${shopName}. رصيدك الجديد ${balanceAfter} ر.س. لقد وفرت ${savingAmount} ر.س في هذه العملية، وإجمالي توفيرك معنا هو ${totalSaved} ر.س! شكراً لثقتك.`
           
           await $fetch('/api/sms/send', {
             method: 'POST',
@@ -401,10 +417,9 @@ onMounted(async () => {
   await fetchCustomers()
   await fetchOffers()
 
-  
   const { data: { user: currentUser } } = await client.auth.getUser()
   if (currentUser) {
-    const { data } = await client.from('profiles').select('shop_name').eq('id', currentUser.id).maybeSingle()
+    const { data } = await client.from('profiles').select('*').eq('id', currentUser.id).maybeSingle()
     profile.value = data
   }
 })
@@ -421,12 +436,17 @@ watch(searchQuery, fetchCustomers)
       </div>
       
       <button 
+        v-if="!isSuspended"
         @click="showAddModal = true"
         class="flex items-center gap-2 px-6 py-3 bg-emerald-500 text-slate-950 rounded-2xl font-bold hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 premium-btn"
       >
         <Plus class="w-5 h-5" />
         <span>إضافة عميل جديد</span>
       </button>
+      <div v-else class="flex items-center gap-3 px-6 py-3 bg-red-500/10 border border-red-500/20 rounded-2xl">
+        <div class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+        <p class="text-red-500 font-bold text-xs">الحساب معلق. لا يمكن إضافة عملاء.</p>
+      </div>
     </div>
 
     <!-- Filters & Search -->

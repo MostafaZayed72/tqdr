@@ -50,7 +50,8 @@ const form = ref({
   email: '',
   password: '',
   shop_name: '',
-  mobile_number: ''
+  mobile_number: '',
+  status: 'active'
 })
 
 const fetchShops = async () => {
@@ -89,7 +90,8 @@ const handleAddShop = async () => {
         .from('profiles')
         .update({ 
           shop_name: form.value.shop_name,
-          email: form.value.email
+          email: form.value.email,
+          status: form.value.status
         })
         .eq('id', editingShop.value.id)
       
@@ -109,7 +111,8 @@ const handleAddShop = async () => {
           .from('profiles')
           .update({ 
             role: 'shop_owner',
-            shop_name: form.value.shop_name
+            shop_name: form.value.shop_name,
+            status: 'active'
           })
           .eq('id', authData.user.id)
         
@@ -136,7 +139,7 @@ const handleAddShop = async () => {
     showAddModal.value = false
     showSuccessModal.value = true
     editingShop.value = null
-    form.value = { email: '', password: '', shop_name: '', mobile_number: '' }
+    form.value = { email: '', password: '', shop_name: '', mobile_number: '', status: 'active' }
     fetchShops()
   } catch (e: any) {
     alert(e.message)
@@ -179,7 +182,8 @@ const handleEditShop = (shop: any) => {
   form.value = { 
     email: shop.email, 
     password: '', 
-    shop_name: shop.shop_name 
+    shop_name: shop.shop_name,
+    status: shop.status || 'active'
   }
   showAddModal.value = true
 }
@@ -264,7 +268,12 @@ watch(searchQuery, fetchShops)
                   {{ new Date(shop.created_at).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US') }}
                 </td>
                 <td class="px-6 py-4">
-                  <span class="px-3 py-1 bg-emerald-500/10 text-emerald-500 rounded-full text-xs font-bold">نشط</span>
+                  <span 
+                    :class="shop.status === 'suspended' ? 'bg-red-500/10 text-red-500' : 'bg-emerald-500/10 text-emerald-500'" 
+                    class="px-3 py-1 rounded-full text-xs font-bold"
+                  >
+                    {{ shop.status === 'suspended' ? 'معلق' : 'نشط' }}
+                  </span>
                 </td>
                 <td class="px-6 py-4" @click.stop>
                   <div class="flex items-center justify-center gap-2">
@@ -400,6 +409,17 @@ watch(searchQuery, fetchShops)
               class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl px-5 py-4 text-slate-900 dark:text-white"
               placeholder="05xxxxxxxx"
             />
+          </div>
+
+          <div v-if="editingShop">
+            <label class="block text-slate-700 dark:text-slate-300 text-sm font-bold mb-2">حالة الحساب</label>
+            <select 
+              v-model="form.status"
+              class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl px-5 py-4 text-slate-900 dark:text-white appearance-none"
+            >
+              <option value="active">نشط</option>
+              <option value="suspended">معلق (محظور)</option>
+            </select>
           </div>
 
           <button 

@@ -35,9 +35,12 @@ const stats = ref([
 
 const recentTransactions = ref([])
 const availableOffers = ref([])
+const profile = ref(null)
 const txFilter = ref('all')
 const offerStats = ref([])
 const loading = ref(true)
+
+const isSuspended = computed(() => profile.value?.status === 'suspended')
 
 const filteredTransactions = computed(() => {
   if (txFilter.value === 'all') return recentTransactions.value.slice(0, 4)
@@ -111,6 +114,14 @@ const fetchDashboardData = async () => {
   try {
     loading.value = true
     
+    // 0. Fetch Profile
+    const { data: profileData } = await client
+      .from('profiles')
+      .select('*')
+      .eq('id', currentUser.id)
+      .single()
+    profile.value = profileData
+
     // 1. Fetch Basic Totals
     const { count: customersCount } = await client
       .from('customers')
@@ -125,7 +136,7 @@ const fetchDashboardData = async () => {
 
     // 2. Fetch Offers & Detailed Data
     const { data: offers } = await client.from('subscription_offers').select('*').eq('shop_owner_id', currentUser.id)
-    const { data: subData } = await client.from('customer_subscriptions').select('offer_id, customer_id').eq('shop_owner_id', currentUser.id).eq('status', 'active')
+    const { data: subData } = await client.from('customer_subscriptions').select('offer_id, customer_id').eq('shop_owner_id', currentUser.id)
     const { data: txData } = await client.from('transactions').select('amount, type, offer_id, created_at').eq('shop_owner_id', currentUser.id)
 
     // Calculate Offer Statistics
@@ -219,11 +230,15 @@ onMounted(fetchDashboardData)
         <p class="text-slate-500 dark:text-slate-400 mt-3 font-medium text-lg">تحليل ذكي وشامل لأداء متجرك الحقيقي اليوم.</p>
       </div>
       
-      <div class="flex items-center gap-3">
+      <div v-if="!isSuspended" class="flex items-center gap-3">
         <NuxtLink to="/customers" class="flex items-center gap-4 px-10 py-5 bg-emerald-500 text-slate-950 rounded-[32px] font-black hover:bg-emerald-600 transition-all shadow-2xl shadow-emerald-500/30 active:scale-95 group">
           <Plus class="w-7 h-7 group-hover:rotate-90 transition-transform" />
           <span>عميل جديد</span>
         </NuxtLink>
+      </div>
+      <div v-else class="flex items-center gap-3 px-6 py-4 bg-red-500/10 border border-red-500/20 rounded-2xl">
+        <div class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+        <p class="text-red-500 font-bold text-sm">حسابك معلق حالياً. يرجى مراجعة الإدارة.</p>
       </div>
     </div>
 

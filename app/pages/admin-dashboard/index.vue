@@ -35,6 +35,21 @@ const loading = ref(true)
 const dateFilter = ref('all') // today, week, month, custom, all
 const customRange = ref({ start: '', end: '' })
 
+// Detailed Stats
+const customersByType = ref({
+  series: [0, 0], // [Prepaid, Subscribed]
+  options: {
+    chart: { type: 'donut', fontFamily: 'Tajawal, sans-serif' },
+    labels: ['دفع مقدم فقط', 'مشتركين في عروض'],
+    colors: ['#6366f1', '#10b981'],
+    legend: { position: 'bottom', labels: { colors: '#94a3b8' } },
+    dataLabels: { enabled: false },
+    plotOptions: { pie: { donut: { size: '75%' } } }
+  }
+})
+
+const shopsPerformance = ref([])
+
 // Charts Data
 const volumeChart = ref({
   series: [{ name: 'حجم التداول', data: [] }],
@@ -159,7 +174,32 @@ const fetchStats = async () => {
     growthChart.value.series[1].data = custData
     growthChart.value.options = { ...growthChart.value.options, xaxis: { ...growthChart.value.options.xaxis, categories: days } }
 
-    // 3. Recent Shops
+    // 3. Detailed Customer Breakdown
+    const { data: allCust } = await client.from('customers').select('id')
+    const { data: activeSubs } = await client.from('customer_subscriptions').select('customer_id')
+    
+    // Count unique customers who have at least one entry in customer_subscriptions
+    const subCustIds = new Set((activeSubs || []).map(s => s.customer_id))
+    const subCount = subCustIds.size
+    const prepaidCount = Math.max(0, (allCust?.length || 0) - subCount)
+    
+    customersByType.value.series = [prepaidCount, subCount]
+
+    // 4. Shop Performance
+    const { data: txWithShops } = await client
+      .from('transactions')
+      .select('amount, type, shop:profiles!inner(shop_name, email)')
+    
+    const perfMap: Record<string, any> = {}
+    txWithShops?.forEach(tx => {
+      const name = tx.shop.shop_name || tx.shop.email.split('@')[0]
+      if (!perfMap[name]) perfMap[name] = { name, count: 0, volume: 0 }
+      perfMap[name].count++
+      perfMap[name].volume += Number(tx.amount)
+    })
+    shopsPerformance.value = Object.values(perfMap).sort((a, b) => b.volume - a.volume).slice(0, 10)
+
+    // 5. Recent Shops
     const { data: shops } = await client
       .from('profiles')
       .select('*')
@@ -286,6 +326,66 @@ watch([dateFilter, customRange], fetchStats)
           <ClientOnly v-else>
             <ApexChart height="100%" width="100%" type="bar" :options="growthChart.options" :series="growthChart.series" />
           </ClientOnly>
+        </div>
+      </BaseCard>
+    </div>
+
+    <!-- Detailed Analysis Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Customers Breakdown -->
+      <BaseCard class="border-white/5 shadow-2xl !p-10 rounded-[48px] flex flex-col items-center justify-center text-center">
+        <h3 class="text-2xl font-black text-slate-900 dark:text-white mb-2">توزيع العملاء</h3>
+        <p class="text-sm text-slate-500 font-medium mb-8">نسبة المشتركين في العروض مقابل الدفع المسبق</p>
+        <div class="w-full max-w-[280px]">
+          <template v-if="loading">
+            <div class="flex items-center justify-center h-[200px]">
+              <Skeleton roundedClass="rounded-full w-40 h-40" />
+            </div>
+          </template>
+          <ClientOnly v-else>
+            <ApexChart type="donut" width="100%" :options="customersByType.options" :series="customersByType.series" />
+          </ClientOnly>
+        </div>
+      </BaseCard>
+
+      <!-- Shop Performance Table -->
+      <BaseCard class="lg:col-span-2 border-white/5 shadow-2xl !p-10 rounded-[48px] overflow-hidden">
+        <div class="flex items-center gap-4 mb-8">
+          <div class="p-4 bg-indigo-500/10 rounded-[24px]">
+            <Store class="w-7 h-7 text-indigo-500" />
+          </div>
+          <div>
+            <h3 class="text-2xl font-black text-slate-900 dark:text-white">أداء المحلات</h3>
+            <p class="text-sm text-slate-500 font-medium">أعلى المحلات تحقيقاً للعمليات وحجم التداول</p>
+          </div>
+        </div>
+        
+        <div class="overflow-x-auto">
+          <table class="w-full text-right">
+            <thead>
+              <tr class="text-slate-400 text-xs font-black uppercase tracking-widest border-b border-slate-100 dark:border-white/5">
+                <th class="pb-4 pr-2">اسم المحل</th>
+                <th class="pb-4 text-center">العمليات</th>
+                <th class="pb-4 text-left pl-2">حجم التداول</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-50 dark:divide-white/5">
+              <template v-if="loading">
+                <tr v-for="i in 5" :key="i">
+                  <td class="py-5 pr-2"><Skeleton roundedClass="rounded w-32 h-6" /></td>
+                  <td class="py-5 text-center"><Skeleton roundedClass="rounded w-20 h-6 mx-auto" /></td>
+                  <td class="py-5 text-left pl-2"><Skeleton roundedClass="rounded w-24 h-6 ml-auto" /></td>
+                </tr>
+              </template>
+              <template v-else>
+                <tr v-for="shop in shopsPerformance" :key="shop.name" class="group hover:bg-slate-50 dark:hover:bg-white/5 transition-all">
+                  <td class="py-5 font-black text-slate-900 dark:text-white pr-2">{{ shop.name }}</td>
+                  <td class="py-5 text-center font-bold text-slate-500">{{ shop.count }} عملية</td>
+                  <td class="py-5 text-left font-black text-emerald-500 pl-2">{{ shop.volume.toLocaleString() }} ر.س</td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
         </div>
       </BaseCard>
     </div>

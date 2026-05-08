@@ -116,42 +116,67 @@ onMounted(fetchData)
 </script>
 
 <template>
-  <div class="space-y-8 animate-fade-in pb-12">
-    <!-- Breadcrumb & Header -->
-    <div class="flex flex-col gap-4">
-      <button @click="navigateTo('/admin-dashboard/shops')" class="flex items-center gap-2 text-slate-500 hover:text-emerald-500 transition-colors w-fit font-bold">
-        <ArrowLeft class="w-4 h-4" />
-        العودة لإدارة المحلات
-      </button>
-      
+    <div v-if="loading" class="space-y-8 animate-fade-in pb-12">
+      <!-- Skeleton Header -->
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">
-          <div class="w-16 h-16 bg-emerald-500 text-slate-950 rounded-3xl flex items-center justify-center shadow-xl shadow-emerald-500/20">
-            <Store class="w-8 h-8" />
-          </div>
-          <div>
-            <h1 class="text-3xl font-black text-slate-900 dark:text-white">{{ shop?.shop_name || 'جاري التحميل...' }}</h1>
-            <p class="text-slate-500 dark:text-slate-400 font-medium">{{ shop?.email }}</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-3">
-          <button 
-            @click="toggleSubscriptions"
-            :disabled="updatingSubscriptions"
-            class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all"
-            :class="shop?.subscriptions_enabled 
-              ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' 
-              : 'bg-slate-100 dark:bg-white/5 text-slate-500 border border-slate-200 dark:border-white/10'"
-          >
-            <CreditCard class="w-4 h-4" />
-            <span>{{ shop?.subscriptions_enabled ? 'تعطيل الاشتراكات' : 'تفعيل الاشتراكات' }}</span>
-          </button>
-          <div class="px-4 py-2 bg-emerald-500/10 text-emerald-500 rounded-xl text-sm font-bold border border-emerald-500/20">
-            حساب نشط
+          <Skeleton roundedClass="rounded-3xl w-16 h-16" />
+          <div class="space-y-2">
+            <Skeleton roundedClass="rounded w-48 h-8" />
+            <Skeleton roundedClass="rounded w-32 h-4" />
           </div>
         </div>
       </div>
+      <!-- Skeleton Stats -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <BaseCard v-for="i in 3" :key="i" class="!p-6">
+          <div class="flex items-center gap-4">
+            <Skeleton roundedClass="rounded-2xl w-12 h-12" />
+            <div class="space-y-2">
+              <Skeleton roundedClass="rounded w-24 h-4" />
+              <Skeleton roundedClass="rounded w-32 h-6" />
+            </div>
+          </div>
+        </BaseCard>
+      </div>
     </div>
+
+    <div v-else class="space-y-8 animate-fade-in pb-12">
+      <!-- Breadcrumb & Header -->
+      <div class="flex flex-col gap-4">
+        <button @click="navigateTo('/admin-dashboard/shops')" class="flex items-center gap-2 text-slate-500 hover:text-emerald-500 transition-colors w-fit font-bold">
+          <ArrowLeft class="w-4 h-4" />
+          العودة لإدارة المحلات
+        </button>
+        
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <div class="w-16 h-16 bg-emerald-500 text-slate-950 rounded-3xl flex items-center justify-center shadow-xl shadow-emerald-500/20">
+              <Store class="w-8 h-8" />
+            </div>
+            <div>
+              <h1 class="text-3xl font-black text-slate-900 dark:text-white">{{ shop?.shop_name || 'جاري التحميل...' }}</h1>
+              <p class="text-slate-500 dark:text-slate-400 font-medium">{{ shop?.email }}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <button 
+              @click="toggleSubscriptions"
+              :disabled="updatingSubscriptions"
+              class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all"
+              :class="shop?.subscriptions_enabled 
+                ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' 
+                : 'bg-slate-100 dark:bg-white/5 text-slate-500 border border-slate-200 dark:border-white/10'"
+            >
+              <CreditCard class="w-4 h-4" />
+              <span>{{ shop?.subscriptions_enabled ? 'تعطيل الاشتراكات' : 'تفعيل الاشتراكات' }}</span>
+            </button>
+            <div class="px-4 py-2 bg-emerald-500/10 text-emerald-500 rounded-xl text-sm font-bold border border-emerald-500/20">
+              حساب نشط
+            </div>
+          </div>
+        </div>
+      </div>
 
     <!-- Stats Grid -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">

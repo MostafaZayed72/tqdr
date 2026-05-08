@@ -88,85 +88,145 @@ onMounted(fetchData)
 
 <template>
   <div class="min-h-screen bg-slate-50 dark:bg-slate-950 font-['Tajawal'] text-slate-900 dark:text-white pb-20">
-    <div v-if="loading" class="min-h-screen flex items-center justify-center">
-      <div class="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+    <div v-if="loading" class="space-y-8 pb-20">
+      <!-- Skeleton Header -->
+      <div class="bg-slate-900 px-6 pt-16 pb-12 rounded-b-[60px] space-y-10">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-5">
+            <Skeleton roundedClass="rounded-2xl w-16 h-16" />
+            <div class="space-y-2">
+              <Skeleton roundedClass="rounded w-24 h-4" />
+              <Skeleton roundedClass="rounded w-48 h-8" />
+            </div>
+          </div>
+          <Skeleton roundedClass="rounded-2xl w-12 h-12" />
+        </div>
+        <Skeleton roundedClass="rounded-[40px] w-full h-48" />
+      </div>
+      
+      <!-- Skeleton Content -->
+      <div class="px-6 space-y-8">
+        <Skeleton roundedClass="rounded-[40px] w-full h-32" />
+        <Skeleton roundedClass="rounded-[32px] w-full h-20" />
+        <div class="space-y-4">
+          <Skeleton roundedClass="rounded w-32 h-6" />
+          <div class="space-y-4">
+            <Skeleton v-for="i in 3" :key="i" roundedClass="rounded-[35px] w-full h-24" />
+          </div>
+        </div>
+      </div>
     </div>
 
     <template v-else>
       <!-- Header / Profile Section -->
-      <div class="bg-white dark:bg-slate-900 px-6 pt-12 pb-8 rounded-b-[50px] shadow-sm border-b border-slate-100 dark:border-white/5 relative overflow-hidden">
-        <div class="absolute -top-24 -right-24 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl"></div>
+      <div class="bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900 px-6 pt-16 pb-12 rounded-b-[60px] shadow-2xl relative overflow-hidden">
+        <!-- Decorative background elements -->
+        <div class="absolute -top-24 -right-24 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div class="absolute top-1/2 -left-20 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl"></div>
         
-        <div class="relative z-10 flex items-center justify-between mb-8">
-          <div class="flex items-center gap-4">
-            <div class="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
-              <Star class="w-7 h-7 fill-white/20" />
+        <div class="relative z-10 flex items-center justify-between mb-10">
+          <div class="flex items-center gap-5">
+            <div class="relative">
+              <div class="w-16 h-16 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-emerald-500/30 rotate-3 group-hover:rotate-0 transition-transform duration-500">
+                <Star class="w-8 h-8 fill-white/20" />
+              </div>
+              <div class="absolute -bottom-1 -right-1 w-6 h-6 bg-amber-500 rounded-lg flex items-center justify-center text-[10px] font-black text-slate-950 border-2 border-slate-900 shadow-lg">
+                <Sparkles class="w-3 h-3" />
+              </div>
             </div>
             <div>
-              <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">مرحباً بك</p>
-              <h1 class="text-2xl font-black">{{ customer?.name }}</h1>
+              <p class="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] mb-1">أهلاً بك مجدداً</p>
+              <h1 class="text-3xl font-black text-white leading-tight">{{ customer?.name }}</h1>
             </div>
           </div>
-          <button @click="handleLogout" class="p-3 bg-slate-100 dark:bg-white/5 rounded-2xl text-slate-400 hover:text-red-500 transition-colors">
+          <button @click="handleLogout" class="w-12 h-12 bg-white/5 hover:bg-red-500/10 border border-white/10 rounded-2xl flex items-center justify-center text-slate-400 hover:text-red-500 transition-all duration-300 backdrop-blur-md">
             <LogOut class="w-6 h-6" />
           </button>
         </div>
 
-        <!-- Shop Info Card -->
-        <div class="bg-slate-900 dark:bg-emerald-500/10 p-6 rounded-[32px] border border-white/10 flex items-center justify-between group">
-          <div class="flex items-center gap-4">
-            <div class="p-3 bg-white/10 rounded-xl">
-              <ShoppingBag class="w-5 h-5 text-emerald-500" />
-            </div>
-            <div>
-              <p class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">أنت عميل في متجر</p>
-              <p class="text-lg font-black text-white dark:text-emerald-500">{{ shop?.shop_name || 'تقدر بلس' }}</p>
-            </div>
+        <!-- Featured Savings Card (Prominent) -->
+        <div class="bg-white/10 backdrop-blur-2xl p-8 rounded-[40px] border border-white/10 shadow-2xl relative overflow-hidden group">
+          <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <TrendingUp class="w-32 h-32 text-white -mr-8 -mt-8 rotate-12" />
           </div>
-          <div class="w-10 h-10 bg-emerald-500/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-             <Smartphone class="w-4 h-4 text-emerald-500" />
+          
+          <div class="relative z-10">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
+                <TrendingUp class="w-4 h-4 text-slate-950" />
+              </div>
+              <p class="text-sm font-bold text-emerald-400">إجمالي ما وفرته مع تقدر</p>
+            </div>
+            <div class="flex items-baseline gap-2">
+              <h2 class="text-6xl font-black text-white tracking-tighter">{{ customer?.total_saved || 0 }}</h2>
+              <span class="text-2xl font-bold text-white/50">ر.س</span>
+            </div>
+            <p class="text-xs text-white/40 mt-4 font-medium">لقد قمت بتوفير هذا المبلغ من خلال العروض والاشتراكات الذكية.</p>
           </div>
         </div>
       </div>
 
-      <div class="px-6 -mt-6 space-y-6">
-        <!-- Stats Row -->
-        <div class="grid grid-cols-2 gap-4">
-          <div class="bg-white dark:bg-slate-900 p-6 rounded-[32px] shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-white/5">
-            <div class="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-500 mb-4">
-              <Wallet class="w-5 h-5" />
+      <div class="px-6 -mt-8 space-y-8">
+        <!-- Main Stats Grid -->
+        <div class="grid grid-cols-1 gap-6">
+          <div class="bg-white dark:bg-slate-900 p-8 rounded-[40px] shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-white/5 flex items-center justify-between group hover:scale-[1.02] transition-all duration-500">
+            <div>
+              <div class="flex items-center gap-2 mb-2 text-slate-400">
+                <Wallet class="w-4 h-4" />
+                <p class="text-xs font-black uppercase tracking-widest">رصيدك الحالي</p>
+              </div>
+              <div class="flex items-baseline gap-2">
+                <h3 class="text-5xl font-black text-emerald-500 tracking-tighter">{{ customer?.balance }}</h3>
+                <span class="text-xl font-bold text-slate-300">ر.س</span>
+              </div>
             </div>
-            <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">رصيدك الحالي</p>
-            <h3 class="text-2xl font-black text-emerald-500">{{ customer?.balance }} <span class="text-xs opacity-60">ر.س</span></h3>
-          </div>
-          <div class="bg-white dark:bg-slate-900 p-6 rounded-[32px] shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-white/5">
-            <div class="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-500 mb-4">
-              <TrendingUp class="w-5 h-5" />
+            <div class="w-20 h-20 bg-emerald-500/10 rounded-[32px] flex items-center justify-center text-emerald-500 group-hover:rotate-12 transition-transform duration-500">
+              <Wallet class="w-10 h-10" />
             </div>
-            <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">إجمالي توفيرك</p>
-            <h3 class="text-2xl font-black text-blue-500">{{ customer?.total_saved || 0 }} <span class="text-xs opacity-60">ر.س</span></h3>
           </div>
+        </div>
+
+        <!-- Shop Info Section -->
+        <div class="bg-slate-100 dark:bg-white/5 p-6 rounded-[32px] flex items-center justify-between border border-transparent hover:border-emerald-500/20 transition-all">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center shadow-sm">
+              <ShoppingBag class="w-6 h-6 text-slate-400" />
+            </div>
+            <div>
+              <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">المتجر الحالي</p>
+              <h4 class="text-lg font-black text-slate-900 dark:text-white">{{ shop?.shop_name || 'تقدر بلس' }}</h4>
+            </div>
+          </div>
+          <div class="text-emerald-500 bg-emerald-500/10 px-4 py-2 rounded-full text-[10px] font-black">عميل مميز</div>
         </div>
 
         <!-- Active Subscriptions -->
         <div v-if="subscriptions.length > 0" class="space-y-4">
-          <h3 class="text-lg font-black flex items-center gap-2 px-2">
-            <CreditCard class="w-5 h-5 text-amber-500" /> اشتراكاتك النشطة
-          </h3>
-          <div class="space-y-3">
-            <div v-for="sub in subscriptions" :key="sub.id" class="bg-gradient-to-r from-amber-500 to-amber-600 p-6 rounded-[32px] text-slate-950 shadow-lg shadow-amber-500/20 relative overflow-hidden">
-              <div class="absolute -right-8 -top-8 w-24 h-24 bg-white/20 rounded-full blur-2xl"></div>
-              <div class="relative z-10">
-                <div class="flex justify-between items-start mb-4">
-                  <h4 class="text-xl font-black">{{ sub.offer?.name }}</h4>
-                  <span class="px-3 py-1 bg-white/30 rounded-full text-[10px] font-bold">نشط</span>
-                </div>
-                <div class="flex items-center gap-4 text-xs font-bold opacity-80">
-                  <div class="flex items-center gap-1">
-                    <Calendar class="w-3 h-3" />
-                    ينتهي في: {{ new Date(sub.expires_at).toLocaleDateString('ar-EG') }}
+          <div class="flex items-center justify-between px-2">
+            <h3 class="text-xl font-black text-slate-900 dark:text-white flex items-center gap-3">
+              <CreditCard class="w-6 h-6 text-amber-500" /> اشتراكاتك النشطة
+            </h3>
+            <span class="text-xs font-bold text-slate-400">{{ subscriptions.length }} اشتراك</span>
+          </div>
+          
+          <div class="grid grid-cols-1 gap-4">
+            <div v-for="sub in subscriptions" :key="sub.id" class="bg-white dark:bg-slate-900 p-6 rounded-[35px] border border-slate-100 dark:border-white/5 shadow-lg shadow-slate-200/20 dark:shadow-none group relative overflow-hidden">
+              <div class="absolute top-0 left-0 w-2 h-full bg-amber-500"></div>
+              <div class="flex justify-between items-start mb-6">
+                <div>
+                  <h4 class="text-xl font-black text-slate-900 dark:text-white mb-1">{{ sub.offer?.name }}</h4>
+                  <div class="flex items-center gap-2 text-xs font-bold text-slate-400">
+                    <Calendar class="w-3.5 h-3.5 text-amber-500" />
+                    <span>ينتهي في: {{ new Date(sub.expires_at).toLocaleDateString('ar-EG') }}</span>
                   </div>
                 </div>
+                <div class="px-4 py-2 bg-amber-500/10 text-amber-600 rounded-2xl text-[10px] font-black uppercase tracking-widest">بريميوم</div>
+              </div>
+              <div class="w-full bg-slate-50 dark:bg-white/5 rounded-2xl p-4 flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-400">حالة الاشتراك</span>
+                <span class="text-xs font-black text-emerald-500 flex items-center gap-1">
+                  <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></div> نشط حالياً
+                </span>
               </div>
             </div>
           </div>
@@ -174,49 +234,62 @@ onMounted(fetchData)
 
         <!-- Transactions History -->
         <div class="space-y-4">
-          <h3 class="text-lg font-black flex items-center gap-2 px-2">
-            <History class="w-5 h-5 text-slate-400" /> آخر المعاملات
-          </h3>
-          <div class="space-y-3">
-            <div v-if="transactions.length === 0" class="text-center py-10 opacity-40 italic">لا توجد عمليات سابقة حتى الآن.</div>
+          <div class="flex items-center justify-between px-2">
+            <h3 class="text-xl font-black text-slate-900 dark:text-white flex items-center gap-3">
+              <History class="w-6 h-6 text-slate-400" /> آخر المعاملات
+            </h3>
+            <button class="text-xs font-bold text-emerald-500">عرض الكل</button>
+          </div>
+          
+          <div class="space-y-4">
+            <div v-if="transactions.length === 0" class="bg-white dark:bg-slate-900 p-12 rounded-[40px] text-center border border-dashed border-slate-200 dark:border-white/10">
+              <p class="text-slate-400 font-bold italic">لا توجد عمليات سابقة حتى الآن.</p>
+            </div>
+            
             <div 
               v-for="tx in transactions" 
               :key="tx.id"
-              class="bg-white dark:bg-slate-900 p-5 rounded-[28px] border border-slate-100 dark:border-white/5 flex items-center justify-between hover:scale-[1.01] transition-transform"
+              class="bg-white dark:bg-slate-900 p-6 rounded-[35px] border border-slate-100 dark:border-white/5 flex items-center justify-between hover:translate-x-[-4px] transition-all duration-300 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none"
             >
-              <div class="flex items-center gap-4">
-                <div :class="tx.type === 'deposit' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'" class="w-12 h-12 rounded-2xl flex items-center justify-center">
-                  <component :is="tx.type === 'deposit' ? ArrowUpCircle : ArrowDownCircle" class="w-6 h-6" />
+              <div class="flex items-center gap-5">
+                <div :class="tx.type === 'deposit' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'" class="w-14 h-14 rounded-[22px] flex items-center justify-center shadow-inner">
+                  <component :is="tx.type === 'deposit' ? ArrowUpCircle : ArrowDownCircle" class="w-7 h-7" />
                 </div>
                 <div>
-                  <p class="font-bold text-sm">{{ tx.type === 'deposit' ? 'شحن رصيد' : 'خصم من الرصيد' }}</p>
-                  <p class="text-[10px] text-slate-400">{{ new Date(tx.created_at).toLocaleString('ar-EG', { day: 'numeric', month: 'short' }) }}</p>
+                  <p class="font-black text-slate-900 dark:text-white">{{ tx.type === 'deposit' ? 'شحن رصيد' : 'خصم من الرصيد' }}</p>
+                  <p class="text-xs font-bold text-slate-400 mt-0.5">{{ new Date(tx.created_at).toLocaleString('ar-EG', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) }}</p>
                 </div>
               </div>
               <div class="text-right">
-                <p class="font-black text-lg" :class="tx.type === 'deposit' ? 'text-emerald-500' : 'text-red-500'">
-                  {{ tx.type === 'deposit' ? '+' : '-' }}{{ tx.amount }} ر.س
+                <p class="text-xl font-black tracking-tighter" :class="tx.type === 'deposit' ? 'text-emerald-500' : 'text-red-500'">
+                  {{ tx.type === 'deposit' ? '+' : '-' }}{{ tx.amount }} <span class="text-xs opacity-50">ر.س</span>
                 </p>
-                <p class="text-[10px] text-slate-400">رصيدك: {{ tx.balance_after }} ر.س</p>
+                <div class="flex items-center gap-1 justify-end mt-1">
+                  <div class="w-1 h-1 rounded-full bg-slate-300"></div>
+                  <p class="text-[10px] font-bold text-slate-400">الرصيد: {{ tx.balance_after }} ر.س</p>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Bottom Nav (Optional Placeholder) -->
-      <div class="fixed bottom-6 left-6 right-6 bg-slate-900/90 backdrop-blur-xl p-4 rounded-[32px] border border-white/10 flex items-center justify-around shadow-2xl z-50">
-        <div class="flex flex-col items-center gap-1 text-emerald-500">
-          <Star class="w-6 h-6" />
-          <span class="text-[10px] font-bold">الرئيسية</span>
-        </div>
-        <div class="flex flex-col items-center gap-1 text-slate-400">
-          <History class="w-6 h-6" />
-          <span class="text-[10px] font-bold">المعاملات</span>
-        </div>
-        <div class="flex flex-col items-center gap-1 text-slate-400">
-          <CreditCard class="w-6 h-6" />
-          <span class="text-[10px] font-bold">العروض</span>
+      <!-- Bottom Navigation -->
+      <div class="fixed bottom-0 left-0 right-0 p-6 z-50 pointer-events-none">
+        <div class="max-w-md mx-auto bg-slate-900/90 dark:bg-slate-900/90 backdrop-blur-2xl p-3 rounded-[35px] border border-white/10 flex items-center justify-around shadow-2xl pointer-events-auto">
+          <button class="flex flex-col items-center gap-1.5 text-emerald-500 p-2 min-w-[70px] relative">
+            <div class="absolute -top-1 w-1 h-1 bg-emerald-500 rounded-full"></div>
+            <Star class="w-6 h-6 fill-emerald-500/20" />
+            <span class="text-[9px] font-black uppercase tracking-widest">الرئيسية</span>
+          </button>
+          <button class="flex flex-col items-center gap-1.5 text-slate-400 p-2 min-w-[70px] hover:text-white transition-colors">
+            <History class="w-6 h-6" />
+            <span class="text-[9px] font-black uppercase tracking-widest">العمليات</span>
+          </button>
+          <button class="flex flex-col items-center gap-1.5 text-slate-400 p-2 min-w-[70px] hover:text-white transition-colors">
+            <CreditCard class="w-6 h-6" />
+            <span class="text-[9px] font-black uppercase tracking-widest">العروض</span>
+          </button>
         </div>
       </div>
     </template>

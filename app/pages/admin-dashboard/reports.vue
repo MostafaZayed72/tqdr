@@ -7,7 +7,13 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Calendar,
-  Activity
+  Activity,
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  ChevronDown
 } from 'lucide-vue-next'
 
 definePageMeta({
@@ -19,21 +25,84 @@ const client = useSupabaseClient()
 
 const transactions = ref([])
 const loading = ref(true)
+const searchQuery = ref('')
+const filterType = ref('all') // all, deposit, withdrawal
+const offerFilter = ref('all') // all, prepaid, or offer_id
+const availableOffers = ref([])
 
-onMounted(async () => {
+// Pagination
+const currentPage = ref(1)
+const pageSize = 10
+const totalTransactions = ref(0)
+const totalPages = computed(() => Math.max(1, Math.ceil(totalTransactions.value / pageSize)))
+
+const displayedPages = computed(() => {
+  const pages = []
+  const maxVisible = 5
+  let start = Math.max(1, currentPage.value - 2)
+  let end = Math.min(totalPages.value, start + maxVisible - 1)
+  if (end - start + 1 < maxVisible) start = Math.max(1, end - maxVisible + 1)
+  for (let i = start; i <= end; i++) pages.push(i)
+  return pages
+})
+
+const offerMap = computed(() => {
+  const map: Record<string, string> = {}
+  availableOffers.value.forEach(o => {
+    map[o.id] = o.name
+  })
+  return map
+})
+
+const fetchData = async () => {
   try {
     loading.value = true
-    const { data } = await client
-      .from('transactions')
-      .select('*, customer:customers(name), shop:profiles!transactions_shop_owner_id_fkey(email, shop_name)')
-      .order('created_at', { ascending: false })
     
+    // 1. Fetch Offers for the filter
+    const { data: offerData } = await client.from('subscription_offers').select('id, name')
+    availableOffers.value = offerData || []
+
+    // 2. Base Query
+    let query = client
+      .from('transactions')
+      .select('*, customer:customers(name, mobile_number), shop:profiles!transactions_shop_owner_id_fkey(email, shop_name)', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range((currentPage.value - 1) * pageSize, currentPage.value * pageSize - 1)
+
+    // 3. Apply Filters
+    if (filterType.value !== 'all') {
+      query = query.eq('type', filterType.value)
+    }
+
+    if (offerFilter.value !== 'all') {
+      if (offerFilter.value === 'prepaid') {
+        query = query.is('offer_id', null)
+      } else {
+        query = query.eq('offer_id', offerFilter.value)
+      }
+    }
+
+    if (searchQuery.value) {
+      // Search in customer name or shop name
+      // Note: Full-text search across joins is complex in Supabase, 
+      // but for simplicity we'll search by note or customer name if possible
+      query = query.or(`note.ilike.%${searchQuery.value}%`)
+    }
+
+    const { data, count } = await query
     transactions.value = data || []
+    totalTransactions.value = count || 0
   } catch (e) {
     console.error(e)
   } finally {
     loading.value = false
   }
+}
+
+onMounted(fetchData)
+watch([filterType, offerFilter, searchQuery], () => {
+  currentPage.value = 1
+  fetchData()
 })
 </script>
 
@@ -49,34 +118,49 @@ onMounted(async () => {
         <p class="text-slate-500 dark:text-slate-400">مراقبة جميع العمليات المالية عبر المنصة بالكامل.</p>
       </div>
       
-      <div class="flex items-center gap-3">
-        <button class="flex items-center gap-2 px-6 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors shadow-sm">
-          <Download class="w-5 h-5 text-emerald-500" />
-          <span>تصدير Excel</span>
-        </button>
-      </div>
     </div>
 
-    <!-- Filters -->
-    <BaseCard>
-      <div class="flex flex-col md:flex-row gap-4">
-        <div class="flex-1 relative">
-          <Search :class="locale === 'ar' ? 'right-4' : 'left-4'" class="absolute top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-          <input 
-            type="text" 
-            placeholder="البحث في العمليات..."
-            :class="locale === 'ar' ? 'pr-12' : 'pl-12'"
-            class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl py-4 focus:ring-2 focus:ring-emerald-500/50 transition-all text-slate-900 dark:text-white"
-          />
-        </div>
-        <div class="flex items-center gap-3">
-          <button class="flex items-center gap-2 px-6 py-4 bg-slate-100 dark:bg-white/5 rounded-2xl font-bold text-slate-700 dark:text-slate-300">
-            <Calendar class="w-5 h-5" />
-            <span>آخر 30 يوم</span>
-          </button>
-        </div>
+    <!-- Filters Row -->
+    <div class="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between bg-white dark:bg-slate-900 p-4 rounded-[32px] border border-slate-200 dark:border-white/5 shadow-sm">
+      <div class="flex-1 relative group">
+        <Search :class="locale === 'ar' ? 'right-4' : 'left-4'" class="absolute top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors w-5 h-5" />
+        <input 
+          v-model="searchQuery"
+          type="text" 
+          placeholder="البحث في الملاحظات أو الكود..."
+          :class="locale === 'ar' ? 'pr-12' : 'pl-12'"
+          class="w-full bg-slate-50 dark:bg-white/5 border-none rounded-2xl py-4 focus:ring-2 focus:ring-emerald-500/50 transition-all text-slate-900 dark:text-white"
+        />
       </div>
-    </BaseCard>
+      
+      <div class="flex flex-wrap items-center gap-3">
+        <!-- Offer Filter -->
+        <div class="relative min-w-[200px]">
+          <select 
+            v-model="offerFilter"
+            class="w-full bg-slate-50 dark:bg-white/5 border border-transparent hover:border-emerald-500/30 rounded-2xl px-6 py-4 font-bold text-slate-700 dark:text-slate-300 focus:ring-0 appearance-none cursor-pointer"
+          >
+            <option value="all">كل العروض / الكل</option>
+            <option value="prepaid">الدفع المقدم فقط</option>
+            <option v-for="offer in availableOffers" :key="offer.id" :value="offer.id">
+              {{ offer.name }}
+            </option>
+          </select>
+          <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-400">
+            <ChevronDown class="w-4 h-4" />
+          </div>
+        </div>
+
+        <select 
+          v-model="filterType"
+          class="bg-slate-50 dark:bg-white/5 border border-transparent hover:border-emerald-500/30 rounded-2xl px-6 py-4 font-bold text-slate-700 dark:text-slate-300 focus:ring-0 appearance-none min-w-[140px]"
+        >
+          <option value="all">جميع الأنواع</option>
+          <option value="deposit">شحن فقط</option>
+          <option value="withdrawal">خصم فقط</option>
+        </select>
+      </div>
+    </div>
 
     <!-- Global Transactions Table -->
     <BaseCard class="!p-0 overflow-hidden">
@@ -110,8 +194,18 @@ onMounted(async () => {
                   </span>
                 </div>
               </td>
-              <td class="px-6 py-4 font-black" :class="tx.type === 'deposit' ? 'text-emerald-500' : 'text-red-500'">
-                {{ tx.type === 'deposit' ? '+' : '-' }}{{ tx.amount }} {{ $t('common.currency') }}
+              <td class="px-6 py-4">
+                <div class="flex flex-col">
+                  <span class="text-lg font-black" :class="tx.type === 'deposit' ? 'text-emerald-500' : 'text-red-500'">
+                    {{ tx.type === 'deposit' ? '+' : '-' }}{{ tx.amount }}
+                  </span>
+                  <span v-if="tx.offer_id" class="text-[10px] text-slate-400 font-bold">
+                    ({{ offerMap[tx.offer_id] || 'جاري التحميل...' }})
+                  </span>
+                  <span v-else class="text-[10px] text-slate-400 font-bold">
+                    (رصيد عام)
+                  </span>
+                </div>
               </td>
               <td class="px-6 py-4 text-sm text-slate-500">
                 {{ new Date(tx.created_at).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-US') }}
@@ -127,5 +221,58 @@ onMounted(async () => {
         </table>
       </div>
     </BaseCard>
+
+    <!-- Pagination -->
+    <div v-if="totalPages > 1" class="p-6 bg-white dark:bg-slate-900 rounded-[32px] border border-slate-200 dark:border-white/5 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-sm">
+      <p class="text-sm text-slate-500 font-bold">
+        عرض 
+        <span class="text-slate-900 dark:text-white">{{ (currentPage - 1) * pageSize + 1 }}</span>
+        -
+        <span class="text-slate-900 dark:text-white">{{ Math.min(currentPage * pageSize, totalTransactions) }}</span>
+        من
+        <span class="text-slate-900 dark:text-white">{{ totalTransactions }}</span>
+      </p>
+      
+      <div class="flex items-center gap-1">
+        <!-- First -->
+        <button @click="currentPage = 1; fetchData()" :disabled="currentPage === 1" 
+          class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 disabled:opacity-30 transition-all">
+          <ChevronsRight v-if="locale === 'ar'" class="w-5 h-5" />
+          <ChevronsLeft v-else class="w-5 h-5" />
+        </button>
+        
+        <!-- Prev -->
+        <button @click="currentPage--; fetchData()" :disabled="currentPage === 1" 
+          class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 disabled:opacity-30 transition-all">
+          <ChevronRight v-if="locale === 'ar'" class="w-5 h-5" />
+          <ChevronLeft v-else class="w-5 h-5" />
+        </button>
+
+        <!-- Numbers -->
+        <div class="flex items-center gap-1 mx-2">
+          <button v-for="p in displayedPages" :key="p" 
+            @click="currentPage = p; fetchData()"
+            class="w-10 h-10 rounded-xl font-black text-sm transition-all"
+            :class="currentPage === p ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5'"
+          >
+            {{ p }}
+          </button>
+        </div>
+
+        <!-- Next -->
+        <button @click="currentPage++; fetchData()" :disabled="currentPage === totalPages" 
+          class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 disabled:opacity-30 transition-all">
+          <ChevronLeft v-if="locale === 'ar'" class="w-5 h-5" />
+          <ChevronRight v-else class="w-5 h-5" />
+        </button>
+
+        <!-- Last -->
+        <button @click="currentPage = totalPages; fetchData()" :disabled="currentPage === totalPages" 
+          class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 disabled:opacity-30 transition-all">
+          <ChevronsLeft v-if="locale === 'ar'" class="w-5 h-5" />
+          <ChevronsRight v-else class="w-5 h-5" />
+        </button>
+      </div>
+    </div>
   </div>
 </template>
