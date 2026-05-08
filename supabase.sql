@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS public.transactions (
     balance_before DECIMAL(12, 2) NOT NULL,
     balance_after DECIMAL(12, 2) NOT NULL,
     note TEXT,
+    offer_id UUID REFERENCES public.subscription_offers(id) ON DELETE SET NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 

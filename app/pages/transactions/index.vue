@@ -11,7 +11,11 @@ import {
   Smartphone,
   Calendar,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight
 } from 'lucide-vue-next'
 
 
@@ -25,22 +29,33 @@ const { t, locale } = useI18n()
 
 const transactions = ref([])
 const customers = ref([])
+const availableOffers = ref([])
 const loading = ref(true)
 const showAddModal = ref(false)
 const searchQuery = ref('')
 const filterType = ref('all')
-const dateRange = ref('today') // today, week, month, custom
+const dateRange = ref('all') // today, week, month, custom, all
 const customDateStart = ref('')
 const customDateEnd = ref('')
 const showDateDropdown = ref(false)
 
 // Pagination
 const currentPage = ref(1)
-const pageSize = 10
+const pageSize = 6
 const totalTransactions = ref(0)
 const totalPages = computed(() => {
   const total = totalTransactions.value || 0
   return Math.max(1, Math.ceil(total / pageSize))
+})
+
+const displayedPages = computed(() => {
+  const pages = []
+  const maxVisible = 5
+  let start = Math.max(1, currentPage.value - 2)
+  let end = Math.min(totalPages.value, start + maxVisible - 1)
+  if (end - start + 1 < maxVisible) start = Math.max(1, end - maxVisible + 1)
+  for (let i = start; i <= end; i++) pages.push(i)
+  return pages
 })
 
 // Stats
@@ -52,7 +67,8 @@ const form = ref({
   customer_id: '',
   type: 'deposit',
   amount: 0,
-  note: ''
+  note: '',
+  offer_id: ''
 })
 const submittng = ref(false)
 const showErrorModal = ref(false)
@@ -62,6 +78,8 @@ const successMsg = ref('')
 
 
 const getDateRangeParams = () => {
+  if (dateRange.value === 'all') return null
+  
   const now = new Date()
   const start = new Date()
   start.setHours(0, 0, 0, 0)
@@ -143,6 +161,13 @@ const fetchData = async () => {
       .eq('shop_owner_id', currentUser.id)
     customers.value = custData || []
 
+    // 4. Fetch Offers for the dropdown
+    const { data: offerData } = await client
+      .from('subscription_offers')
+      .select('id, name, price')
+      .eq('shop_owner_id', currentUser.id)
+    availableOffers.value = offerData || []
+
   } catch (e) {
     console.error(e)
   } finally {
@@ -197,7 +222,8 @@ const handleAddTransaction = async () => {
       ...form.value,
       shop_owner_id: currentUser.id,
       balance_before,
-      balance_after
+      balance_after,
+      offer_id: form.value.offer_id || null
     })
 
     if (txError) throw txError
@@ -309,12 +335,13 @@ watch([filterType, searchQuery], fetchData)
             class="flex items-center gap-3 px-6 py-4 bg-slate-50 dark:bg-white/5 border border-transparent hover:border-emerald-500/30 rounded-2xl font-bold text-slate-700 dark:text-slate-300 transition-all whitespace-nowrap"
           >
             <Calendar class="w-5 h-5 text-emerald-500" />
-            <span>{{ dateRange === 'custom' ? (customDateStart || 'من') + ' - ' + (customDateEnd || 'إلى') : dateRange === 'today' ? 'اليوم' : dateRange === 'week' ? 'آخر أسبوع' : 'آخر شهر' }}</span>
+            <span>{{ dateRange === 'custom' ? (customDateStart || 'من') + ' - ' + (customDateEnd || 'إلى') : dateRange === 'today' ? 'اليوم' : dateRange === 'week' ? 'آخر أسبوع' : dateRange === 'month' ? 'آخر شهر' : 'جميع العمليات' }}</span>
           </button>
 
           <!-- Dropdown Menu -->
           <div v-if="showDateDropdown" class="absolute left-0 top-full mt-2 w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-3xl shadow-2xl z-[100] p-4 animate-in fade-in slide-in-from-top-2">
             <div class="space-y-1">
+              <button @click="setRange('all')" class="w-full text-right px-4 py-3 rounded-xl hover:bg-emerald-500/10 hover:text-emerald-500 font-bold transition-colors" :class="dateRange === 'all' ? 'bg-emerald-500/10 text-emerald-500' : 'text-slate-600'">جميع العمليات</button>
               <button @click="setRange('today')" class="w-full text-right px-4 py-3 rounded-xl hover:bg-emerald-500/10 hover:text-emerald-500 font-bold transition-colors" :class="dateRange === 'today' ? 'bg-emerald-500/10 text-emerald-500' : 'text-slate-600'">اليوم</button>
               <button @click="setRange('week')" class="w-full text-right px-4 py-3 rounded-xl hover:bg-emerald-500/10 hover:text-emerald-500 font-bold transition-colors" :class="dateRange === 'week' ? 'bg-emerald-500/10 text-emerald-500' : 'text-slate-600'">آخر أسبوع</button>
               <button @click="setRange('month')" class="w-full text-right px-4 py-3 rounded-xl hover:bg-emerald-500/10 hover:text-emerald-500 font-bold transition-colors" :class="dateRange === 'month' ? 'bg-emerald-500/10 text-emerald-500' : 'text-slate-600'">آخر شهر</button>
@@ -435,30 +462,54 @@ watch([filterType, searchQuery], fetchData)
       </div>
 
       <!-- Pagination -->
-      <div v-if="totalPages > 1" class="p-6 border-t border-slate-100 dark:border-white/5 flex items-center justify-between">
-        <p class="text-sm text-slate-500 font-medium">
-          عرض 
-          <span class="font-bold text-slate-900 dark:text-white">{{ (currentPage - 1) * pageSize + 1 }}</span>
-          -
-          <span class="font-bold text-slate-900 dark:text-white">{{ Math.min(currentPage * pageSize, totalTransactions) }}</span>
-          من
-          <span class="font-bold text-slate-900 dark:text-white">{{ totalTransactions }}</span>
+      <div v-if="totalPages > 1" class="p-6 border-t border-slate-100 dark:border-white/5 flex flex-col sm:flex-row items-center justify-between gap-6">
+        <p class="text-sm text-slate-500 font-bold">
+          {{ $t('common.showing') }} 
+          <span class="text-slate-900 dark:text-white">{{ (currentPage - 1) * pageSize + 1 }}</span>
+          {{ $t('common.to') }}
+          <span class="text-slate-900 dark:text-white">{{ Math.min(currentPage * pageSize, totalTransactions) }}</span>
+          {{ $t('common.of') }}
+          <span class="text-slate-900 dark:text-white">{{ totalTransactions }}</span>
         </p>
         
-        <div class="flex items-center gap-2">
-          <button 
-            @click="currentPage--; fetchData()"
-            :disabled="currentPage === 1"
-            class="p-2 rounded-xl bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {{ locale === 'ar' ? '→' : '←' }}
+        <div class="flex items-center gap-1">
+          <!-- First -->
+          <button @click="currentPage = 1; fetchData()" :disabled="currentPage === 1" 
+            class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 disabled:opacity-30 transition-all">
+            <ChevronsRight v-if="locale === 'ar'" class="w-5 h-5" />
+            <ChevronsLeft v-else class="w-5 h-5" />
           </button>
-          <button 
-            @click="currentPage++; fetchData()"
-            :disabled="currentPage === totalPages"
-            class="p-2 rounded-xl bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {{ locale === 'ar' ? '←' : '→' }}
+          
+          <!-- Prev -->
+          <button @click="currentPage--; fetchData()" :disabled="currentPage === 1" 
+            class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 disabled:opacity-30 transition-all">
+            <ChevronRight v-if="locale === 'ar'" class="w-5 h-5" />
+            <ChevronLeft v-else class="w-5 h-5" />
+          </button>
+
+          <!-- Numbers -->
+          <div class="flex items-center gap-1 mx-2">
+            <button v-for="p in displayedPages" :key="p" 
+              @click="currentPage = p; fetchData()"
+              class="w-10 h-10 rounded-xl font-black text-sm transition-all"
+              :class="currentPage === p ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5'"
+            >
+              {{ p }}
+            </button>
+          </div>
+
+          <!-- Next -->
+          <button @click="currentPage++; fetchData()" :disabled="currentPage === totalPages" 
+            class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 disabled:opacity-30 transition-all">
+            <ChevronLeft v-if="locale === 'ar'" class="w-5 h-5" />
+            <ChevronRight v-else class="w-5 h-5" />
+          </button>
+
+          <!-- Last -->
+          <button @click="currentPage = totalPages; fetchData()" :disabled="currentPage === totalPages" 
+            class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 disabled:opacity-30 transition-all">
+            <ChevronsLeft v-if="locale === 'ar'" class="w-5 h-5" />
+            <ChevronsRight v-else class="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -527,6 +578,22 @@ watch([filterType, searchQuery], fetchData)
               placeholder="0.00"
               class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl px-6 py-4 text-center text-3xl font-black text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500" 
             />
+          </div>
+
+          <!-- Offer Selection -->
+          <div v-if="form.type === 'deposit'" class="space-y-2">
+            <label class="text-sm font-bold text-slate-700 dark:text-slate-300">ربط باشتراك (اختياري)</label>
+            <div class="grid grid-cols-1 gap-2">
+              <select 
+                v-model="form.offer_id" 
+                class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl px-4 py-4 appearance-none focus:ring-2 focus:ring-emerald-500 text-sm font-bold"
+              >
+                <option value="">دفع مقدم عادي</option>
+                <option v-for="offer in availableOffers" :key="offer.id" :value="offer.id">
+                  {{ offer.name }} ({{ offer.price }} ر.س)
+                </option>
+              </select>
+            </div>
           </div>
 
           <!-- Note -->

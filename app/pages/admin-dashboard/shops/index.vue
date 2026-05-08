@@ -12,7 +12,10 @@ import {
   Lock,
   Eye,
   ShieldCheck,
-  ChevronRight
+  ChevronRight,
+  ChevronLeft,
+  ChevronsLeft,
+  ChevronsRight
 } from 'lucide-vue-next'
 
 definePageMeta({
@@ -27,6 +30,20 @@ const loading = ref(true)
 const searchQuery = ref('')
 const showAddModal = ref(false)
 const showSuccessModal = ref(false)
+const currentPage = ref(1)
+const pageSize = 6
+const totalShops = ref(0)
+const totalPages = computed(() => Math.ceil(totalShops.value / pageSize))
+
+const displayedPages = computed(() => {
+  const pages = []
+  const maxVisible = 5
+  let start = Math.max(1, currentPage.value - 2)
+  let end = Math.min(totalPages.value, start + maxVisible - 1)
+  if (end - start + 1 < maxVisible) start = Math.max(1, end - maxVisible + 1)
+  for (let i = start; i <= end; i++) pages.push(i)
+  return pages
+})
 
 // Form state for new shop owner
 const form = ref({
@@ -49,8 +66,12 @@ const fetchShops = async () => {
       query = query.or(`email.ilike.%${searchQuery.value}%,shop_name.ilike.%${searchQuery.value}%`)
     }
 
-    const { data } = await query
+    const { data, count } = await query
+      .select('*', { count: 'exact' })
+      .range((currentPage.value - 1) * pageSize, currentPage.value * pageSize - 1)
+    
     shops.value = data || []
+    totalShops.value = count || 0
   } catch (e) {
     console.error(e)
   } finally {
@@ -259,6 +280,59 @@ watch(searchQuery, fetchShops)
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- Pagination -->
+      <div v-if="totalPages > 1" class="p-6 border-t border-slate-100 dark:border-white/5 flex flex-col sm:flex-row items-center justify-between gap-6">
+        <p class="text-sm text-slate-500 font-bold">
+          عرض 
+          <span class="text-slate-900 dark:text-white">{{ (currentPage - 1) * pageSize + 1 }}</span>
+          -
+          <span class="text-slate-900 dark:text-white">{{ Math.min(currentPage * pageSize, totalShops) }}</span>
+          من
+          <span class="text-slate-900 dark:text-white">{{ totalShops }}</span>
+        </p>
+        
+        <div class="flex items-center gap-1">
+          <!-- First -->
+          <button @click="currentPage = 1; fetchShops()" :disabled="currentPage === 1" 
+            class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 disabled:opacity-30 transition-all">
+            <ChevronsRight v-if="locale === 'ar'" class="w-5 h-5" />
+            <ChevronsLeft v-else class="w-5 h-5" />
+          </button>
+          
+          <!-- Prev -->
+          <button @click="currentPage--; fetchShops()" :disabled="currentPage === 1" 
+            class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 disabled:opacity-30 transition-all">
+            <ChevronRight v-if="locale === 'ar'" class="w-5 h-5" />
+            <ChevronLeft v-else class="w-5 h-5" />
+          </button>
+
+          <!-- Numbers -->
+          <div class="flex items-center gap-1 mx-2">
+            <button v-for="p in displayedPages" :key="p" 
+              @click="currentPage = p; fetchShops()"
+              class="w-10 h-10 rounded-xl font-black text-sm transition-all"
+              :class="currentPage === p ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5'"
+            >
+              {{ p }}
+            </button>
+          </div>
+
+          <!-- Next -->
+          <button @click="currentPage++; fetchShops()" :disabled="currentPage === totalPages" 
+            class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 disabled:opacity-30 transition-all">
+            <ChevronLeft v-if="locale === 'ar'" class="w-5 h-5" />
+            <ChevronRight v-else class="w-5 h-5" />
+          </button>
+
+          <!-- Last -->
+          <button @click="currentPage = totalPages; fetchShops()" :disabled="currentPage === totalPages" 
+            class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 disabled:opacity-30 transition-all">
+            <ChevronsLeft v-if="locale === 'ar'" class="w-5 h-5" />
+            <ChevronsRight v-else class="w-5 h-5" />
+          </button>
+        </div>
       </div>
     </BaseCard>
 

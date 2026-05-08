@@ -163,7 +163,8 @@ const handleAddCustomer = async () => {
         amount: form.value.added_balance,
         balance_before: 0,
         balance_after: form.value.added_balance,
-        note: 'افتتاح حساب عميل جديد'
+        note: 'افتتاح حساب عميل جديد',
+        offer_id: form.value.offer_id || null
       })
     }
 
@@ -258,7 +259,8 @@ const handleQuickTx = async () => {
       amount: txForm.value.amount,
       balance_before: balanceBefore,
       balance_after: balanceAfter,
-      note: txForm.value.note
+      note: txForm.value.note,
+      offer_id: txForm.value.offer_id || null
     })
 
     showTxModal.value = false

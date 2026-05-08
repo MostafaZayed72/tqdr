@@ -11,7 +11,11 @@ import {
   Activity,
   Trash2,
   Edit2,
-  X
+  X,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight
 } from 'lucide-vue-next'
 
 definePageMeta({
@@ -28,6 +32,20 @@ const searchQuery = ref('')
 const selectedShopId = ref('all')
 const showDeleteModal = ref(false)
 const customerToDelete = ref<string | null>(null)
+const currentPage = ref(1)
+const pageSize = 6
+const totalCustomers = ref(0)
+const totalPages = computed(() => Math.ceil(totalCustomers.value / pageSize))
+
+const displayedPages = computed(() => {
+  const pages = []
+  const maxVisible = 5
+  let start = Math.max(1, currentPage.value - 2)
+  let end = Math.min(totalPages.value, start + maxVisible - 1)
+  if (end - start + 1 < maxVisible) start = Math.max(1, end - maxVisible + 1)
+  for (let i = start; i <= end; i++) pages.push(i)
+  return pages
+})
 
 const fetchShops = async () => {
   const { data } = await client
@@ -54,9 +72,13 @@ const fetchAllCustomers = async () => {
       query = query.or(`name.ilike.%${searchQuery.value}%,mobile_number.ilike.%${searchQuery.value}%`)
     }
 
-    const { data, error } = await query
+    const { data, count, error } = await query
+      .select('*, shop:profiles!customers_shop_owner_id_fkey(shop_name, email)', { count: 'exact' })
+      .range((currentPage.value - 1) * pageSize, currentPage.value * pageSize - 1)
+
     if (error) throw error
     customers.value = data || []
+    totalCustomers.value = count || 0
   } catch (e) {
     console.error(e)
   } finally {
@@ -247,6 +269,59 @@ watch([searchQuery, selectedShopId], fetchAllCustomers)
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- Pagination -->
+      <div v-if="totalPages > 1" class="p-6 border-t border-slate-100 dark:border-white/5 flex flex-col sm:flex-row items-center justify-between gap-6">
+        <p class="text-sm text-slate-500 font-bold">
+          عرض 
+          <span class="text-slate-900 dark:text-white">{{ (currentPage - 1) * pageSize + 1 }}</span>
+          -
+          <span class="text-slate-900 dark:text-white">{{ Math.min(currentPage * pageSize, totalCustomers) }}</span>
+          من
+          <span class="text-slate-900 dark:text-white">{{ totalCustomers }}</span>
+        </p>
+        
+        <div class="flex items-center gap-1">
+          <!-- First -->
+          <button @click="currentPage = 1; fetchAllCustomers()" :disabled="currentPage === 1" 
+            class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 disabled:opacity-30 transition-all">
+            <ChevronsRight v-if="locale === 'ar'" class="w-5 h-5" />
+            <ChevronsLeft v-else class="w-5 h-5" />
+          </button>
+          
+          <!-- Prev -->
+          <button @click="currentPage--; fetchAllCustomers()" :disabled="currentPage === 1" 
+            class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 disabled:opacity-30 transition-all">
+            <ChevronRight v-if="locale === 'ar'" class="w-5 h-5" />
+            <ChevronLeft v-else class="w-5 h-5" />
+          </button>
+
+          <!-- Numbers -->
+          <div class="flex items-center gap-1 mx-2">
+            <button v-for="p in displayedPages" :key="p" 
+              @click="currentPage = p; fetchAllCustomers()"
+              class="w-10 h-10 rounded-xl font-black text-sm transition-all"
+              :class="currentPage === p ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5'"
+            >
+              {{ p }}
+            </button>
+          </div>
+
+          <!-- Next -->
+          <button @click="currentPage++; fetchAllCustomers()" :disabled="currentPage === totalPages" 
+            class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 disabled:opacity-30 transition-all">
+            <ChevronLeft v-if="locale === 'ar'" class="w-5 h-5" />
+            <ChevronRight v-else class="w-5 h-5" />
+          </button>
+
+          <!-- Last -->
+          <button @click="currentPage = totalPages; fetchAllCustomers()" :disabled="currentPage === totalPages" 
+            class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 disabled:opacity-30 transition-all">
+            <ChevronsLeft v-if="locale === 'ar'" class="w-5 h-5" />
+            <ChevronsRight v-else class="w-5 h-5" />
+          </button>
+        </div>
       </div>
     </BaseCard>
 
