@@ -8,9 +8,17 @@
     "delete": "Delete",
     "edit": "Edit",
     "search": "Search...",
+    "confirm": "Confirm",
+    "optional": "Optional",
     "showing": "Showing",
     "to": "to",
-    "of": "of"
+    "of": "of",
+    "confirm_delete": "Confirm Permanent Delete",
+    "delete_confirm": "Delete?",
+    "delete_warning": "Are you sure you want to delete {name}?",
+    "delete_irreversible": "Warning: This action cannot be undone and all associated data will be deleted.",
+    "error_occurred": "Sorry, an error occurred",
+    "ok_got_it": "Ok, Got it"
   },
   "brand": {
     "name": "Merchant",
@@ -26,7 +34,23 @@
     "password": "Password",
     "error": "Authentication Failed",
     "welcome": "Welcome Back",
-    "rights": "All Rights Reserved"
+    "no_profile_error": "No permissions found for this account. Please contact administration.",
+    "rights": "All Rights Reserved",
+    "customer_otp": {
+      "title": "Customer Login",
+      "subtitle": "Track your balance and savings in seconds",
+      "phone_label": "Mobile Number",
+      "send_code": "Send Verification Code",
+      "sending_code": "Sending...",
+      "code_sent_to": "Verification code sent to",
+      "enter_code": "Enter 4-digit code",
+      "confirm_login": "Confirm & Login",
+      "verifying": "Verifying...",
+      "edit_phone": "Edit Mobile Number",
+      "secure_system": "Tqdr Secure Mobile Verification System",
+      "error_send": "Failed to send code. Please check the number.",
+      "error_invalid": "Invalid verification code."
+    }
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -46,18 +70,37 @@
   "subscriptions": {
     "title": "Subscriptions",
     "offers": "Subscription Offers",
+    "subtitle": "Create and manage subscription offers for your customers to increase loyalty and activity.",
     "add_offer": "Add New Offer",
+    "add_first": "Add Your First Offer",
     "edit_offer": "Edit Offer",
+    "save_changes": "Save Changes",
     "offer_name": "Offer Name",
-    "price": "Price (SAR)",
+    "price": "Subscription Price (SAR)",
     "usage_limit": "Usage Limit",
-    "discount": "Discount",
+    "discount": "Discount Value",
     "duration": "Duration (Days)",
-    "enable_feature": "Enable Subscriptions",
+    "duration_days": "Duration: {days} Days",
+    "usage_times": "Usage Limit: {count}",
+    "no_offers": "No offers currently",
+    "no_offers_desc": "Start by creating your first subscription offer for your customers to increase engagement with your store.",
+    "manage_subscribers": "Manage Subscribers",
+    "current_subscribers": "Current Subscribers ({count})",
+    "no_subscribers": "No current subscribers for this offer.",
+    "add_customer_to_offer": "Add Customer to Offer",
+    "search_customer": "Search for customer by name or number...",
+    "add_btn": "Add",
+    "remove_from_offer": "Remove from Offer",
+    "delete_offer_confirm": "Are you sure you want to delete offer {name}?",
+    "unsubscribe_confirm_title": "Cancel Subscription?",
+    "unsubscribe_confirm_desc": "Are you sure you want to remove this customer from the offer? They will no longer benefit from the discounts associated with this offer.",
+    "confirm_remove": "Confirm Removal",
+    "enable_feature": "Enable Subscriptions Feature",
     "status": {
       "active": "Active",
       "inactive": "Inactive"
-    }
+    },
+    "duration_unit": "Days"
   },
   "dashboard": {
     "welcome": "Welcome",
@@ -93,7 +136,113 @@
       "trading_volume": "Trading Volume",
       "recent_shops": "Recent Joined Shops",
       "all_shops": "All Shops",
-      "no_new_shops": "No new shops found at the moment."
+      "no_new_shops": "No new shops found at the moment.",
+      "manage_all_customers": "Manage All Customers 👥",
+      "manage_all_customers_desc": "View and monitor all registered customers across all shops.",
+      "export_customers": "Export Customers List",
+      "search_placeholder": "Search by name or mobile number...",
+      "all_subscribers": "All Subscribers",
+      "subscribed_only": "Offer Subscribers",
+      "prepaid_only_filter": "Prepaid Customers",
+      "table": {
+        "customer": "Customer",
+        "shop": "Associated Shop",
+        "balance": "Balance",
+        "registered_at": "Registration Date",
+        "actions": "Actions",
+        "undefined_shop": "Not Defined"
+      },
+      "no_customers_found": "No customers found in the system.",
+      "edit_customer_title": "Edit Customer Data",
+      "delete_customer_confirm": "Confirm Delete Customer",
+      "delete_customer_desc": "Are you sure you want to delete this customer permanently? All their records will be wiped from the system.",
+      "confirm_delete_btn": "Yes, Delete Customer",
+      "reports": {
+        "title": "Transactions Log 📑",
+        "subtitle": "Monitor all financial transactions across the entire platform.",
+        "search_placeholder": "Search in notes or code...",
+        "all_offers": "All Offers / All",
+        "prepaid_only": "Prepaid Only",
+        "all_types": "All Types",
+        "deposit_only": "Deposit Only",
+        "withdrawal_only": "Withdrawal Only",
+        "table": {
+          "shop": "Store / Seller",
+          "customer": "Customer",
+          "type": "Type",
+          "amount": "Amount",
+          "date": "Date",
+          "prepaid": "General Balance"
+        }
+      },
+      "shops_management": {
+        "title": "Shops 🏪",
+        "subtitle": "Manage shop owner accounts and control their permissions.",
+        "add_shop": "Add New Shop Owner",
+        "search_placeholder": "Search by email or shop name...",
+        "table": {
+          "owner": "Shop Owner",
+          "shop_name": "Shop Name",
+          "joined_at": "Joined Date",
+          "status": "Status"
+        },
+        "add_modal": {
+          "title_add": "Add Shop Owner",
+          "title_edit": "Edit Shop Data",
+          "shop_name": "Shop Name",
+          "shop_name_placeholder": "e.g. Tech Store",
+          "email": "Email Address",
+          "password": "Temporary Password",
+          "phone_notifications": "Mobile Number (for notifications)",
+          "account_status": "Account Status",
+          "save_btn": "Save Changes",
+          "create_btn": "Create Account"
+        },
+        "delete_modal": {
+          "title": "Confirm Delete",
+          "desc": "Are you sure you want to delete this account permanently? This action cannot be undone.",
+          "confirm": "Yes, Delete Account"
+        },
+        "success_modal": {
+          "title": "Created Successfully!",
+          "desc": "The new shop account has been created and activated in the system.",
+          "ok": "OK"
+        }
+      },
+      "subscriptions_management": {
+        "title": "Subscriptions Management 💳",
+        "subtitle": "Enable subscription feature for stores and monitor their offers.",
+        "search_placeholder": "Search by shop name or email...",
+        "shop_name_placeholder": "No Name",
+        "feature_status": "Subscription Feature:",
+        "current_offers": "Current Offers",
+        "view_shop_details": "View Shop Details",
+        "no_offers": "No offers added for this shop.",
+        "price": "Price",
+        "discount": "Discount",
+        "days": "Days",
+        "delete_confirm": "Are you sure you want to delete this offer?"
+      },
+      "shop_details": {
+        "back_btn": "Back to Shops Management",
+        "loading": "Loading...",
+        "disable_subscriptions": "Disable Subscriptions",
+        "enable_subscriptions": "Enable Subscriptions",
+        "active_account": "Active Account",
+        "transactions_log": "Shop's Financial Transactions Log",
+        "customers_list": "Shop's Customers",
+        "no_transactions": "No transactions registered for this shop yet.",
+        "no_customers": "No customers added.",
+        "no_offers": "No offers added yet.",
+        "page": "Page",
+        "of": "of",
+        "usage_times": "times",
+        "stats": {
+          "total_customers": "Total Customers",
+          "total_balances": "Total Balances",
+          "total_transactions": "Total Transactions"
+        }
+      }
     },
     "merchant_stats": {
       "welcome_desc": "Smart and comprehensive analysis of your store's real performance today.",
@@ -144,13 +293,20 @@
       "active_now": "Active Now",
       "recent_transactions": "Recent Transactions",
       "view_all": "View All",
-      "no_transactions": "No previous transactions yet.",
+      "no_transactions": "No transactions registered yet.",
       "deposit": "Recharge Balance",
       "withdraw": "Deduction from Balance",
       "balance_after": "Balance: {balance} SAR",
       "home": "Home",
       "transactions": "Transactions",
-      "offers": "Offers"
+      "offers": "Offers",
+      "welcome_guest": "Welcome, our special customer",
+      "last_deposit": "Last Deposit",
+      "request_deposit": "Request Deposit",
+      "your_transactions": "Your Transactions",
+      "filter": "Filter",
+      "my_cards": "My Cards",
+      "notifications": "Notifications"
     },
     "user_status": {
       "admin": "Administrator",
@@ -158,34 +314,97 @@
       "customer": "Customer",
       "online": "Online",
       "offline": "Offline"
+    },
+    "landing": {
+      "hero": {
+        "tqdr_plus": "Tqdr Plus",
+        "smart_discount_system": "Smart Discount System",
+        "current_balance": "Current Balance",
+        "total_savings": "Total Savings",
+        "subscribe_now": "Subscribe Now"
+      },
+      "contact": {
+        "call_us": "Call Us",
+        "email_us": "Email Us",
+        "whatsapp": "WhatsApp"
+      }
     }
   },
   "customers": {
     "title": "Customer Management",
+    "subtitle": "Add new customers and manage their balances easily.",
     "add_new": "Add New Customer",
+    "edit_customer": "Edit Customer Details",
+    "update_data": "Update Data",
+    "search_placeholder": "Search by name or mobile...",
+    "quick_actions": "Quick Actions",
+    "deposit_new": "New Recharge",
+    "withdraw_balance": "Deduct Balance",
+    "history": "History",
+    "history_title": "Customer Transaction History",
+    "no_customers": "No customers added yet",
+    "start_adding": "Start by adding the first customer to your store now",
+    "account_suspended": "Account suspended. Cannot add customers.",
+    "opening_balance": "Opening Balance",
+    "paid_amount": "Paid Amount (Cash)",
+    "added_balance": "Added Balance",
+    "select_offer": "Select Offer / Subscription",
+    "no_offer_prepaid": "No Offer (Prepaid Only)",
+    "save_customer_sub": "Save Customer & Subscription",
+    "available_balance": "Available balance for use",
+    "total_savings_desc": "Total discounted amounts",
+    "since": "Since",
     "table": {
-      "name": "Name",
-      "phone": "Mobile",
+      "name": "Customer Name",
+      "phone": "Mobile Number",
       "balance": "Balance",
       "total_savings": "Total Savings",
       "actions": "Actions"
+    },
+    "errors": {
+      "suspended": "Cannot add new customers while account is suspended",
+      "login_required": "Please login first",
+      "insufficient_balance": "Insufficient customer balance",
+      "select_offer_first": "Please select a recharge offer first"
+    },
+    "sms": {
+      "welcome": "Welcome to {shop}! Your account has been successfully activated with a balance of {balance} SAR.",
+      "savings_info": " You saved {discount} SAR through your subscription in ({offer}).",
+      "footer": " Your total savings with us is {total} SAR. Track your balance at: tqdr.me/my",
+      "subscription_success": "Subscription ({offer}) successfully activated at {shop}. Your new balance is {balance} SAR. You saved {savings} SAR in this transaction, and your total savings with us is {total} SAR! Thank you for your trust."
     }
   },
   "transactions": {
-    "title": "Financial Transactions",
-    "deposit": "Deposit",
-    "withdraw": "Withdraw",
-    "amount": "Amount",
-    "date": "Date",
-    "status": "Status",
+    "title": "Transaction History",
+    "subtitle": "Complete record of all recharge and deduction operations.",
+    "new_transaction": "New Transaction",
+    "select_customer": "Select Customer",
+    "select_customer_placeholder": "Select a customer from the list",
+    "link_subscription": "Link to Subscription (Optional)",
+    "note_placeholder": "Write a note here...",
+    "success_title": "Transaction Successful",
+    "success_notified": "Operation executed successfully and notification sent to customer.",
+    "filters": {
+      "all": "All Transactions",
+      "all_offers": "All Offers",
+      "all_types": "All Types"
+    },
+    "table": {
+      "customer": "Customer Info",
+      "type": "Operation Type",
+      "amount": "Amount & Value",
+      "time": "Time",
+      "status": "Status"
+    },
     "types": {
-      "deposit": "Deposit",
-      "withdrawal": "Withdrawal"
+      "deposit": "Recharge",
+      "withdrawal": "Deduction"
     },
     "status_labels": {
-      "completed": "Completed",
-      "pending": "Pending"
-    }
+      "completed": "Completed"
+    },
+    "date": "Time",
+    "amount": "Amount"
   },
   "landing": {
     "nav": {
@@ -373,5 +592,8 @@
       "rights": "Tqdr Plus. All Rights Reserved.",
       "status": "Running 24/7"
     }
+  },
+  "admin": {
+    "welcome_sms": "Welcome as a shop owner on Tqdr Plus! Your account for {shop_name} has been created. Your login details: Email: {email} Password: {password} Login Link: https://tqdrplus.sa/login"
   }
 }

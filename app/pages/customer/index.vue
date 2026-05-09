@@ -70,7 +70,7 @@ onMounted(fetchData)
             {{ user.email.charAt(0).toUpperCase() }}
           </div>
           <div>
-            <h1 class="text-xl font-black text-slate-900 dark:text-white">أهلاً بك، عميلنا المميز</h1>
+            <h1 class="text-xl font-black text-slate-900 dark:text-white">{{ $t('dashboard.customer_stats.welcome_guest') }}</h1>
             <p class="text-xs text-slate-500">{{ user.email }}</p>
           </div>
         </div>
@@ -85,7 +85,7 @@ onMounted(fetchData)
         <div class="relative z-10">
           <div class="flex items-center gap-2 text-emerald-100 font-bold mb-2">
             <Wallet class="w-5 h-5" />
-            <span>رصيدك الحالي</span>
+            <span>{{ $t('dashboard.customer_stats.current_balance') }}</span>
           </div>
           <div class="flex items-end gap-2">
             <span class="text-5xl font-black">{{ customerData?.balance || 0 }}</span>
@@ -95,12 +95,12 @@ onMounted(fetchData)
           <div class="mt-8 pt-8 border-t border-white/10 flex items-center justify-between">
             <div class="flex items-center gap-4">
               <div class="text-center">
-                <p class="text-[10px] text-emerald-100 uppercase tracking-widest font-bold">آخر شحن</p>
+                <p class="text-[10px] text-emerald-100 uppercase tracking-widest font-bold">{{ $t('dashboard.customer_stats.last_deposit') }}</p>
                 <p class="font-bold text-lg">+0 {{ $t('common.currency') }}</p>
               </div>
             </div>
             <button class="bg-white/20 hover:bg-white/30 px-6 py-3 rounded-2xl font-bold text-sm transition-all backdrop-blur-md">
-              طلب شحن
+              {{ $t('dashboard.customer_stats.request_deposit') }}
             </button>
           </div>
         </div>
@@ -111,9 +111,9 @@ onMounted(fetchData)
         <div class="flex items-center justify-between">
           <h3 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <History class="w-5 h-5 text-emerald-500" />
-            سجل عملياتك
+            {{ $t('dashboard.customer_stats.your_transactions') }}
           </h3>
-          <button class="text-sm font-bold text-slate-400">تصفية</button>
+          <button class="text-sm font-bold text-slate-400">{{ $t('dashboard.customer_stats.filter') }}</button>
         </div>
 
         <div class="space-y-4">
@@ -127,8 +127,8 @@ onMounted(fetchData)
                 <component :is="tx.type === 'deposit' ? ArrowUpCircle : ArrowDownCircle" class="w-6 h-6" />
               </div>
               <div>
-                <h4 class="font-bold text-slate-900 dark:text-white">{{ tx.type === 'deposit' ? 'شحن رصيد' : 'خصم رصيد' }}</h4>
-                <p class="text-[10px] text-slate-500">{{ new Date(tx.created_at).toLocaleString('ar-EG') }}</p>
+                <h4 class="font-bold text-slate-900 dark:text-white">{{ tx.type === 'deposit' ? $t('dashboard.customer_stats.deposit') : $t('dashboard.customer_stats.withdraw') }}</h4>
+                <p class="text-[10px] text-slate-500">{{ new Date(tx.created_at).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-US') }}</p>
               </div>
             </div>
             <div class="text-right">
@@ -141,7 +141,7 @@ onMounted(fetchData)
 
           <div v-if="transactions.length === 0" class="py-20 text-center space-y-4">
             <History class="w-16 h-16 mx-auto opacity-10" />
-            <p class="text-slate-500 font-medium italic">لا توجد عمليات مسجلة حتى الآن.</p>
+            <p class="text-slate-500 font-medium italic">{{ $t('dashboard.customer_stats.no_transactions') }}</p>
           </div>
         </div>
       </div>
@@ -150,11 +150,11 @@ onMounted(fetchData)
       <div class="grid grid-cols-2 gap-4">
         <button class="p-6 bg-white dark:bg-white/5 rounded-[32px] flex flex-col items-center gap-3 hover:bg-emerald-500 hover:text-white transition-all group shadow-sm">
           <CreditCard class="w-8 h-8 text-emerald-500 group-hover:text-white" />
-          <span class="font-bold">بطاقاتي</span>
+          <span class="font-bold">{{ $t('dashboard.customer_stats.my_cards') }}</span>
         </button>
         <button class="p-6 bg-white dark:bg-white/5 rounded-[32px] flex flex-col items-center gap-3 hover:bg-emerald-500 hover:text-white transition-all group shadow-sm">
           <Bell class="w-8 h-8 text-emerald-500 group-hover:text-white" />
-          <span class="font-bold">التنبيهات</span>
+          <span class="font-bold">{{ $t('dashboard.customer_stats.notifications') }}</span>
         </button>
       </div>
     </div>

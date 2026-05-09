@@ -38,9 +38,9 @@ const totalCust = ref(0)
 const pageSize = 10
 
 const stats = ref([
-  { label: 'إجمالي العملاء', value: '0', icon: Users, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
-  { label: 'إجمالي الأرصدة', value: '0', icon: Wallet, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-  { label: 'إجمالي العمليات', value: '0', icon: Activity, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+  { label: t('dashboard.admin_stats.shop_details.stats.total_customers'), value: '0', icon: Users, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
+  { label: t('dashboard.admin_stats.shop_details.stats.total_balances'), value: '0', icon: Wallet, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+  { label: t('dashboard.admin_stats.shop_details.stats.total_transactions'), value: '0', icon: Activity, color: 'text-amber-500', bg: 'bg-amber-500/10' },
 ])
 
 const fetchData = async () => {
@@ -181,7 +181,7 @@ onMounted(fetchData)
       <div class="flex flex-col gap-4">
         <button @click="navigateTo('/admin-dashboard/shops')" class="flex items-center gap-2 text-slate-500 hover:text-emerald-500 transition-colors w-fit font-bold">
           <ArrowLeft class="w-4 h-4" />
-          العودة لإدارة المحلات
+          {{ $t('dashboard.admin_stats.shop_details.back_btn') }}
         </button>
         
         <div class="flex items-center justify-between">
@@ -190,7 +190,7 @@ onMounted(fetchData)
               <Store class="w-8 h-8" />
             </div>
             <div>
-              <h1 class="text-3xl font-black text-slate-900 dark:text-white">{{ shop?.shop_name || 'جاري التحميل...' }}</h1>
+              <h1 class="text-3xl font-black text-slate-900 dark:text-white">{{ shop?.shop_name || $t('dashboard.admin_stats.shop_details.loading') }}</h1>
               <p class="text-slate-500 dark:text-slate-400 font-medium">{{ shop?.email }}</p>
             </div>
           </div>
@@ -204,10 +204,10 @@ onMounted(fetchData)
                 : 'bg-slate-100 dark:bg-white/5 text-slate-500 border border-slate-200 dark:border-white/10'"
             >
               <CreditCard class="w-4 h-4" />
-              <span>{{ shop?.subscriptions_enabled ? 'تعطيل الاشتراكات' : 'تفعيل الاشتراكات' }}</span>
+              <span>{{ shop?.subscriptions_enabled ? $t('dashboard.admin_stats.shop_details.disable_subscriptions') : $t('dashboard.admin_stats.shop_details.enable_subscriptions') }}</span>
             </button>
             <div class="px-4 py-2 bg-emerald-500/10 text-emerald-500 rounded-xl text-sm font-bold border border-emerald-500/20">
-              حساب نشط
+              {{ $t('dashboard.admin_stats.shop_details.active_account') }}
             </div>
           </div>
         </div>
@@ -233,7 +233,7 @@ onMounted(fetchData)
       <div class="lg:col-span-2 space-y-6">
         <h3 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
           <Activity class="w-5 h-5 text-emerald-500" />
-          سجل العمليات المالي للمحل
+          {{ $t('dashboard.admin_stats.shop_details.transactions_log') }}
         </h3>
         
         <BaseCard class="!p-0 overflow-hidden">
@@ -241,10 +241,10 @@ onMounted(fetchData)
             <table class="w-full text-right">
               <thead>
                 <tr class="bg-slate-50 dark:bg-white/5 border-b border-slate-100 dark:border-white/5">
-                  <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">العميل</th>
-                  <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase text-center">النوع</th>
-                  <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">المبلغ</th>
-                  <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">التوقيت</th>
+                  <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">{{ $t('dashboard.admin_stats.reports.table.customer') }}</th>
+                  <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase text-center">{{ $t('dashboard.admin_stats.reports.table.type') }}</th>
+                  <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">{{ $t('dashboard.admin_stats.reports.table.amount') }}</th>
+                  <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">{{ $t('dashboard.admin_stats.reports.table.date') }}</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 dark:divide-white/5">
@@ -259,7 +259,7 @@ onMounted(fetchData)
                     <div class="flex justify-center">
                       <div class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-black" :class="tx.type === 'deposit' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-600'">
                         <component :is="tx.type === 'deposit' ? ArrowUpCircle : ArrowDownCircle" class="w-3 h-3" />
-                        {{ tx.type === 'deposit' ? 'إيداع' : 'خصم' }}
+                        {{ tx.type === 'deposit' ? $t('dashboard.merchant_stats.deposit') : $t('dashboard.merchant_stats.withdrawal') }}
                       </div>
                     </div>
                   </td>
@@ -271,13 +271,13 @@ onMounted(fetchData)
                   <td class="px-6 py-4">
                     <div class="text-[10px] font-bold text-slate-500 flex items-center gap-1">
                       <Calendar class="w-3 h-3" />
-                      {{ new Date(tx.created_at).toLocaleDateString('ar-EG') }}
+                      {{ new Date(tx.created_at).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US') }}
                     </div>
                   </td>
                 </tr>
                 <tr v-if="transactions.length === 0">
                   <td colspan="4" class="px-6 py-12 text-center text-slate-400 text-sm">
-                    لا توجد عمليات مسجلة لهذا المحل حتى الآن.
+                    {{ $t('dashboard.admin_stats.shop_details.no_transactions') }}
                   </td>
                 </tr>
               </tbody>
@@ -296,11 +296,11 @@ onMounted(fetchData)
             </button>
             
             <div class="flex items-center gap-2">
-              <span class="text-xs font-black text-slate-400">صفحة</span>
+              <span class="text-xs font-black text-slate-400">{{ $t('dashboard.admin_stats.shop_details.page') }}</span>
               <span class="w-8 h-8 bg-emerald-500 text-slate-950 rounded-lg flex items-center justify-center text-sm font-black shadow-lg shadow-emerald-500/20">
                 {{ txPage }}
               </span>
-              <span class="text-xs font-black text-slate-400">من {{ Math.ceil(totalTx / pageSize) }}</span>
+              <span class="text-xs font-black text-slate-400">{{ $t('dashboard.admin_stats.shop_details.of') }} {{ Math.ceil(totalTx / pageSize) }}</span>
             </div>
 
             <button 
@@ -321,7 +321,7 @@ onMounted(fetchData)
         <div v-if="shop?.subscriptions_enabled" class="space-y-6">
           <h3 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <CreditCard class="w-5 h-5 text-amber-500" />
-            عروض الاشتراكات
+            {{ $t('dashboard.admin_stats.shop_details.no_offers') }}
           </h3>
           <div class="space-y-3">
             <BaseCard v-for="offer in subscriptionOffers" :key="offer.id" class="!p-4 border-l-4 border-amber-500">
@@ -329,17 +329,17 @@ onMounted(fetchData)
                 <div>
                   <h4 class="font-bold text-slate-900 dark:text-white">{{ offer.name }}</h4>
                   <p class="text-xs text-slate-500 mt-1">
-                    {{ offer.usage_limit }} مرات | {{ offer.duration }} يوم
+                    {{ offer.usage_limit }} {{ $t('dashboard.admin_stats.shop_details.usage_times') }} | {{ offer.duration }} {{ $t('dashboard.admin_stats.subscriptions_management.days') }}
                   </p>
                 </div>
                 <div class="text-right">
-                  <p class="font-black text-amber-500">{{ offer.price }} ر.س</p>
-                  <p class="text-[10px] text-emerald-500 font-bold">خصم {{ offer.discount }} ر.س</p>
+                  <p class="font-black text-amber-500">{{ offer.price }} {{ $t('common.currency') }}</p>
+                  <p class="text-[10px] text-emerald-500 font-bold">{{ $t('dashboard.admin_stats.subscriptions_management.discount') }} {{ offer.discount }} {{ $t('common.currency') }}</p>
                 </div>
               </div>
             </BaseCard>
             <div v-if="subscriptionOffers.length === 0" class="text-center py-6 bg-slate-50 dark:bg-white/5 rounded-2xl border-2 border-dashed border-slate-200 dark:border-white/10">
-              <p class="text-slate-400 text-sm">لا توجد عروض مضافة حتى الآن.</p>
+              <p class="text-slate-400 text-sm">{{ $t('dashboard.admin_stats.shop_details.no_offers') }}</p>
             </div>
           </div>
         </div>
@@ -347,7 +347,7 @@ onMounted(fetchData)
         <div class="space-y-6">
           <h3 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <Users class="w-5 h-5 text-indigo-500" />
-            عملاء المحل
+            {{ $t('dashboard.admin_stats.shop_details.customers_list') }}
           </h3>
           
           <div class="space-y-3">
@@ -363,7 +363,7 @@ onMounted(fetchData)
                   </div>
                 </div>
                 <div class="text-right">
-                  <p class="text-xs font-black text-emerald-500">{{ customer.balance }} ر.س</p>
+                  <p class="text-xs font-black text-emerald-500">{{ customer.balance }} {{ $t('common.currency') }}</p>
                 </div>
               </div>
             </BaseCard>
@@ -392,7 +392,7 @@ onMounted(fetchData)
             </div>
 
             <div v-if="customers.length === 0" class="text-center py-8">
-              <p class="text-slate-400 text-sm">لا يوجد عملاء مضافين.</p>
+              <p class="text-slate-400 text-sm">{{ $t('dashboard.admin_stats.shop_details.no_customers') }}</p>
             </div>
           </div>
         </div>

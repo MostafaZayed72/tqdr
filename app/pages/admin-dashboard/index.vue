@@ -22,11 +22,18 @@ definePageMeta({
 const { t, locale } = useI18n()
 const client = useSupabaseClient()
 
-const stats = ref([
+const stats = computed(() => [
   { label: t('dashboard.admin_stats.shops'), value: '0', icon: Store, color: 'bg-indigo-500 shadow-indigo-500/20' },
   { label: t('dashboard.admin_stats.customers'), value: '0', icon: Users, color: 'bg-emerald-500 shadow-emerald-500/20' },
   { label: t('dashboard.admin_stats.volume'), value: '0', icon: Activity, color: 'bg-amber-500 shadow-amber-500/20' },
-  { label: 'إجمالي العمليات', value: '0', icon: ShieldCheck, color: 'bg-blue-500 shadow-blue-500/20' },
+  { label: t('dashboard.admin_stats.total_transactions'), value: '0', icon: ShieldCheck, color: 'bg-blue-500 shadow-blue-500/20' },
+])
+
+const displayStats = ref([
+  { label: '', value: '0', icon: Store, color: 'bg-indigo-500 shadow-indigo-500/20' },
+  { label: '', value: '0', icon: Users, color: 'bg-emerald-500 shadow-emerald-500/20' },
+  { label: '', value: '0', icon: Activity, color: 'bg-amber-500 shadow-amber-500/20' },
+  { label: '', value: '0', icon: ShieldCheck, color: 'bg-blue-500 shadow-blue-500/20' },
 ])
 
 const recentShops = ref([])
@@ -35,51 +42,53 @@ const loading = ref(true)
 const dateFilter = ref('all') // today, week, month, custom, all
 const customRange = ref({ start: '', end: '' })
 
-// Detailed Stats
-const customersByType = ref({
-  series: [0, 0], // [Prepaid, Subscribed]
+const volumeChart = computed(() => ({
+  series: [{ name: t('dashboard.admin_stats.trading_volume'), data: volData.value }],
+  options: {
+    chart: { type: 'area', toolbar: { show: false }, zoom: { enabled: false }, fontFamily: 'Tajawal, sans-serif' },
+    colors: ['#10b981'],
+    stroke: { curve: 'smooth', width: 4 },
+    fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.1 } },
+    dataLabels: { enabled: false },
+    xaxis: { categories: chartDays.value, labels: { style: { colors: '#94a3b8' } } },
+    yaxis: { labels: { style: { colors: '#94a3b8' } } },
+    grid: { borderColor: '#f1f5f9', strokeDashArray: 4 }
+  }
+}))
+
+const growthChart = computed(() => ({
+  series: [
+    { name: t('dashboard.admin_stats.shops'), data: shopsData.value },
+    { name: t('dashboard.admin_stats.customers'), data: custData.value }
+  ],
+  options: {
+    chart: { type: 'bar', toolbar: { show: false }, stacked: false, fontFamily: 'Tajawal, sans-serif' },
+    colors: ['#6366f1', '#10b981'],
+    plotOptions: { bar: { borderRadius: 8, columnWidth: '50%' } },
+    xaxis: { categories: chartDays.value, labels: { style: { colors: '#94a3b8' } } },
+    yaxis: { labels: { style: { colors: '#94a3b8' } } },
+    legend: { position: 'top', labels: { colors: '#94a3b8' } },
+    grid: { borderColor: '#f1f5f9', strokeDashArray: 4 }
+  }
+}))
+
+const customersByType = computed(() => ({
+  series: customerTypeSeries.value,
   options: {
     chart: { type: 'donut', fontFamily: 'Tajawal, sans-serif' },
-    labels: ['عملاء الدفع المسبق', 'المشتركين في العروض'],
+    labels: [t('dashboard.admin_stats.prepaid_customers'), t('dashboard.admin_stats.subscribed_customers')],
     colors: ['#6366f1', '#10b981'],
     legend: { position: 'bottom', labels: { colors: '#94a3b8' } },
     dataLabels: { enabled: false },
     plotOptions: { pie: { donut: { size: '75%' } } }
   }
-})
+}))
 
-const shopsPerformance = ref([])
-
-// Charts Data
-const volumeChart = ref({
-  series: [{ name: 'حجم التداول', data: [] }],
-  options: {
-    chart: { type: 'area', toolbar: { show: false }, zoom: { enabled: false }, fontFamily: 'Inter, sans-serif' },
-    colors: ['#10b981'],
-    stroke: { curve: 'smooth', width: 4 },
-    fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.1 } },
-    dataLabels: { enabled: false },
-    xaxis: { categories: [], labels: { style: { colors: '#94a3b8' } } },
-    yaxis: { labels: { style: { colors: '#94a3b8' } } },
-    grid: { borderColor: '#f1f5f9', strokeDashArray: 4 }
-  }
-})
-
-const growthChart = ref({
-  series: [
-    { name: 'المحلات', data: [] },
-    { name: 'العملاء', data: [] }
-  ],
-  options: {
-    chart: { type: 'bar', toolbar: { show: false }, stacked: false, fontFamily: 'Inter, sans-serif' },
-    colors: ['#6366f1', '#10b981'],
-    plotOptions: { bar: { borderRadius: 8, columnWidth: '50%' } },
-    xaxis: { categories: [], labels: { style: { colors: '#94a3b8' } } },
-    yaxis: { labels: { style: { colors: '#94a3b8' } } },
-    legend: { position: 'top', labels: { colors: '#94a3b8' } },
-    grid: { borderColor: '#f1f5f9', strokeDashArray: 4 }
-  }
-})
+const volData = ref([])
+const shopsData = ref([])
+const custData = ref([])
+const chartDays = ref([])
+const customerTypeSeries = ref([0, 0])
 
 const getDateRange = () => {
   if (dateFilter.value === 'all') return null
@@ -130,10 +139,10 @@ const fetchStats = async () => {
     const totalVolume = txRes.data?.reduce((acc, curr) => acc + Number(curr.amount), 0) || 0
     const txCount = txRes.data?.length || 0
 
-    stats.value[0].value = shopsRes.count?.toString() || '0'
-    stats.value[1].value = customersRes.count?.toString() || '0'
-    stats.value[2].value = `${totalVolume.toLocaleString()} ${t('common.currency')}`
-    stats.value[3].value = txCount.toLocaleString()
+    displayStats.value[0].value = shopsRes.count?.toString() || '0'
+    displayStats.value[1].value = customersRes.count?.toString() || '0'
+    displayStats.value[2].value = `${totalVolume.toLocaleString()} ${t('common.currency')}`
+    displayStats.value[3].value = txCount.toLocaleString()
 
     // 2. Charts Data (Last 7 Days)
     const sevenDaysAgo = new Date()
@@ -147,37 +156,34 @@ const fetchStats = async () => {
     ])
 
     const days = []
-    const volData = []
-    const shopsData = []
-    const custData = []
+    const vData = []
+    const sData = []
+    const cData = []
 
     for (let i = 0; i < 7; i++) {
       const d = new Date()
       d.setDate(d.getDate() - (6 - i))
-      const dateStr = d.toLocaleDateString('ar-EG', { weekday: 'short', day: 'numeric' })
+      const dateStr = d.toLocaleDateString(locale.value === 'ar' ? 'ar-EG' : 'en-US', { weekday: 'short', day: 'numeric' })
       days.push(dateStr)
 
       const dayTxs = histTx.data?.filter(t => new Date(t.created_at).toDateString() === d.toDateString())
-      volData.push(dayTxs?.reduce((acc, curr) => acc + Number(curr.amount), 0) || 0)
+      vData.push(dayTxs?.reduce((acc, curr) => acc + Number(curr.amount), 0) || 0)
 
       const dayShops = histShops.data?.filter(s => new Date(s.created_at).toDateString() === d.toDateString())
-      shopsData.push(dayShops?.length || 0)
+      sData.push(dayShops?.length || 0)
 
       const dayCust = histCust.data?.filter(c => new Date(c.created_at).toDateString() === d.toDateString())
-      custData.push(dayCust?.length || 0)
+      cData.push(dayCust?.length || 0)
     }
 
-    volumeChart.value.series[0].data = volData
-    volumeChart.value.options = { ...volumeChart.value.options, xaxis: { ...volumeChart.value.options.xaxis, categories: days } }
-
-    growthChart.value.series[0].data = shopsData
-    growthChart.value.series[1].data = custData
-    growthChart.value.options = { ...growthChart.value.options, xaxis: { ...growthChart.value.options.xaxis, categories: days } }
+    volData.value = vData
+    shopsData.value = sData
+    custData.value = cData
+    chartDays.value = days
 
     // 3. Detailed Customer Breakdown
     const { data: allCust } = await client.from('customers').select('id')
     
-    // Use transactions with offer_id as the source (kept in sync with active subscriptions)
     const { data: txSubs } = await client
       .from('transactions')
       .select('customer_id')
@@ -187,7 +193,7 @@ const fetchStats = async () => {
     const subCount = subCustIds.size
     const prepaidCount = Math.max(0, (allCust?.length || 0) - subCount)
     
-    customersByType.value.series = [prepaidCount, subCount]
+    customerTypeSeries.value = [prepaidCount, subCount]
 
     // 4. Shop Performance
     const { data: txWithShops } = await client
@@ -229,9 +235,9 @@ watch([dateFilter, customRange], fetchStats)
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
       <div>
         <h1 class="text-4xl font-black text-slate-900 dark:text-white tracking-tight">
-          {{ $t('dashboard.welcome') }}, {{ $t('nav.admin_panel') }} 🛡️
+          {{ $t('dashboard.welcome_back') }}, {{ $t('nav.admin_panel') }} 🛡️
         </h1>
-        <p class="text-slate-500 dark:text-slate-400 mt-2 font-medium text-lg">إليك تقرير شامل ومفصل عن أداء منصة تقدر بلس بالكامل.</p>
+        <p class="text-slate-500 dark:text-slate-400 mt-2 font-medium text-lg">{{ $t('dashboard.admin_stats.welcome_title') }}</p>
       </div>
       
       <div class="flex flex-col md:flex-row items-end md:items-center gap-4">
@@ -242,18 +248,18 @@ watch([dateFilter, customRange], fetchStats)
             v-model="dateFilter"
             class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl pr-12 pl-4 py-4 text-sm font-bold text-slate-700 dark:text-slate-300 appearance-none focus:ring-4 focus:ring-emerald-500/10 transition-all cursor-pointer shadow-sm hover:border-emerald-500/30"
           >
-            <option value="all">جميع الأوقات</option>
-            <option value="today">إحصائيات اليوم</option>
-            <option value="week">آخر أسبوع</option>
-            <option value="month">آخر شهر</option>
-            <option value="custom">نطاق مخصص</option>
+            <option value="all">{{ $t('dashboard.all_time') }}</option>
+            <option value="today">{{ $t('dashboard.today_stats') }}</option>
+            <option value="week">{{ $t('dashboard.last_week') }}</option>
+            <option value="month">{{ $t('dashboard.last_month') }}</option>
+            <option value="custom">{{ $t('dashboard.custom_range') }}</option>
           </select>
         </div>
 
         <!-- Custom Range -->
         <div v-if="dateFilter === 'custom'" class="flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
           <input v-model="customRange.start" type="date" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-300" />
-          <span class="text-slate-400 font-bold">إلى</span>
+          <span class="text-slate-400 font-bold">{{ $t('dashboard.to') }}</span>
           <input v-model="customRange.end" type="date" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-300" />
         </div>
       </div>
@@ -271,7 +277,8 @@ watch([dateFilter, customRange], fetchStats)
         </BaseCard>
       </template>
       <template v-else>
-        <BaseCard v-for="stat in stats" :key="stat.label" class="relative overflow-hidden group hover:scale-[1.02] transition-all duration-500 border-white/5 shadow-xl !p-8 rounded-[48px]">
+        <BaseCard v-for="(stat, index) in displayStats" :key="index" class="relative overflow-hidden group hover:scale-[1.02] transition-all duration-500 border-white/5 shadow-xl !p-8 rounded-[48px]">
+
           <div class="flex items-center justify-between relative z-10">
             <div :class="`p-4 ${stat.color} text-white rounded-[24px] shadow-2xl`">
               <component :is="stat.icon" class="w-7 h-7" />
@@ -281,7 +288,8 @@ watch([dateFilter, customRange], fetchStats)
             </div>
           </div>
           <div class="mt-8 relative z-10">
-            <p class="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-widest mb-2">{{ stat.label }}</p>
+            <p class="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-widest mb-2">{{ stats[index].label }}</p>
+
             <h3 class="text-4xl font-black text-slate-900 dark:text-white tabular-nums">{{ stat.value }}</h3>
           </div>
           <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-slate-50 dark:bg-white/5 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-1000"></div>
@@ -299,8 +307,8 @@ watch([dateFilter, customRange], fetchStats)
               <Activity class="w-7 h-7 text-emerald-500" />
             </div>
             <div>
-              <h3 class="text-2xl font-black text-slate-900 dark:text-white">حجم التداول اليومي</h3>
-              <p class="text-sm text-slate-500 font-medium">مراقبة السيولة المالية عبر المنصة (آخر 7 أيام)</p>
+              <h3 class="text-2xl font-black text-slate-900 dark:text-white">{{ $t('dashboard.admin_stats.daily_volume') }}</h3>
+              <p class="text-sm text-slate-500 font-medium">{{ $t('dashboard.admin_stats.daily_volume_desc') }}</p>
             </div>
           </div>
         </div>
@@ -320,8 +328,8 @@ watch([dateFilter, customRange], fetchStats)
               <Users class="w-7 h-7 text-indigo-500" />
             </div>
             <div>
-              <h3 class="text-2xl font-black text-slate-900 dark:text-white">معدل نمو المنصة</h3>
-              <p class="text-sm text-slate-500 font-medium">مقارنة انضمام المحلات والعملاء الجدد</p>
+              <h3 class="text-2xl font-black text-slate-900 dark:text-white">{{ $t('dashboard.admin_stats.platform_growth') }}</h3>
+              <p class="text-sm text-slate-500 font-medium">{{ $t('dashboard.admin_stats.platform_growth_desc') }}</p>
             </div>
           </div>
         </div>
@@ -338,8 +346,8 @@ watch([dateFilter, customRange], fetchStats)
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <!-- Customers Breakdown -->
       <BaseCard class="border-white/5 shadow-2xl !p-10 rounded-[48px] flex flex-col items-center justify-center text-center">
-        <h3 class="text-2xl font-black text-slate-900 dark:text-white mb-2">توزيع العملاء</h3>
-        <p class="text-sm text-slate-500 font-medium mb-8">نسبة المشتركين في العروض مقابل الدفع المسبق</p>
+        <h3 class="text-2xl font-black text-slate-900 dark:text-white mb-2">{{ $t('dashboard.admin_stats.customer_distribution') }}</h3>
+        <p class="text-sm text-slate-500 font-medium mb-8">{{ $t('dashboard.admin_stats.customer_distribution_desc') }}</p>
         <div class="w-full max-w-[280px]">
           <template v-if="loading">
             <div class="flex items-center justify-center h-[200px]">
@@ -359,8 +367,8 @@ watch([dateFilter, customRange], fetchStats)
             <Store class="w-7 h-7 text-indigo-500" />
           </div>
           <div>
-            <h3 class="text-2xl font-black text-slate-900 dark:text-white">أداء المحلات</h3>
-            <p class="text-sm text-slate-500 font-medium">أعلى المحلات تحقيقاً للعمليات وحجم التداول</p>
+            <h3 class="text-2xl font-black text-slate-900 dark:text-white">{{ $t('dashboard.admin_stats.shop_performance') }}</h3>
+            <p class="text-sm text-slate-500 font-medium">{{ $t('dashboard.admin_stats.shop_performance_desc') }}</p>
           </div>
         </div>
         
@@ -368,9 +376,9 @@ watch([dateFilter, customRange], fetchStats)
           <table class="w-full text-right">
             <thead>
               <tr class="text-slate-400 text-xs font-black uppercase tracking-widest border-b border-slate-100 dark:border-white/5">
-                <th class="pb-4 pr-2">اسم المحل</th>
-                <th class="pb-4 text-center">العمليات</th>
-                <th class="pb-4 text-left pl-2">حجم التداول</th>
+                <th class="pb-4 pr-2">{{ $t('dashboard.admin_stats.shop_name') }}</th>
+                <th class="pb-4 text-center">{{ $t('dashboard.admin_stats.transactions_count') }}</th>
+                <th class="pb-4 text-left pl-2">{{ $t('dashboard.admin_stats.trading_volume') }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-50 dark:divide-white/5">
@@ -384,8 +392,8 @@ watch([dateFilter, customRange], fetchStats)
               <template v-else>
                 <tr v-for="shop in shopsPerformance" :key="shop.name" class="group hover:bg-slate-50 dark:hover:bg-white/5 transition-all">
                   <td class="py-5 font-black text-slate-900 dark:text-white pr-2">{{ shop.name }}</td>
-                  <td class="py-5 text-center font-bold text-slate-500">{{ shop.count }} عملية</td>
-                  <td class="py-5 text-left font-black text-emerald-500 pl-2">{{ shop.volume.toLocaleString() }} ر.س</td>
+                  <td class="py-5 text-center font-bold text-slate-500">{{ shop.count }} {{ $t('dashboard.admin_stats.transactions_count') }}</td>
+                  <td class="py-5 text-left font-black text-emerald-500 pl-2">{{ shop.volume.toLocaleString() }} {{ $t('common.currency') }}</td>
                 </tr>
               </template>
             </tbody>
@@ -399,11 +407,11 @@ watch([dateFilter, customRange], fetchStats)
       <div class="flex items-center justify-between px-4">
         <h3 class="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-3">
           <ShoppingBag class="w-7 h-7 text-emerald-500" />
-          أحدث المحلات المنضمة
+          {{ $t('dashboard.admin_stats.recent_shops') }}
         </h3>
         <NuxtLink to="/admin-dashboard/shops" class="flex items-center gap-2 text-emerald-500 font-black hover:translate-x-[-4px] transition-transform">
-          <span>كل المحلات</span>
-          <ChevronRight class="w-5 h-5 rotate-180" />
+          <span>{{ $t('dashboard.admin_stats.all_shops') }}</span>
+          <ChevronRight class="w-5 h-5 rtl:rotate-0 rotate-180" />
         </NuxtLink>
       </div>
 
@@ -434,7 +442,7 @@ watch([dateFilter, customRange], fetchStats)
         </template>
         
         <div v-if="recentShops.length === 0 && !loading" class="col-span-full text-center py-24 text-slate-500 font-bold bg-slate-50 dark:bg-white/5 rounded-[48px] border-2 border-dashed border-slate-200 dark:border-white/5">
-          لم يتم العثور على محلات جديدة حالياً.
+          {{ $t('dashboard.admin_stats.no_new_shops') }}
         </div>
       </div>
     </div>

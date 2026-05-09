@@ -32,10 +32,10 @@ const handleLogin = async () => {
       .eq('id', data.user.id)
       .maybeSingle()
 
-    if (profileError || !profile) {
+    if (!profile) {
       // If no profile, we can't determine role
       await client.auth.signOut()
-      throw new Error('لم يتم العثور على صلاحيات لهذا الحساب. يرجى التواصل مع الإدارة.')
+      throw new Error(t('auth.no_profile_error'))
     }
 
     const role = profile.role

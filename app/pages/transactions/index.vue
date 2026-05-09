@@ -215,7 +215,7 @@ const handleAddTransaction = async () => {
     submittng.value = true
     
     const { data: { user: currentUser } } = await client.auth.getUser()
-    if (!currentUser) throw new Error('يرجى تسجيل الدخول أولاً')
+    if (!currentUser) throw new Error(t('customers.errors.login_required'))
 
     // 1. Get current customer balance
     const { data: customer } = await client
@@ -224,7 +224,7 @@ const handleAddTransaction = async () => {
       .eq('id', form.value.customer_id)
       .single()
 
-    if (!customer) throw new Error('العميل غير موجود.')
+    if (!customer) throw new Error(t('common.no_data'))
 
     const balance_before = Number(customer.balance)
     const amount = Number(form.value.amount)
@@ -233,7 +233,7 @@ const handleAddTransaction = async () => {
     if (form.value.type === 'deposit') {
       balance_after += amount
     } else {
-      if (balance_before < amount) throw new Error('رصيد العميل غير كافٍ.')
+      if (balance_before < amount) throw new Error(t('customers.errors.insufficient_balance'))
       balance_after -= amount
     }
 
@@ -269,14 +269,20 @@ const handleAddTransaction = async () => {
 
       if (custInfo?.mobile_number) {
         let smsMessage = ''
-        const shopName = profile?.shop_name || 'تقدر'
+        const shopName = profile?.shop_name || 'Tqdr'
         
         if (form.value.type === 'deposit') {
-          smsMessage = `تم تسجيلك في محل (${shopName}). دفعت ${amount} ر.س ورصيدك الحالي هو ${balance_after} ر.س. شكراً لثقتك!`
+          smsMessage = t('customers.sms.welcome', { shop: shopName, balance: balance_after })
         } else {
-          // Assume a 5% saving for the example, or use 0 if not defined
+          // Assume a 5% saving for the example
           const saving = (amount * 0.05).toFixed(2) 
-          smsMessage = `تم خصم ${amount} ر.س من رصيدك في (${shopName}). رصيدك المتبقي هو ${balance_after} ر.س. لقد وفرت ${saving} ر.س في هذه العملية!`
+          smsMessage = t('customers.sms.subscription_success', { 
+            offer: t('dashboard.merchant_stats.withdrawal'), 
+            shop: shopName, 
+            balance: balance_after, 
+            savings: saving, 
+            total: customer.total_saved 
+          })
         }
 
         await $fetch('/api/sms/send', {
@@ -294,7 +300,7 @@ const handleAddTransaction = async () => {
     showAddModal.value = false
     form.value = { customer_id: '', type: 'deposit', amount: 0, note: '' }
     fetchData()
-    successMsg.value = 'تم تنفيذ العملية بنجاح وإرسال الإشعار للعميل.'
+    successMsg.value = t('transactions.success_notified')
     showSuccessModal.value = true
 
   } catch (e: any) {
@@ -326,7 +332,7 @@ onMounted(async () => {
           </div>
           {{ $t('nav.transactions') }}
         </h1>
-        <p class="text-slate-500 dark:text-slate-400 mt-2 font-medium">سجل كامل لجميع عمليات الشحن والخصم ومتابعة الأرصدة.</p>
+        <p class="text-slate-500 dark:text-slate-400 mt-2 font-medium">{{ $t('transactions.subtitle') }}</p>
       </div>
       
       <button 
@@ -334,7 +340,7 @@ onMounted(async () => {
         class="flex items-center gap-2 px-8 py-4 bg-emerald-500 text-slate-950 rounded-[24px] font-black hover:bg-emerald-600 transition-all shadow-xl shadow-emerald-500/20 active:scale-95 premium-btn"
       >
         <Plus class="w-6 h-6" />
-        <span>عملية جديدة</span>
+        <span>{{ $t('transactions.new_transaction') }}</span>
       </button>
     </div>
 
@@ -345,8 +351,9 @@ onMounted(async () => {
         <input 
           v-model="searchQuery"
           type="text" 
-          placeholder="ابحث عن اسم العميل أو رقم الجوال..."
-          class="w-full bg-slate-50 dark:bg-white/5 border-none rounded-2xl pr-12 pl-4 py-4 focus:ring-2 focus:ring-emerald-500/50 transition-all text-slate-900 dark:text-white"
+          :placeholder="$t('customers.search_placeholder')"
+          :class="locale === 'ar' ? 'pr-12 pl-4' : 'pl-12 pr-4'"
+          class="w-full bg-slate-50 dark:bg-white/5 border-none rounded-2xl py-4 focus:ring-2 focus:ring-emerald-500/50 transition-all text-slate-900 dark:text-white"
         />
       </div>
       
@@ -358,17 +365,17 @@ onMounted(async () => {
             class="flex items-center gap-3 px-6 py-4 bg-slate-50 dark:bg-white/5 border border-transparent hover:border-emerald-500/30 rounded-2xl font-bold text-slate-700 dark:text-slate-300 transition-all whitespace-nowrap"
           >
             <Calendar class="w-5 h-5 text-emerald-500" />
-            <span>{{ dateRange === 'custom' ? (customDateStart || 'من') + ' - ' + (customDateEnd || 'إلى') : dateRange === 'today' ? 'اليوم' : dateRange === 'week' ? 'آخر أسبوع' : dateRange === 'month' ? 'آخر شهر' : 'جميع العمليات' }}</span>
+            <span>{{ dateRange === 'custom' ? (customDateStart || $t('common.from')) + ' - ' + (customDateEnd || $t('common.to')) : dateRange === 'today' ? $t('dashboard.today_stats') : dateRange === 'week' ? $t('dashboard.last_week') : dateRange === 'month' ? $t('dashboard.last_month') : $t('transactions.filters.all') }}</span>
           </button>
 
           <!-- Dropdown Menu -->
           <div v-if="showDateDropdown" class="absolute left-0 top-full mt-2 w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-3xl shadow-2xl z-[100] p-4 animate-in fade-in slide-in-from-top-2">
             <div class="space-y-1">
-              <button @click="setRange('all')" class="w-full text-right px-4 py-3 rounded-xl hover:bg-emerald-500/10 hover:text-emerald-500 font-bold transition-colors" :class="dateRange === 'all' ? 'bg-emerald-500/10 text-emerald-500' : 'text-slate-600'">جميع العمليات</button>
-              <button @click="setRange('today')" class="w-full text-right px-4 py-3 rounded-xl hover:bg-emerald-500/10 hover:text-emerald-500 font-bold transition-colors" :class="dateRange === 'today' ? 'bg-emerald-500/10 text-emerald-500' : 'text-slate-600'">اليوم</button>
-              <button @click="setRange('week')" class="w-full text-right px-4 py-3 rounded-xl hover:bg-emerald-500/10 hover:text-emerald-500 font-bold transition-colors" :class="dateRange === 'week' ? 'bg-emerald-500/10 text-emerald-500' : 'text-slate-600'">آخر أسبوع</button>
-              <button @click="setRange('month')" class="w-full text-right px-4 py-3 rounded-xl hover:bg-emerald-500/10 hover:text-emerald-500 font-bold transition-colors" :class="dateRange === 'month' ? 'bg-emerald-500/10 text-emerald-500' : 'text-slate-600'">آخر شهر</button>
-              <button @click="dateRange = 'custom'" class="w-full text-right px-4 py-3 rounded-xl hover:bg-emerald-500/10 hover:text-emerald-500 font-bold transition-colors" :class="dateRange === 'custom' ? 'bg-emerald-500/10 text-emerald-500' : 'text-slate-600'">نطاق مخصص</button>
+              <button @click="setRange('all')" class="w-full text-right px-4 py-3 rounded-xl hover:bg-emerald-500/10 hover:text-emerald-500 font-bold transition-colors" :class="dateRange === 'all' ? 'bg-emerald-500/10 text-emerald-500' : 'text-slate-600'">{{ $t('transactions.filters.all') }}</button>
+              <button @click="setRange('today')" class="w-full text-right px-4 py-3 rounded-xl hover:bg-emerald-500/10 hover:text-emerald-500 font-bold transition-colors" :class="dateRange === 'today' ? 'bg-emerald-500/10 text-emerald-500' : 'text-slate-600'">{{ $t('dashboard.today_stats') }}</button>
+              <button @click="setRange('week')" class="w-full text-right px-4 py-3 rounded-xl hover:bg-emerald-500/10 hover:text-emerald-500 font-bold transition-colors" :class="dateRange === 'week' ? 'bg-emerald-500/10 text-emerald-500' : 'text-slate-600'">{{ $t('dashboard.last_week') }}</button>
+              <button @click="setRange('month')" class="w-full text-right px-4 py-3 rounded-xl hover:bg-emerald-500/10 hover:text-emerald-500 font-bold transition-colors" :class="dateRange === 'month' ? 'bg-emerald-500/10 text-emerald-500' : 'text-slate-600'">{{ $t('dashboard.last_month') }}</button>
+              <button @click="dateRange = 'custom'" class="w-full text-right px-4 py-3 rounded-xl hover:bg-emerald-500/10 hover:text-emerald-500 font-bold transition-colors" :class="dateRange === 'custom' ? 'bg-emerald-500/10 text-emerald-500' : 'text-slate-600'">{{ $t('dashboard.custom_range') }}</button>
             </div>
 
             <!-- Custom Range Inputs -->
@@ -377,7 +384,7 @@ onMounted(async () => {
                 <input v-model="customDateStart" type="date" class="w-full bg-slate-50 dark:bg-white/5 border-none rounded-xl p-2 text-xs font-bold text-slate-700 dark:text-white" />
                 <input v-model="customDateEnd" type="date" class="w-full bg-slate-50 dark:bg-white/5 border-none rounded-xl p-2 text-xs font-bold text-slate-700 dark:text-white" />
               </div>
-              <button @click="applyCustomRange" class="w-full bg-emerald-500 text-slate-950 font-black py-2 rounded-xl text-sm shadow-lg shadow-emerald-500/20">تطبيق</button>
+              <button @click="applyCustomRange" class="w-full bg-emerald-500 text-slate-950 font-black py-2 rounded-xl text-sm shadow-lg shadow-emerald-500/20">{{ $t('common.confirm') }}</button>
             </div>
           </div>
         </div>
@@ -388,8 +395,8 @@ onMounted(async () => {
             v-model="offerFilter"
             class="w-full bg-slate-50 dark:bg-white/5 border border-transparent hover:border-emerald-500/30 rounded-2xl px-6 py-4 font-bold text-slate-700 dark:text-slate-300 focus:ring-0 appearance-none cursor-pointer"
           >
-            <option value="all">كل العروض / الكل</option>
-            <option value="prepaid">الدفع المقدم فقط</option>
+            <option value="all">{{ $t('transactions.filters.all_offers') }}</option>
+            <option value="prepaid">{{ $t('customers.no_offer_prepaid') }}</option>
             <option v-for="offer in availableOffers" :key="offer.id" :value="offer.id">
               {{ offer.name }}
             </option>
@@ -403,9 +410,9 @@ onMounted(async () => {
           v-model="filterType"
           class="bg-slate-50 dark:bg-white/5 border border-transparent hover:border-emerald-500/30 rounded-2xl px-6 py-4 font-bold text-slate-700 dark:text-slate-300 focus:ring-0 appearance-none min-w-[140px]"
         >
-          <option value="all">جميع العمليات</option>
-          <option value="deposit">شحن فقط</option>
-          <option value="withdrawal">خصم فقط</option>
+          <option value="all">{{ $t('transactions.filters.all_types') }}</option>
+          <option value="deposit">{{ $t('transactions.types.deposit') }}</option>
+          <option value="withdrawal">{{ $t('transactions.types.withdrawal') }}</option>
         </select>
       </div>
     </div>
@@ -416,7 +423,7 @@ onMounted(async () => {
         <div class="absolute -right-10 -top-10 w-40 h-40 bg-white/20 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000"></div>
         <div class="relative z-10 flex items-center justify-between">
           <div>
-            <p class="text-slate-950/60 font-bold uppercase tracking-wider text-sm mb-1">إجمالي الشحن</p>
+            <p class="text-slate-950/60 font-bold uppercase tracking-wider text-sm mb-1">{{ $t('dashboard.merchant_stats.today_deposits') }}</p>
             <h3 class="text-4xl font-black">+{{ totalDeposits.toLocaleString() }} <span class="text-xl opacity-80">{{ $t('common.currency') }}</span></h3>
           </div>
           <div class="w-16 h-16 bg-white/20 rounded-[24px] flex items-center justify-center backdrop-blur-md">
@@ -429,7 +436,7 @@ onMounted(async () => {
         <div class="absolute -right-10 -top-10 w-40 h-40 bg-red-500/5 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000"></div>
         <div class="relative z-10 flex items-center justify-between">
           <div>
-            <p class="text-slate-500 font-bold uppercase tracking-wider text-sm mb-1">إجمالي الخصم</p>
+            <p class="text-slate-500 font-bold uppercase tracking-wider text-sm mb-1">{{ $t('dashboard.merchant_stats.today_withdrawals') }}</p>
             <h3 class="text-4xl font-black text-red-500">-{{ totalWithdrawals.toLocaleString() }} <span class="text-xl opacity-60">{{ $t('common.currency') }}</span></h3>
           </div>
           <div class="w-16 h-16 bg-red-500/10 rounded-[24px] flex items-center justify-center">
@@ -445,11 +452,11 @@ onMounted(async () => {
         <table class="w-full" :class="locale === 'ar' ? 'text-right' : 'text-left'">
           <thead>
             <tr class="bg-slate-50 dark:bg-white/5 border-b border-slate-100 dark:border-white/5">
-              <th class="px-8 py-5 text-sm font-bold text-slate-500">العميل والمعلومات</th>
-              <th class="px-8 py-5 text-sm font-bold text-slate-500">نوع العملية</th>
-              <th class="px-8 py-5 text-sm font-bold text-slate-500">المبلغ والقيمة</th>
-              <th class="px-8 py-5 text-sm font-bold text-slate-500">التوقيت</th>
-              <th class="px-8 py-5 text-sm font-bold text-slate-500 text-center">الحالة</th>
+              <th class="px-8 py-5 text-sm font-bold text-slate-500">{{ $t('transactions.table.customer') }}</th>
+              <th class="px-8 py-5 text-sm font-bold text-slate-500">{{ $t('transactions.table.type') }}</th>
+              <th class="px-8 py-5 text-sm font-bold text-slate-500">{{ $t('transactions.table.amount') }}</th>
+              <th class="px-8 py-5 text-sm font-bold text-slate-500">{{ $t('transactions.table.time') }}</th>
+              <th class="px-8 py-5 text-sm font-bold text-slate-500 text-center">{{ $t('transactions.table.status') }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 dark:divide-white/5">
@@ -484,10 +491,10 @@ onMounted(async () => {
                       {{ tx.type === 'deposit' ? t('transactions.types.deposit') : t('transactions.types.withdrawal') }}
                     </span>
                     <span v-if="tx.offer_id" class="text-[10px] text-slate-400 font-bold mt-1">
-                      (اشتراك: {{ offerMap[tx.offer_id] || 'جاري التحميل...' }})
+                      ({{ $t('nav.subscriptions_nav') }}: {{ offerMap[tx.offer_id] || '...' }})
                     </span>
                     <span v-else class="text-[10px] text-slate-400 font-bold mt-1">
-                      (رصيد عام)
+                      ({{ $t('customers.no_offer_prepaid') }})
                     </span>
                   </div>
                 </td>
@@ -497,7 +504,7 @@ onMounted(async () => {
                       {{ tx.type === 'deposit' ? '+' : '-' }}{{ tx.amount }}
                       <span class="text-xs font-bold opacity-50">{{ t('common.currency') }}</span>
                     </span>
-                    <span class="text-[10px] text-slate-400 font-bold mt-1">الرصيد بعد: {{ tx.balance_after }} ر.س</span>
+                    <span class="text-[10px] text-slate-400 font-bold mt-1">{{ $t('dashboard.customer_stats.balance_after', { balance: tx.balance_after }) }}</span>
                   </div>
                 </td>
                 <td class="px-8 py-5">
@@ -591,7 +598,7 @@ onMounted(async () => {
       <div class="absolute inset-0 bg-slate-950/40 backdrop-blur-sm" @click="showAddModal = false"></div>
       <div class="relative bg-white dark:bg-slate-900 w-full max-w-lg rounded-[32px] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
         <div class="p-6 border-b border-slate-100 dark:border-white/5 flex items-center justify-between">
-          <h3 class="text-xl font-bold text-slate-900 dark:text-white">إجراء عملية جديدة</h3>
+          <h3 class="text-xl font-bold text-slate-900 dark:text-white">{{ $t('transactions.new_transaction') }}</h3>
           <button @click="showAddModal = false" class="text-slate-400 hover:text-slate-600">
             <X class="w-6 h-6" />
           </button>
@@ -600,7 +607,7 @@ onMounted(async () => {
         <form @submit.prevent="handleAddTransaction" class="p-8 space-y-6">
           <!-- Customer Selection -->
           <div class="space-y-2">
-            <label class="text-sm font-bold text-slate-700 dark:text-slate-300">اختر العميل</label>
+            <label class="text-sm font-bold text-slate-700 dark:text-slate-300">{{ $t('transactions.select_customer') }}</label>
             <div class="relative">
               <User class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
               <select 
@@ -608,7 +615,7 @@ onMounted(async () => {
                 required 
                 class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl pr-12 pl-4 py-4 appearance-none focus:ring-2 focus:ring-emerald-500"
               >
-                <option value="" disabled>اختر عميلاً من القائمة</option>
+                <option value="" disabled>{{ $t('transactions.select_customer_placeholder') }}</option>
                 <option v-for="c in customers" :key="c.id" :value="c.id">
                   {{ c.name }} ({{ c.mobile_number }})
                 </option>
@@ -622,8 +629,8 @@ onMounted(async () => {
               v-model="offerFilter"
               class="w-full bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-2xl px-6 py-4 text-xs font-black text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-emerald-500/50 appearance-none cursor-pointer"
             >
-              <option value="all">كل العروض</option>
-              <option value="prepaid">الدفع المقدم فقط</option>
+              <option value="all">{{ $t('transactions.filters.all_offers') }}</option>
+              <option value="prepaid">{{ $t('customers.no_offer_prepaid') }}</option>
               <option v-for="offer in availableOffers" :key="offer.id" :value="offer.id">
                 {{ offer.name }}
               </option>
@@ -642,7 +649,7 @@ onMounted(async () => {
               :class="form.type === 'deposit' ? 'border-emerald-500 bg-emerald-500/5 text-emerald-600' : 'border-slate-100 dark:border-white/5 text-slate-500'"
             >
               <ArrowUpCircle class="w-8 h-8" />
-              <span class="font-bold">شحن رصيد</span>
+              <span class="font-bold">{{ $t('transactions.types.deposit') }}</span>
             </button>
             <button 
               type="button"
@@ -651,13 +658,13 @@ onMounted(async () => {
               :class="form.type === 'withdrawal' ? 'border-red-500 bg-red-500/5 text-red-600' : 'border-slate-100 dark:border-white/5 text-slate-500'"
             >
               <ArrowDownCircle class="w-8 h-8" />
-              <span class="font-bold">خصم رصيد</span>
+              <span class="font-bold">{{ $t('transactions.types.withdrawal') }}</span>
             </button>
           </div>
 
           <!-- Amount -->
           <div class="space-y-2">
-            <label class="text-sm font-bold text-slate-700 dark:text-slate-300">المبلغ (ر.س)</label>
+            <label class="text-sm font-bold text-slate-700 dark:text-slate-300">{{ $t('transactions.table.amount') }} ({{ $t('common.currency') }})</label>
             <input 
               v-model="form.amount" 
               type="number" 
@@ -670,15 +677,15 @@ onMounted(async () => {
 
           <!-- Offer Selection -->
           <div v-if="form.type === 'deposit'" class="space-y-2">
-            <label class="text-sm font-bold text-slate-700 dark:text-slate-300">ربط باشتراك (اختياري)</label>
+            <label class="text-sm font-bold text-slate-700 dark:text-slate-300">{{ $t('transactions.link_subscription') }}</label>
             <div class="grid grid-cols-1 gap-2">
               <select 
                 v-model="form.offer_id" 
                 class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl px-4 py-4 appearance-none focus:ring-2 focus:ring-emerald-500 text-sm font-bold"
               >
-                <option value="">دفع مقدم عادي</option>
+                <option value="">{{ $t('customers.no_offer_prepaid') }}</option>
                 <option v-for="offer in availableOffers" :key="offer.id" :value="offer.id">
-                  {{ offer.name }} ({{ offer.price }} ر.س)
+                  {{ offer.name }} ({{ offer.price }} {{ $t('common.currency') }})
                 </option>
               </select>
             </div>
@@ -686,12 +693,12 @@ onMounted(async () => {
 
           <!-- Note -->
           <div class="space-y-2">
-            <label class="text-sm font-bold text-slate-700 dark:text-slate-300">ملاحظات (اختياري)</label>
+            <label class="text-sm font-bold text-slate-700 dark:text-slate-300">{{ $t('common.optional') }}</label>
             <textarea 
               v-model="form.note" 
               rows="2"
               class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl px-4 py-3 focus:ring-2 focus:ring-emerald-500"
-              placeholder="اكتب ملاحظة هنا..."
+              :placeholder="$t('transactions.note_placeholder')"
             ></textarea>
           </div>
 
@@ -700,7 +707,7 @@ onMounted(async () => {
             :disabled="submittng"
             class="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black py-5 rounded-2xl mt-4 hover:shadow-xl transition-all disabled:opacity-50"
           >
-            {{ submittng ? 'جاري التنفيذ...' : 'تأكيد العملية' }}
+            {{ submittng ? $t('common.loading') : $t('common.confirm') }}
           </button>
         </form>
       </div>
@@ -714,13 +721,13 @@ onMounted(async () => {
           <div class="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-2xl flex items-center justify-center mx-auto">
             <CheckCircle2 class="w-8 h-8" />
           </div>
-          <h3 class="text-xl font-bold text-slate-900 dark:text-white">تمت العملية بنجاح</h3>
+          <h3 class="text-xl font-bold text-slate-900 dark:text-white">{{ $t('transactions.success_title') }}</h3>
           <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{{ successMsg }}</p>
           <button 
             @click="showSuccessModal = false"
             class="w-full bg-emerald-500 text-slate-950 font-bold py-3 rounded-xl mt-4 transition-all active:scale-95"
           >
-            ممتاز
+            {{ $t('common.ok_got_it') }}
           </button>
         </div>
       </div>
@@ -734,13 +741,13 @@ onMounted(async () => {
           <div class="w-16 h-16 bg-red-500/10 text-red-500 rounded-2xl flex items-center justify-center mx-auto">
             <AlertCircle class="w-8 h-8" />
           </div>
-          <h3 class="text-xl font-bold text-slate-900 dark:text-white">عذراً، حدث خطأ</h3>
+          <h3 class="text-xl font-bold text-slate-900 dark:text-white">{{ $t('common.error_occurred') }}</h3>
           <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{{ errorMsg }}</p>
           <button 
             @click="showErrorModal = false"
             class="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold py-3 rounded-xl mt-4 transition-all active:scale-95"
           >
-            حسناً، فهمت
+            {{ $t('common.ok_got_it') }}
           </button>
         </div>
       </div>

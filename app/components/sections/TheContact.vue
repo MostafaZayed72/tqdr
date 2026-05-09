@@ -47,7 +47,7 @@ function handleSubmit() {
                 </svg>
               </div>
               <div>
-                <p class="text-xs text-gray-400 mb-0.5">اتصل بنا</p>
+                <p class="text-xs text-gray-400 mb-0.5">{{ $t('landing.contact.call_us') }}</p>
                 <p class="font-bold text-gray-900 dark:text-white text-sm" dir="ltr">+966 55 057 0751</p>
               </div>
             </a>
@@ -62,7 +62,7 @@ function handleSubmit() {
                 </svg>
               </div>
               <div>
-                <p class="text-xs text-gray-400 mb-0.5">راسلنا</p>
+                <p class="text-xs text-gray-400 mb-0.5">{{ $t('landing.contact.email_us') }}</p>
                 <p class="font-bold text-gray-900 dark:text-white text-sm">info@tqdrplus.sa</p>
               </div>
             </a>
@@ -79,7 +79,7 @@ function handleSubmit() {
                 </svg>
               </div>
               <div>
-                <p class="text-xs text-gray-400 mb-0.5">واتساب</p>
+                <p class="text-xs text-gray-400 mb-0.5">{{ $t('landing.contact.whatsapp') }}</p>
                 <p class="font-bold text-gray-900 dark:text-white text-sm" dir="ltr">+966 55 057 0751</p>
               </div>
             </a>

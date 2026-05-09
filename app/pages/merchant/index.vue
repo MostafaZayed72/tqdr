@@ -26,11 +26,18 @@ const client = useSupabaseClient()
 const user = useSupabaseUser()
 
 // Basic Stats
-const stats = ref([
-  { label: 'إجمالي العملاء', value: '0', icon: Users, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-  { label: 'إجمالي الأرصدة', value: '0', icon: Wallet, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-  { label: 'إيداعات اليوم', value: '0', icon: ArrowUpRight, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
-  { label: 'سحوبات اليوم', value: '0', icon: Activity, color: 'text-red-500', bg: 'bg-red-500/10' },
+const stats = computed(() => [
+  { label: t('dashboard.merchant_stats.total_customers'), value: '0', icon: Users, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+  { label: t('dashboard.merchant_stats.total_balances'), value: '0', icon: Wallet, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+  { label: t('dashboard.merchant_stats.today_deposits'), value: '0', icon: ArrowUpRight, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
+  { label: t('dashboard.merchant_stats.today_withdrawals'), value: '0', icon: Activity, color: 'text-red-500', bg: 'bg-red-500/10' },
+])
+
+const displayStats = ref([
+  { value: '0' },
+  { value: '0' },
+  { value: '0' },
+  { value: '0' },
 ])
 
 const recentTransactions = ref([])
@@ -51,27 +58,30 @@ const filteredTransactions = computed(() => {
 })
 
 // Chart Data
-const customerChart = ref({
-  series: [],
+const customerChart = computed(() => ({
+  series: customerSeries.value,
   options: {
-    labels: [],
+    labels: [t('dashboard.merchant_stats.prepaid_only'), ...offerNames.value],
     colors: ['#10b981', '#f59e0b', '#3b82f6', '#8b5cf6', '#ec4899'],
-    chart: { type: 'donut', fontFamily: 'Inter, sans-serif' },
+    chart: { type: 'donut', fontFamily: 'Tajawal, sans-serif' },
     plotOptions: { pie: { donut: { size: '75%' } } },
     legend: { position: 'bottom', labels: { colors: '#94a3b8' } },
     dataLabels: { enabled: false },
     stroke: { show: false }
   }
-})
+}))
 
-const balanceChart = ref({
-  series: [{ name: 'الرصيد الحقيقي', data: [] }],
+const customerSeries = ref([])
+const offerNames = ref([])
+
+const balanceChart = computed(() => ({
+  series: [{ name: t('dashboard.merchant_stats.balance'), data: balanceSeries.value }],
   options: {
-    chart: { type: 'bar', toolbar: { show: false }, fontFamily: 'Inter, sans-serif' },
+    chart: { type: 'bar', toolbar: { show: false }, fontFamily: 'Tajawal, sans-serif' },
     colors: ['#10b981'],
     plotOptions: { bar: { borderRadius: 12, columnWidth: '50%', distributed: true } },
     xaxis: { 
-      categories: [],
+      categories: [t('dashboard.merchant_stats.prepaid_only'), ...offerNames.value],
       labels: { style: { colors: '#94a3b8', fontWeight: 600 } }
     },
     yaxis: { labels: { style: { colors: '#94a3b8' } } },
@@ -79,25 +89,27 @@ const balanceChart = ref({
     legend: { show: false },
     dataLabels: { 
       enabled: true,
-      formatter: (val) => val.toLocaleString() + ' ر.س',
+      formatter: (val) => val.toLocaleString() + ' ' + t('common.currency'),
       offsetY: -20,
       style: { fontSize: '12px', colors: ["#304758"] }
     }
   }
-})
+}))
 
-const activityChart = ref({
+const balanceSeries = ref([])
+
+const activityChart = computed(() => ({
   series: [
-    { name: 'إيداعات', data: [] },
-    { name: 'سحوبات', data: [] }
+    { name: t('dashboard.merchant_stats.deposit'), data: depositData.value },
+    { name: t('dashboard.merchant_stats.withdrawal'), data: withdrawalData.value }
   ],
   options: {
-    chart: { type: 'area', toolbar: { show: false }, zoom: { enabled: false }, fontFamily: 'Inter, sans-serif' },
+    chart: { type: 'area', toolbar: { show: false }, zoom: { enabled: false }, fontFamily: 'Tajawal, sans-serif' },
     colors: ['#10b981', '#ef4444'],
     dataLabels: { enabled: false },
     stroke: { curve: 'smooth', width: 4 },
     xaxis: { 
-      categories: [],
+      categories: chartDays.value,
       labels: { style: { colors: '#94a3b8' } }
     },
     yaxis: { labels: { style: { colors: '#94a3b8' } } },
@@ -105,7 +117,11 @@ const activityChart = ref({
     fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.5, opacityTo: 0.1 } },
     grid: { borderColor: '#f1f5f9', strokeDashArray: 4 }
   }
-})
+}))
+
+const depositData = ref([])
+const withdrawalData = ref([])
+const chartDays = ref([])
 
 const fetchDashboardData = async () => {
   const { data: { user: currentUser } } = await client.auth.getUser()
@@ -154,21 +170,10 @@ const fetchDashboardData = async () => {
     const subCustomerIds = new Set(subData?.map(s => s.customer_id) || [])
     const prepaidCount = (customersCount || 0) - subCustomerIds.size
 
-    // 3. Update Charts with Granular Data
-    customerChart.value.series = [prepaidCount, ...statsByOffer.map(o => o.subCount)]
-    customerChart.value.options = {
-      ...customerChart.value.options,
-      labels: ['دفع مقدم', ...statsByOffer.map(o => o.name)]
-    }
-
-    balanceChart.value.series[0].data = [prepaidBalance, ...statsByOffer.map(o => o.balance)]
-    balanceChart.value.options = {
-      ...balanceChart.value.options,
-      xaxis: {
-        ...balanceChart.value.options.xaxis,
-        categories: ['أرصدة مقدمة', ...statsByOffer.map(o => o.name)]
-      }
-    }
+    // 3. Update Charts
+    offerNames.value = statsByOffer.map(o => o.name)
+    customerSeries.value = [prepaidCount, ...statsByOffer.map(o => o.subCount)]
+    balanceSeries.value = [prepaidBalance, ...statsByOffer.map(o => o.balance)]
 
     // 4. Today's Precise Stats
     const todayStart = new Date()
@@ -177,26 +182,26 @@ const fetchDashboardData = async () => {
     const todayDeposits = todayTxs?.filter(t => t.type === 'deposit').reduce((acc, curr) => acc + Number(curr.amount), 0) || 0
     const todayWithdrawals = todayTxs?.filter(t => t.type === 'withdrawal').reduce((acc, curr) => acc + Number(curr.amount), 0) || 0
 
-    stats.value[0].value = (customersCount || 0).toString()
-    stats.value[1].value = `${totalBalance.toLocaleString()} ${t('common.currency')}`
-    stats.value[2].value = `${todayDeposits.toLocaleString()} ${t('common.currency')}`
-    stats.value[3].value = `${todayWithdrawals.toLocaleString()} ${t('common.currency')}`
+    displayStats.value[0].value = (customersCount || 0).toString()
+    displayStats.value[1].value = `${totalBalance.toLocaleString()} ${t('common.currency')}`
+    displayStats.value[2].value = `${todayDeposits.toLocaleString()} ${t('common.currency')}`
+    displayStats.value[3].value = `${todayWithdrawals.toLocaleString()} ${t('common.currency')}`
 
     // 5. Weekly Activity
     const days = []
-    const deposits = []
-    const withdrawals = []
+    const deps = []
+    const withs = []
     for (let i = 0; i < 7; i++) {
       const d = new Date()
       d.setDate(d.getDate() - (6 - i))
-      days.push(d.toLocaleDateString('ar-EG', { weekday: 'short', day: 'numeric' }))
+      days.push(d.toLocaleDateString(locale.value === 'ar' ? 'ar-EG' : 'en-US', { weekday: 'short', day: 'numeric' }))
       const dayTxs = txData?.filter(tx => new Date(tx.created_at).toDateString() === d.toDateString())
-      deposits.push(dayTxs?.filter(t => t.type === 'deposit').reduce((acc, curr) => acc + Number(curr.amount), 0) || 0)
-      withdrawals.push(dayTxs?.filter(t => t.type === 'withdrawal').reduce((acc, curr) => acc + Number(curr.amount), 0) || 0)
+      deps.push(dayTxs?.filter(t => t.type === 'deposit').reduce((acc, curr) => acc + Number(curr.amount), 0) || 0)
+      withs.push(dayTxs?.filter(t => t.type === 'withdrawal').reduce((acc, curr) => acc + Number(curr.amount), 0) || 0)
     }
-    activityChart.value.series[0].data = deposits
-    activityChart.value.series[1].data = withdrawals
-    activityChart.value.options.xaxis.categories = days
+    depositData.value = deps
+    withdrawalData.value = withs
+    chartDays.value = days
 
     // 6. Recent Transactions (Fetch a bit more to allow local filtering)
     const { data: recentTxs } = await client
@@ -224,21 +229,21 @@ onMounted(fetchDashboardData)
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
       <div>
         <h1 class="text-5xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-4">
-          <span>أهلاً بك، {{ user?.email?.split('@')[0] }}</span>
+          <span>{{ $t('dashboard.welcome') }}، {{ user?.email?.split('@')[0] }}</span>
           <span class="animate-bounce">👋</span>
         </h1>
-        <p class="text-slate-500 dark:text-slate-400 mt-3 font-medium text-lg">تحليل ذكي وشامل لأداء متجرك الحقيقي اليوم.</p>
+        <p class="text-slate-500 dark:text-slate-400 mt-3 font-medium text-lg">{{ $t('dashboard.merchant_stats.welcome_desc') }}</p>
       </div>
       
       <div v-if="!isSuspended" class="flex items-center gap-3">
         <NuxtLink to="/customers" class="flex items-center gap-4 px-10 py-5 bg-emerald-500 text-slate-950 rounded-[32px] font-black hover:bg-emerald-600 transition-all shadow-2xl shadow-emerald-500/30 active:scale-95 group">
           <Plus class="w-7 h-7 group-hover:rotate-90 transition-transform" />
-          <span>عميل جديد</span>
+          <span>{{ $t('dashboard.merchant_stats.new_customer') }}</span>
         </NuxtLink>
       </div>
       <div v-else class="flex items-center gap-3 px-6 py-4 bg-red-500/10 border border-red-500/20 rounded-2xl">
         <div class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-        <p class="text-red-500 font-bold text-sm">حسابك معلق حالياً. يرجى مراجعة الإدارة.</p>
+        <p class="text-red-500 font-bold text-sm">{{ $t('dashboard.merchant_stats.suspended_alert') }}</p>
       </div>
     </div>
 
@@ -266,7 +271,7 @@ onMounted(fetchDashboardData)
           </div>
           <div class="mt-4">
             <p class="text-slate-500 dark:text-slate-400 font-medium text-sm">{{ stat.label }}</p>
-            <h3 class="text-2xl font-black text-slate-900 dark:text-white mt-1">{{ stat.value }}</h3>
+            <h3 class="text-2xl font-black text-slate-900 dark:text-white mt-1">{{ displayStats[stats.indexOf(stat)].value }}</h3>
           </div>
         </BaseCard>
       </template>
@@ -276,7 +281,7 @@ onMounted(fetchDashboardData)
     <div class="space-y-6">
       <h2 class="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
         <Sparkles class="w-6 h-6 text-amber-500" />
-        تفاصيل الاشتراكات النشطة
+        {{ $t('dashboard.merchant_stats.active_subscriptions') }}
       </h2>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <template v-if="loading">
@@ -290,19 +295,19 @@ onMounted(fetchDashboardData)
                 <div class="p-3 bg-white/10 rounded-2xl backdrop-blur-sm">
                   <Layers class="w-8 h-8" />
                 </div>
-                <div class="bg-emerald-500/20 text-emerald-400 px-4 py-1.5 rounded-full text-xs font-black ring-1 ring-emerald-500/50">نشط الآن</div>
+                <div class="bg-emerald-500/20 text-emerald-400 px-4 py-1.5 rounded-full text-xs font-black ring-1 ring-emerald-500/50">{{ $t('dashboard.merchant_stats.active_now') }}</div>
               </div>
               <div>
                 <h3 class="text-2xl font-black mb-1">{{ offer.name }}</h3>
               </div>
               <div class="grid grid-cols-2 gap-4 pt-4">
                 <div class="bg-white/5 p-4 rounded-3xl border border-white/5">
-                  <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">المشتركين</p>
+                  <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">{{ $t('dashboard.merchant_stats.subscribers') }}</p>
                   <div class="text-2xl font-black">{{ offer.subCount }}</div>
                 </div>
                 <div class="bg-white/5 p-4 rounded-3xl border border-white/5">
-                  <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">الرصيد</p>
-                  <div class="text-2xl font-black text-emerald-400">{{ offer.balance }} <span class="text-xs opacity-60">ر.س</span></div>
+                  <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">{{ $t('dashboard.merchant_stats.balance') }}</p>
+                  <div class="text-2xl font-black text-emerald-400">{{ offer.balance }} <span class="text-xs opacity-60">{{ $t('common.currency') }}</span></div>
                 </div>
               </div>
             </div>
@@ -321,8 +326,8 @@ onMounted(fetchDashboardData)
               <TrendingUp class="w-7 h-7 text-amber-500" />
             </div>
             <div>
-              <h3 class="text-2xl font-black text-slate-900 dark:text-white">حركة المتجر والسيولة</h3>
-              <p class="text-sm text-slate-500 font-medium">متابعة الإيداعات والسحوبات خلال الأسبوع</p>
+              <h3 class="text-2xl font-black text-slate-900 dark:text-white">{{ $t('dashboard.merchant_stats.store_activity') }}</h3>
+              <p class="text-sm text-slate-500 font-medium">{{ $t('dashboard.merchant_stats.store_activity_desc') }}</p>
             </div>
           </div>
         </div>
@@ -347,8 +352,8 @@ onMounted(fetchDashboardData)
             <PieIcon class="w-7 h-7 text-blue-500" />
           </div>
           <div>
-            <h3 class="text-2xl font-black text-slate-900 dark:text-white">تجزئة العملاء</h3>
-            <p class="text-sm text-slate-500 font-medium">حسب نوع الاشتراك</p>
+            <h3 class="text-2xl font-black text-slate-900 dark:text-white">{{ $t('dashboard.merchant_stats.customer_segmentation') }}</h3>
+            <p class="text-sm text-slate-500 font-medium">{{ $t('dashboard.merchant_stats.by_subscription_type') }}</p>
           </div>
         </div>
         <div class="h-[300px]">
@@ -387,8 +392,8 @@ onMounted(fetchDashboardData)
             <BarChart3 class="w-7 h-7 text-emerald-500" />
           </div>
           <div>
-            <h3 class="text-2xl font-black text-slate-900 dark:text-white">تحليل توزيع الأرصدة الحقيقية</h3>
-            <p class="text-sm text-slate-500 font-medium">مقارنة بين أرصدة الدفع المقدم وأرصدة الاشتراكات المختلفة</p>
+            <h3 class="text-2xl font-black text-slate-900 dark:text-white">{{ $t('dashboard.merchant_stats.balance_analysis') }}</h3>
+            <p class="text-sm text-slate-500 font-medium">{{ $t('dashboard.merchant_stats.balance_analysis_desc') }}</p>
           </div>
         </div>
         <div class="h-[350px]">
@@ -413,8 +418,8 @@ onMounted(fetchDashboardData)
             <Activity class="w-7 h-7 text-emerald-500" />
           </div>
           <div>
-            <h3 class="text-3xl font-black text-slate-900 dark:text-white">أحدث العمليات</h3>
-            <p class="text-base text-slate-500 font-medium">متابعة لحظية وشاملة لآخر حركات المتجر</p>
+            <h3 class="text-3xl font-black text-slate-900 dark:text-white">{{ $t('dashboard.merchant_stats.recent_activity') }}</h3>
+            <p class="text-base text-slate-500 font-medium">{{ $t('dashboard.merchant_stats.recent_activity_desc') }}</p>
           </div>
         </div>
 
@@ -425,8 +430,8 @@ onMounted(fetchDashboardData)
               v-model="txFilter"
               class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-[18px] px-6 py-4 text-sm font-black text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-emerald-500/50 appearance-none cursor-pointer shadow-sm"
             >
-              <option value="all">كل العمليات</option>
-              <option value="prepaid">الدفع المقدم فقط</option>
+              <option value="all">{{ $t('dashboard.merchant_stats.all_transactions') }}</option>
+              <option value="prepaid">{{ $t('dashboard.merchant_stats.prepaid_only') }}</option>
               <option v-for="offer in availableOffers" :key="offer.id" :value="offer.id">
                 {{ offer.name }}
               </option>
@@ -437,7 +442,7 @@ onMounted(fetchDashboardData)
           </div>
 
           <NuxtLink to="/transactions" class="px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-950 font-black text-sm rounded-[20px] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg">
-            عرض سجل العمليات الكامل
+            {{ $t('dashboard.merchant_stats.view_full_history') }}
           </NuxtLink>
         </div>
       </div>
@@ -445,29 +450,29 @@ onMounted(fetchDashboardData)
       <div class="overflow-x-auto">
         <div v-if="loading" class="p-24 text-center text-slate-400">
           <div class="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-8"></div>
-          <p class="font-black text-xl">جاري مزامنة أحدث البيانات...</p>
+          <p class="font-black text-xl">{{ $t('dashboard.merchant_stats.syncing_data') }}</p>
         </div>
         <div v-else-if="filteredTransactions.length === 0" class="p-24 text-center text-slate-500">
           <div class="flex flex-col items-center gap-6 opacity-30">
             <Activity class="w-24 h-24" />
-            <p class="text-2xl font-bold">لا توجد عمليات مسجلة لهذا الفلتر.</p>
+            <p class="text-2xl font-bold">{{ $t('dashboard.merchant_stats.no_transactions_filter') }}</p>
           </div>
         </div>
         <div v-else class="min-w-[1000px]">
           <table class="w-full text-right">
             <thead>
               <tr class="bg-slate-50 dark:bg-white/5 text-slate-500 text-sm font-bold border-b border-slate-100 dark:border-white/5">
-                <th class="px-10 py-6">العميل</th>
-                <th class="px-10 py-6">النوع</th>
-                <th class="px-10 py-6">المبلغ</th>
-                <th class="px-10 py-6">التوقيت</th>
-                <th class="px-10 py-6 text-center">الحالة</th>
+                <th class="px-10 py-6">{{ $t('dashboard.merchant_stats.customer') }}</th>
+                <th class="px-10 py-6">{{ $t('dashboard.merchant_stats.type') }}</th>
+                <th class="px-10 py-6">{{ $t('dashboard.merchant_stats.amount') }}</th>
+                <th class="px-10 py-6">{{ $t('dashboard.merchant_stats.time') }}</th>
+                <th class="px-10 py-6 text-center">{{ $t('dashboard.merchant_stats.status') }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 dark:divide-white/5">
               <tr v-for="tx in filteredTransactions" :key="tx.id" class="hover:bg-slate-50 dark:hover:bg-white/5 transition-all group">
                 <td class="px-10 py-8">
-                  <p class="font-black text-slate-900 dark:text-white text-lg">{{ tx.customer?.name || 'عميل' }}</p>
+                  <p class="font-black text-slate-900 dark:text-white text-lg">{{ tx.customer?.name || $t('dashboard.merchant_stats.customer') }}</p>
                 </td>
                 <td class="px-10 py-8">
                   <div class="flex items-center gap-3">
@@ -475,16 +480,16 @@ onMounted(fetchDashboardData)
                       <component :is="tx.type === 'deposit' ? Plus : Activity" class="w-5 h-5" />
                     </div>
                     <span class="font-black text-sm" :class="tx.type === 'deposit' ? 'text-emerald-500' : 'text-red-500'">
-                      {{ tx.type === 'deposit' ? 'شحن رصيد' : 'سحب / خصم' }}
+                      {{ tx.type === 'deposit' ? $t('dashboard.merchant_stats.deposit') : $t('dashboard.merchant_stats.withdrawal') }}
                     </span>
                   </div>
                 </td>
                 <td class="px-10 py-8">
                   <p class="font-black text-2xl" :class="tx.type === 'deposit' ? 'text-emerald-500' : 'text-red-500'">
-                    {{ tx.type === 'deposit' ? '+' : '-' }}{{ tx.amount }} <span class="text-xs opacity-60 font-bold">ر.س</span>
+                    {{ tx.type === 'deposit' ? '+' : '-' }}{{ tx.amount }} <span class="text-xs opacity-60 font-bold">{{ $t('common.currency') }}</span>
                   </p>
                   <p v-if="tx.offer_id" class="text-[10px] text-amber-500 font-bold mt-1 uppercase tracking-wider flex items-center gap-1">
-                    <Sparkles class="w-3 h-3" /> عملية اشتراك خاصة
+                    <Sparkles class="w-3 h-3" /> {{ $t('dashboard.merchant_stats.special_subscription') }}
                   </p>
                 </td>
                 <td class="px-10 py-8">
@@ -493,7 +498,7 @@ onMounted(fetchDashboardData)
                 </td>
                 <td class="px-10 py-8">
                   <div class="flex justify-center">
-                    <span class="px-6 py-2 bg-emerald-500/10 text-emerald-500 rounded-full text-[10px] font-black ring-1 ring-emerald-500/20">مكتمل</span>
+                    <span class="px-6 py-2 bg-emerald-500/10 text-emerald-500 rounded-full text-[10px] font-black ring-1 ring-emerald-500/20">{{ $t('dashboard.merchant_stats.completed') }}</span>
                   </div>
                 </td>
               </tr>

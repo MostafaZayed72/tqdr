@@ -135,7 +135,7 @@ onMounted(fetchData)
               </div>
             </div>
             <div>
-              <p class="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] mb-1">أهلاً بك مجدداً</p>
+              <p class="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] mb-1">{{ $t('dashboard.customer_stats.welcome_back') }}</p>
               <h1 class="text-3xl font-black text-white leading-tight">{{ customer?.name }}</h1>
             </div>
           </div>
@@ -155,13 +155,13 @@ onMounted(fetchData)
               <div class="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
                 <TrendingUp class="w-4 h-4 text-slate-950" />
               </div>
-              <p class="text-sm font-bold text-emerald-400">إجمالي ما وفرته مع تقدر</p>
+              <p class="text-sm font-bold text-emerald-400">{{ $t('dashboard.customer_stats.total_saved') }}</p>
             </div>
             <div class="flex items-baseline gap-2">
               <h2 class="text-6xl font-black text-white tracking-tighter">{{ customer?.total_saved || 0 }}</h2>
-              <span class="text-2xl font-bold text-white/50">ر.س</span>
+              <span class="text-2xl font-bold text-white/50">{{ $t('common.currency') }}</span>
             </div>
-            <p class="text-xs text-white/40 mt-4 font-medium">لقد قمت بتوفير هذا المبلغ من خلال العروض والاشتراكات الذكية.</p>
+            <p class="text-xs text-white/40 mt-4 font-medium">{{ $t('dashboard.customer_stats.savings_desc') }}</p>
           </div>
         </div>
       </div>
@@ -173,11 +173,11 @@ onMounted(fetchData)
             <div>
               <div class="flex items-center gap-2 mb-2 text-slate-400">
                 <Wallet class="w-4 h-4" />
-                <p class="text-xs font-black uppercase tracking-widest">رصيدك الحالي</p>
+                <p class="text-xs font-black uppercase tracking-widest">{{ $t('dashboard.customer_stats.current_balance') }}</p>
               </div>
               <div class="flex items-baseline gap-2">
                 <h3 class="text-5xl font-black text-emerald-500 tracking-tighter">{{ customer?.balance }}</h3>
-                <span class="text-xl font-bold text-slate-300">ر.س</span>
+                <span class="text-xl font-bold text-slate-300">{{ $t('common.currency') }}</span>
               </div>
             </div>
             <div class="w-20 h-20 bg-emerald-500/10 rounded-[32px] flex items-center justify-center text-emerald-500 group-hover:rotate-12 transition-transform duration-500">
@@ -193,20 +193,20 @@ onMounted(fetchData)
               <ShoppingBag class="w-6 h-6 text-slate-400" />
             </div>
             <div>
-              <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">المتجر الحالي</p>
-              <h4 class="text-lg font-black text-slate-900 dark:text-white">{{ shop?.shop_name || 'تقدر بلس' }}</h4>
+              <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">{{ $t('dashboard.customer_stats.current_shop') }}</p>
+              <h4 class="text-lg font-black text-slate-900 dark:text-white">{{ shop?.shop_name || 'Tqdr Plus' }}</h4>
             </div>
           </div>
-          <div class="text-emerald-500 bg-emerald-500/10 px-4 py-2 rounded-full text-[10px] font-black">عميل مميز</div>
+          <div class="text-emerald-500 bg-emerald-500/10 px-4 py-2 rounded-full text-[10px] font-black">{{ $t('dashboard.customer_stats.premium_customer') }}</div>
         </div>
 
         <!-- Active Subscriptions -->
         <div v-if="subscriptions.length > 0" class="space-y-4">
           <div class="flex items-center justify-between px-2">
             <h3 class="text-xl font-black text-slate-900 dark:text-white flex items-center gap-3">
-              <CreditCard class="w-6 h-6 text-amber-500" /> اشتراكاتك النشطة
+              <CreditCard class="w-6 h-6 text-amber-500" /> {{ $t('dashboard.customer_stats.active_subscriptions') }}
             </h3>
-            <span class="text-xs font-bold text-slate-400">{{ subscriptions.length }} اشتراك</span>
+            <span class="text-xs font-bold text-slate-400">{{ $t('dashboard.customer_stats.subscription_count', { count: subscriptions.length }) }}</span>
           </div>
           
           <div class="grid grid-cols-1 gap-4">
@@ -217,15 +217,15 @@ onMounted(fetchData)
                   <h4 class="text-xl font-black text-slate-900 dark:text-white mb-1">{{ sub.offer?.name }}</h4>
                   <div class="flex items-center gap-2 text-xs font-bold text-slate-400">
                     <Calendar class="w-3.5 h-3.5 text-amber-500" />
-                    <span>ينتهي في: {{ new Date(sub.expires_at).toLocaleDateString('ar-EG') }}</span>
+                    <span>{{ $t('transactions.date') }}: {{ new Date(sub.expires_at).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US') }}</span>
                   </div>
                 </div>
-                <div class="px-4 py-2 bg-amber-500/10 text-amber-600 rounded-2xl text-[10px] font-black uppercase tracking-widest">بريميوم</div>
+                <div class="px-4 py-2 bg-amber-500/10 text-amber-600 rounded-2xl text-[10px] font-black uppercase tracking-widest">{{ $t('dashboard.customer_stats.premium') }}</div>
               </div>
               <div class="w-full bg-slate-50 dark:bg-white/5 rounded-2xl p-4 flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-400">حالة الاشتراك</span>
+                <span class="text-xs font-bold text-slate-400">{{ $t('dashboard.customer_stats.subscription_status') }}</span>
                 <span class="text-xs font-black text-emerald-500 flex items-center gap-1">
-                  <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></div> نشط حالياً
+                  <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></div> {{ $t('dashboard.customer_stats.active_now') }}
                 </span>
               </div>
             </div>
@@ -236,14 +236,14 @@ onMounted(fetchData)
         <div class="space-y-4">
           <div class="flex items-center justify-between px-2">
             <h3 class="text-xl font-black text-slate-900 dark:text-white flex items-center gap-3">
-              <History class="w-6 h-6 text-slate-400" /> آخر المعاملات
+              <History class="w-6 h-6 text-slate-400" /> {{ $t('dashboard.customer_stats.recent_transactions') }}
             </h3>
-            <button class="text-xs font-bold text-emerald-500">عرض الكل</button>
+            <button class="text-xs font-bold text-emerald-500">{{ $t('dashboard.customer_stats.view_all') }}</button>
           </div>
           
           <div class="space-y-4">
             <div v-if="transactions.length === 0" class="bg-white dark:bg-slate-900 p-12 rounded-[40px] text-center border border-dashed border-slate-200 dark:border-white/10">
-              <p class="text-slate-400 font-bold italic">لا توجد عمليات سابقة حتى الآن.</p>
+              <p class="text-slate-400 font-bold italic">{{ $t('dashboard.customer_stats.no_transactions') }}</p>
             </div>
             
             <div 
@@ -256,17 +256,17 @@ onMounted(fetchData)
                   <component :is="tx.type === 'deposit' ? ArrowUpCircle : ArrowDownCircle" class="w-7 h-7" />
                 </div>
                 <div>
-                  <p class="font-black text-slate-900 dark:text-white">{{ tx.type === 'deposit' ? 'شحن رصيد' : 'خصم من الرصيد' }}</p>
-                  <p class="text-xs font-bold text-slate-400 mt-0.5">{{ new Date(tx.created_at).toLocaleString('ar-EG', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) }}</p>
+                  <p class="font-black text-slate-900 dark:text-white">{{ tx.type === 'deposit' ? $t('dashboard.customer_stats.deposit') : $t('dashboard.customer_stats.withdraw') }}</p>
+                  <p class="text-xs font-bold text-slate-400 mt-0.5">{{ new Date(tx.created_at).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-US', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) }}</p>
                 </div>
               </div>
               <div class="text-right">
                 <p class="text-xl font-black tracking-tighter" :class="tx.type === 'deposit' ? 'text-emerald-500' : 'text-red-500'">
-                  {{ tx.type === 'deposit' ? '+' : '-' }}{{ tx.amount }} <span class="text-xs opacity-50">ر.س</span>
+                  {{ tx.type === 'deposit' ? '+' : '-' }}{{ tx.amount }} <span class="text-xs opacity-50">{{ $t('common.currency') }}</span>
                 </p>
                 <div class="flex items-center gap-1 justify-end mt-1">
                   <div class="w-1 h-1 rounded-full bg-slate-300"></div>
-                  <p class="text-[10px] font-bold text-slate-400">الرصيد: {{ tx.balance_after }} ر.س</p>
+                  <p class="text-[10px] font-bold text-slate-400">{{ $t('dashboard.customer_stats.balance_after', { balance: tx.balance_after }) }}</p>
                 </div>
               </div>
             </div>
@@ -280,15 +280,15 @@ onMounted(fetchData)
           <button class="flex flex-col items-center gap-1.5 text-emerald-500 p-2 min-w-[70px] relative">
             <div class="absolute -top-1 w-1 h-1 bg-emerald-500 rounded-full"></div>
             <Star class="w-6 h-6 fill-emerald-500/20" />
-            <span class="text-[9px] font-black uppercase tracking-widest">الرئيسية</span>
+            <span class="text-[9px] font-black uppercase tracking-widest">{{ $t('dashboard.customer_stats.home') }}</span>
           </button>
           <button class="flex flex-col items-center gap-1.5 text-slate-400 p-2 min-w-[70px] hover:text-white transition-colors">
             <History class="w-6 h-6" />
-            <span class="text-[9px] font-black uppercase tracking-widest">العمليات</span>
+            <span class="text-[9px] font-black uppercase tracking-widest">{{ $t('dashboard.customer_stats.transactions') }}</span>
           </button>
           <button class="flex flex-col items-center gap-1.5 text-slate-400 p-2 min-w-[70px] hover:text-white transition-colors">
             <CreditCard class="w-6 h-6" />
-            <span class="text-[9px] font-black uppercase tracking-widest">العروض</span>
+            <span class="text-[9px] font-black uppercase tracking-widest">{{ $t('dashboard.customer_stats.offers') }}</span>
           </button>
         </div>
       </div>

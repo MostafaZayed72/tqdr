@@ -191,13 +191,13 @@ watch([searchQuery, selectedShopId, subFilter], () => {
     <!-- Header -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
-        <h1 class="text-3xl font-black text-slate-900 dark:text-white">إدارة كافة العملاء 👥</h1>
-        <p class="text-slate-500 dark:text-slate-400 mt-1">عرض ومراقبة جميع العملاء المسجلين عبر كافة المحلات.</p>
+        <h1 class="text-3xl font-black text-slate-900 dark:text-white">{{ $t('dashboard.admin_stats.manage_all_customers') }}</h1>
+        <p class="text-slate-500 dark:text-slate-400 mt-1">{{ $t('dashboard.admin_stats.manage_all_customers_desc') }}</p>
       </div>
       
       <button class="flex items-center gap-2 px-6 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors shadow-sm">
         <Download class="w-5 h-5 text-emerald-500" />
-        <span>تصدير قائمة العملاء</span>
+        <span>{{ $t('dashboard.admin_stats.export_customers') }}</span>
       </button>
     </div>
 
@@ -209,7 +209,7 @@ watch([searchQuery, selectedShopId, subFilter], () => {
           <input 
             v-model="searchQuery"
             type="text" 
-            placeholder="ابحث بالاسم أو رقم الجوال..."
+            :placeholder="$t('dashboard.admin_stats.search_placeholder')"
             :class="locale === 'ar' ? 'pr-12 pl-4' : 'pl-12 pr-4'"
             class="w-full bg-slate-50 dark:bg-white/5 border-none rounded-2xl py-4 focus:ring-2 focus:ring-emerald-500/50 transition-all text-slate-900 dark:text-white font-medium"
           />
@@ -222,9 +222,9 @@ watch([searchQuery, selectedShopId, subFilter], () => {
             :class="locale === 'ar' ? 'pr-12 pl-4' : 'pl-12 pr-4'"
             class="w-full bg-slate-50 dark:bg-white/5 border-none rounded-2xl py-4 focus:ring-2 focus:ring-emerald-500/50 transition-all text-slate-900 dark:text-white font-bold appearance-none"
           >
-            <option value="all">كل المشتركين</option>
-            <option value="subscribed">المشتركين في عروض</option>
-            <option value="prepaid">عملاء الدفع المسبق</option>
+            <option value="all">{{ $t('dashboard.admin_stats.all_subscribers') }}</option>
+            <option value="subscribed">{{ $t('dashboard.admin_stats.subscribed_only') }}</option>
+            <option value="prepaid">{{ $t('dashboard.admin_stats.prepaid_only_filter') }}</option>
           </select>
         </div>
 
@@ -235,7 +235,7 @@ watch([searchQuery, selectedShopId, subFilter], () => {
             :class="locale === 'ar' ? 'pr-12 pl-4' : 'pl-12 pr-4'"
             class="w-full bg-slate-50 dark:bg-white/5 border-none rounded-2xl py-4 focus:ring-2 focus:ring-emerald-500/50 transition-all text-slate-900 dark:text-white font-bold appearance-none"
           >
-            <option value="all">كل المحلات</option>
+            <option value="all">{{ $t('dashboard.admin_stats.all_shops') }}</option>
             <option v-for="shop in shops" :key="shop.id" :value="shop.id">{{ shop.shop_name }}</option>
           </select>
         </div>
@@ -248,11 +248,11 @@ watch([searchQuery, selectedShopId, subFilter], () => {
         <table class="w-full" :class="locale === 'ar' ? 'text-right' : 'text-left'">
           <thead>
             <tr class="bg-slate-50 dark:bg-white/5 border-b border-slate-100 dark:border-white/5">
-              <th class="px-6 py-4 text-sm font-bold text-slate-500">العميل</th>
-              <th class="px-6 py-4 text-sm font-bold text-slate-500">المحل التابع له</th>
-              <th class="px-6 py-4 text-sm font-bold text-slate-500">الرصيد</th>
-              <th class="px-6 py-4 text-sm font-bold text-slate-500">تاريخ التسجيل</th>
-              <th class="px-6 py-4 text-sm font-bold text-slate-500 text-center">الإجراءات</th>
+              <th class="px-6 py-4 text-sm font-bold text-slate-500">{{ $t('dashboard.admin_stats.table.customer') }}</th>
+              <th class="px-6 py-4 text-sm font-bold text-slate-500">{{ $t('dashboard.admin_stats.table.shop') }}</th>
+              <th class="px-6 py-4 text-sm font-bold text-slate-500">{{ $t('dashboard.admin_stats.table.balance') }}</th>
+              <th class="px-6 py-4 text-sm font-bold text-slate-500">{{ $t('dashboard.admin_stats.table.registered_at') }}</th>
+              <th class="px-6 py-4 text-sm font-bold text-slate-500 text-center">{{ $t('dashboard.admin_stats.table.actions') }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 dark:divide-white/5">
@@ -283,7 +283,7 @@ watch([searchQuery, selectedShopId, subFilter], () => {
                 </td>
                 <td class="px-6 py-4">
                   <div class="font-medium text-slate-700 dark:text-slate-300 text-sm">
-                    {{ customer.shop?.shop_name || 'غير محدد' }}
+                    {{ customer.shop?.shop_name || $t('dashboard.admin_stats.table.undefined_shop') }}
                   </div>
                   <div class="text-[10px] text-slate-400">{{ customer.shop?.email }}</div>
                 </td>
@@ -315,7 +315,7 @@ watch([searchQuery, selectedShopId, subFilter], () => {
               </tr>
               <tr v-if="customers.length === 0 && !loading">
                 <td colspan="5" class="px-6 py-20 text-center text-slate-500">
-                  لم يتم العثور على عملاء في النظام.
+                  {{ $t('dashboard.admin_stats.no_customers_found') }}
                 </td>
               </tr>
             </template>
@@ -326,11 +326,11 @@ watch([searchQuery, selectedShopId, subFilter], () => {
       <!-- Pagination -->
       <div v-if="totalPages > 1" class="p-6 border-t border-slate-100 dark:border-white/5 flex flex-col sm:flex-row items-center justify-between gap-6">
         <p class="text-sm text-slate-500 font-bold">
-          عرض 
+          {{ $t('common.showing') }} 
           <span class="text-slate-900 dark:text-white">{{ (currentPage - 1) * pageSize + 1 }}</span>
           -
           <span class="text-slate-900 dark:text-white">{{ Math.min(currentPage * pageSize, totalCustomers) }}</span>
-          من
+          {{ $t('common.of') }}
           <span class="text-slate-900 dark:text-white">{{ totalCustomers }}</span>
         </p>
         
@@ -382,7 +382,7 @@ watch([searchQuery, selectedShopId, subFilter], () => {
       <div @click="showEditModal = false" class="absolute inset-0 bg-slate-950/40 backdrop-blur-sm"></div>
       <BaseCard class="w-full max-w-lg relative z-10 animate-slide-up !p-10 rounded-[40px]">
         <div class="flex items-center justify-between mb-8">
-          <h3 class="text-2xl font-black text-slate-900 dark:text-white">تعديل بيانات العميل</h3>
+          <h3 class="text-2xl font-black text-slate-900 dark:text-white">{{ $t('dashboard.admin_stats.edit_customer_title') }}</h3>
           <button @click="showEditModal = false" class="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors">
             <X class="w-6 h-6 text-slate-400" />
           </button>
@@ -390,7 +390,7 @@ watch([searchQuery, selectedShopId, subFilter], () => {
 
         <form @submit.prevent="handleUpdateCustomer" class="space-y-6">
           <div>
-            <label class="block text-slate-700 dark:text-slate-300 text-sm font-bold mb-2">اسم العميل</label>
+            <label class="block text-slate-700 dark:text-slate-300 text-sm font-bold mb-2">{{ $t('customers.table.name') }}</label>
             <input 
               v-model="editForm.name"
               type="text" 
@@ -399,7 +399,7 @@ watch([searchQuery, selectedShopId, subFilter], () => {
             />
           </div>
           <div>
-            <label class="block text-slate-700 dark:text-slate-300 text-sm font-bold mb-2">رقم الجوال</label>
+            <label class="block text-slate-700 dark:text-slate-300 text-sm font-bold mb-2">{{ $t('customers.table.phone') }}</label>
             <input 
               v-model="editForm.mobile_number"
               type="tel" 
@@ -415,14 +415,14 @@ watch([searchQuery, selectedShopId, subFilter], () => {
               class="flex-1 bg-emerald-500 text-slate-950 font-black py-4 rounded-2xl hover:bg-emerald-600 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
             >
               <span v-if="loading" class="w-4 h-4 border-2 border-slate-950/30 border-t-slate-950 rounded-full animate-spin"></span>
-              <span>حفظ التعديلات</span>
+              <span>{{ $t('common.save') }}</span>
             </button>
             <button 
               type="button"
               @click="showEditModal = false"
               class="flex-1 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 font-black py-4 rounded-2xl hover:bg-slate-200 transition-all"
             >
-              إلغاء
+              {{ $t('common.cancel') }}
             </button>
           </div>
         </form>
@@ -436,8 +436,8 @@ watch([searchQuery, selectedShopId, subFilter], () => {
         <div class="w-20 h-20 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
           <Trash2 class="w-10 h-10" />
         </div>
-        <h3 class="text-2xl font-black text-slate-900 dark:text-white mb-2">تأكيد حذف العميل</h3>
-        <p class="text-slate-500 mb-8 font-medium">هل أنت متأكد من حذف هذا العميل نهائياً؟ سيتم مسح كافة سجلاته من النظام.</p>
+        <h3 class="text-2xl font-black text-slate-900 dark:text-white mb-2">{{ $t('dashboard.admin_stats.delete_customer_confirm') }}</h3>
+        <p class="text-slate-500 mb-8 font-medium">{{ $t('dashboard.admin_stats.delete_customer_desc') }}</p>
         <div class="space-y-3">
           <button 
             @click="handleDeleteCustomer"
@@ -445,13 +445,13 @@ watch([searchQuery, selectedShopId, subFilter], () => {
             class="w-full bg-red-500 text-white font-black py-4 rounded-2xl hover:bg-red-600 transition-all flex items-center justify-center gap-2"
           >
             <span v-if="loading" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-            <span>نعم، احذف العميل</span>
+            <span>{{ $t('dashboard.admin_stats.confirm_delete_btn') }}</span>
           </button>
           <button 
             @click="showDeleteModal = false"
             class="w-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 font-black py-4 rounded-2xl hover:bg-slate-200 transition-all"
           >
-            إلغاء
+            {{ $t('common.cancel') }}
           </button>
         </div>
       </BaseCard>

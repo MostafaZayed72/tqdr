@@ -3,11 +3,17 @@
     href="https://wa.me/966550570751"
     target="_blank"
     rel="noopener noreferrer"
-    class="fixed bottom-6 left-6 z-[999] group flex items-center gap-3"
+    :class="[
+      'fixed bottom-6 z-[999] group flex items-center gap-3',
+      locale === 'ar' ? 'left-6' : 'right-6'
+    ]"
   >
     <!-- Label -->
-    <span class="bg-white dark:bg-[#0a1a0a] text-gray-900 dark:text-white px-4 py-2 rounded-2xl shadow-2xl border border-gray-100 dark:border-white/5 text-sm font-bold opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 pointer-events-none">
-      {{ $t('landing.nav.contact') }}
+    <span :class="[
+      'bg-white dark:bg-[#0a1a0a] text-gray-900 dark:text-white px-4 py-2 rounded-2xl shadow-2xl border border-gray-100 dark:border-white/5 text-sm font-bold opacity-0 transition-all duration-300 pointer-events-none group-hover:opacity-100 group-hover:translate-x-0',
+      locale === 'ar' ? 'translate-x-4' : '-translate-x-4'
+    ]">
+      {{ $t('landing.nav.contact') || 'تواصل معنا' }}
     </span>
 
     <!-- Icon -->
@@ -20,5 +26,5 @@
 </template>
 
 <script setup lang="ts">
-// Floating WhatsApp component
+const { locale } = useI18n()
 </script>

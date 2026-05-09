@@ -82,7 +82,7 @@ const toggleSubscriptions = async (shop: any) => {
 }
 
 const handleDeleteOffer = async (shopId: string, offerId: string) => {
-  if (!confirm('هل أنت متأكد من حذف هذا العرض؟')) return
+  if (!confirm(t('dashboard.admin_stats.subscriptions_management.delete_confirm'))) return
   try {
     const { error } = await client
       .from('subscription_offers')
@@ -105,8 +105,10 @@ watch(searchQuery, fetchShops)
     <!-- Header -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
-        <h1 class="text-3xl font-black text-slate-900 dark:text-white">{{ $t('subscriptions.title') }}</h1>
-        <p class="text-slate-500 dark:text-slate-400 mt-1">تفعيل ميزة الاشتراكات للمتاجر ومتابعة عروضهم.</p>
+      <div>
+        <h1 class="text-3xl font-black text-slate-900 dark:text-white">{{ $t('dashboard.admin_stats.subscriptions_management.title') }}</h1>
+        <p class="text-slate-500 dark:text-slate-400 mt-1">{{ $t('dashboard.admin_stats.subscriptions_management.subtitle') }}</p>
+      </div>
       </div>
     </div>
 
@@ -117,7 +119,7 @@ watch(searchQuery, fetchShops)
         <input 
           v-model="searchQuery"
           type="text" 
-          placeholder="ابحث باسم المحل أو البريد..."
+          :placeholder="$t('dashboard.admin_stats.subscriptions_management.search_placeholder')"
           :class="locale === 'ar' ? 'pr-12 pl-4' : 'pl-12 pr-4'"
           class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl py-4 focus:ring-2 focus:ring-emerald-500/50 transition-all text-slate-900 dark:text-white"
         />
@@ -136,14 +138,14 @@ watch(searchQuery, fetchShops)
               <Store class="w-6 h-6" />
             </div>
             <div>
-              <h3 class="font-bold text-slate-900 dark:text-white">{{ shop.shop_name || 'بدون اسم' }}</h3>
+              <h3 class="font-bold text-slate-900 dark:text-white">{{ shop.shop_name || $t('dashboard.admin_stats.subscriptions_management.shop_name_placeholder') }}</h3>
               <p class="text-xs text-slate-500">{{ shop.email }}</p>
             </div>
           </div>
 
           <div class="flex items-center gap-6">
             <div class="flex items-center gap-3">
-              <span class="text-xs font-bold text-slate-500">خاصية الاشتراكات:</span>
+              <span class="text-xs font-bold text-slate-500">{{ $t('dashboard.admin_stats.subscriptions_management.feature_status') }}</span>
               <button 
                 @click.stop="toggleSubscriptions(shop)"
                 class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
@@ -169,10 +171,10 @@ watch(searchQuery, fetchShops)
           <div class="flex items-center justify-between mb-6">
             <h4 class="font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <CreditCard class="w-4 h-4 text-amber-500" />
-              العروض الحالية ({{ shopOffers[shop.id]?.length || 0 }})
+              {{ $t('dashboard.admin_stats.subscriptions_management.current_offers') }} ({{ shopOffers[shop.id]?.length || 0 }})
             </h4>
             <NuxtLink :to="`/admin-dashboard/shops/${shop.id}`" class="text-xs text-emerald-500 font-bold hover:underline flex items-center gap-1">
-              عرض تفاصيل المحل <ExternalLink class="w-3 h-3" />
+              {{ $t('dashboard.admin_stats.subscriptions_management.view_shop_details') }} <ExternalLink class="w-3 h-3" />
             </NuxtLink>
           </div>
 
@@ -189,19 +191,19 @@ watch(searchQuery, fetchShops)
               </div>
               <div class="flex justify-between items-end mt-4">
                 <div>
-                  <p class="text-[10px] text-slate-500">السعر: {{ offer.price }} ر.س</p>
-                  <p class="text-[10px] text-emerald-500 font-bold">الخصم: {{ offer.discount }} ر.س</p>
+                  <p class="text-[10px] text-slate-500">{{ $t('dashboard.admin_stats.subscriptions_management.price') }}: {{ offer.price }} {{ $t('common.currency') }}</p>
+                  <p class="text-[10px] text-emerald-500 font-bold">{{ $t('dashboard.admin_stats.subscriptions_management.discount') }}: {{ offer.discount }} {{ $t('common.currency') }}</p>
                 </div>
                 <div class="text-right">
                   <span class="text-[10px] bg-slate-100 dark:bg-white/5 px-2 py-1 rounded-md text-slate-600 dark:text-slate-400">
-                    {{ offer.duration }} يوم
+                    {{ offer.duration }} {{ $t('dashboard.admin_stats.subscriptions_management.days') }}
                   </span>
                 </div>
               </div>
             </div>
           </div>
           <div v-else class="text-center py-8 text-slate-400 text-sm italic">
-            لا توجد عروض مضافة لهذا المحل.
+            {{ $t('dashboard.admin_stats.subscriptions_management.no_offers') }}
           </div>
         </div>
       </BaseCard>

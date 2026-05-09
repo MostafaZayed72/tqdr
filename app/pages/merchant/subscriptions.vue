@@ -82,7 +82,7 @@ const handleSubmit = async () => {
   try {
     loading.value = true
     const { data: { user: authUser } } = await client.auth.getUser()
-    if (!authUser) throw new Error('لم يتم العثور على بيانات المستخدم')
+    if (!authUser) throw new Error(t('auth.no_profile_error'))
 
     const payload = {
       name: form.value.name,
@@ -200,7 +200,7 @@ const handleAddSubscriber = async (customerId: string) => {
   try {
     subLoading.value = true
     const { data: { user: authUser } } = await client.auth.getUser()
-    if (!authUser) throw new Error('يرجى تسجيل الدخول أولاً')
+    if (!authUser) throw new Error(t('auth.errors.login_required', 'Please login first'))
 
     const offer = selectedOffer.value
     const expiresAt = new Date()
@@ -226,7 +226,7 @@ const handleAddSubscriber = async (customerId: string) => {
       amount: 0,
       balance_before: custProfile?.balance || 0,
       balance_after: custProfile?.balance || 0,
-      note: `اشتراك في عرض: ${offer.name}`
+      note: `${t('nav.subscriptions_nav')}: ${offer.name}`
     })
 
     await fetchSubscribers(offer.id)
@@ -235,8 +235,8 @@ const handleAddSubscriber = async (customerId: string) => {
     const customer = allCustomers.value.find(c => c.id === customerId)
     if (customer) {
       const { data: profile } = await client.from('profiles').select('shop_name').eq('id', authUser.id).single()
-      const shopName = profile?.shop_name || 'تقدر'
-      const smsMessage = `تم تفعيل اشتراك (${offer.name}) بنجاح في ${shopName}. صالح لمدة ${offer.duration} يوماً. شكراً لثقتك!`
+      const shopName = profile?.shop_name || t('brand.name')
+      const smsMessage = t('customers.sms.subscription_success_simple', { offer: offer.name, shop: shopName, duration: offer.duration })
       await $fetch('/api/sms/send', {
         method: 'POST',
         body: { phone: customer.mobile_number, message: smsMessage }
@@ -299,7 +299,7 @@ onMounted(() => {
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
         <h1 class="text-3xl font-black text-slate-900 dark:text-white">{{ $t('subscriptions.offers') }}</h1>
-        <p class="text-slate-500 dark:text-slate-400 mt-1">قم بإنشاء وإدارة عروض الاشتراكات لعملائك لزيادة الولاء والنشاط.</p>
+        <p class="text-slate-500 dark:text-slate-400 mt-1">{{ $t('subscriptions.subtitle') }}</p>
       </div>
       
       <button 
@@ -323,7 +323,7 @@ onMounted(() => {
               <CreditCard class="w-6 h-6" />
             </div>
             <div class="flex gap-2">
-              <button @click="openManageCustomers(offer)" class="p-2 text-slate-400 hover:text-emerald-500 hover:bg-emerald-500/10 rounded-xl transition-all" title="إدارة المشتركين">
+              <button @click="openManageCustomers(offer)" class="p-2 text-slate-400 hover:text-emerald-500 hover:bg-emerald-500/10 rounded-xl transition-all" :title="$t('subscriptions.manage_subscribers')">
                 <UserPlus class="w-4 h-4" />
               </button>
               <button @click="handleEdit(offer)" class="p-2 text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 rounded-xl transition-all">
@@ -342,21 +342,21 @@ onMounted(() => {
           <div class="space-y-3 mb-6">
             <div class="flex items-center gap-2 text-sm text-slate-500">
               <Clock class="w-4 h-4" />
-              <span>مدة العرض: {{ offer.duration }} يوم</span>
+              <span>{{ $t('subscriptions.duration_days', { days: offer.duration }) }}</span>
             </div>
             <div class="flex items-center gap-2 text-sm text-slate-500">
               <CheckCircle2 class="w-4 h-4" />
-              <span>مرات الاشتراك: {{ offer.usage_limit }}</span>
+              <span>{{ $t('subscriptions.usage_times', { count: offer.usage_limit }) }}</span>
             </div>
           </div>
 
           <div class="flex items-end justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-2xl">
             <div>
-              <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">قيمة الاشتراك</p>
+              <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ $t('subscriptions.price') }}</p>
               <p class="text-2xl font-black text-emerald-500">{{ offer.price }} <span class="text-xs">{{ $t('common.currency') }}</span></p>
             </div>
             <div class="text-right">
-              <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">الخصم</p>
+              <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ $t('subscriptions.discount') }}</p>
               <p class="text-lg font-bold text-amber-500">{{ offer.discount }} <span class="text-xs">{{ $t('common.currency') }}</span></p>
             </div>
           </div>
@@ -369,14 +369,14 @@ onMounted(() => {
           <div class="w-20 h-20 bg-slate-100 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-400">
             <CreditCard class="w-10 h-10" />
           </div>
-          <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">لا توجد عروض حالياً</h3>
-          <p class="text-slate-500 mb-8 max-w-sm mx-auto">ابدأ بإنشاء أول عرض اشتراك لعملائك لزيادة التفاعل مع محلك.</p>
+          <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">{{ $t('subscriptions.no_offers') }}</h3>
+          <p class="text-slate-500 mb-8 max-w-sm mx-auto">{{ $t('subscriptions.no_offers_desc') }}</p>
           <button 
             @click="showModal = true"
             class="inline-flex items-center gap-2 px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-bold hover:shadow-xl transition-all"
           >
             <Plus class="w-5 h-5" />
-            <span>إضافة عرضك الأول</span>
+            <span>{{ $t('subscriptions.add_first') }}</span>
           </button>
         </BaseCard>
       </div>
@@ -388,7 +388,7 @@ onMounted(() => {
       <BaseCard class="w-full max-w-lg relative z-10 animate-slide-up !p-8 rounded-[40px]">
         <div class="flex items-center justify-between mb-8">
           <h3 class="text-2xl font-black text-slate-900 dark:text-white">
-            {{ editingOffer ? 'تعديل عرض' : 'إضافة عرض جديد' }}
+            {{ editingOffer ? $t('subscriptions.edit_offer') : $t('subscriptions.add_offer') }}
           </h3>
           <button @click="showModal = false; editingOffer = null" class="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors">
             <X class="w-6 h-6 text-slate-400" />
@@ -397,19 +397,19 @@ onMounted(() => {
 
         <form @submit.prevent="handleSubmit" class="space-y-6">
           <div>
-            <label class="block text-slate-700 dark:text-slate-300 text-sm font-bold mb-2">اسم العرض</label>
+            <label class="block text-slate-700 dark:text-slate-300 text-sm font-bold mb-2">{{ $t('subscriptions.offer_name') }}</label>
             <input 
               v-model="form.name"
               type="text" 
               required
               class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl px-5 py-4 text-slate-900 dark:text-white"
-              placeholder="مثال: عرض الصيف المميز"
+              :placeholder="$t('subscriptions.offer_name')"
             />
           </div>
 
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-slate-700 dark:text-slate-300 text-sm font-bold mb-2">قيمة الاشتراك (ريال)</label>
+              <label class="block text-slate-700 dark:text-slate-300 text-sm font-bold mb-2">{{ $t('subscriptions.price') }}</label>
               <input 
                 v-model="form.price"
                 type="number" 
@@ -419,7 +419,7 @@ onMounted(() => {
               />
             </div>
             <div>
-              <label class="block text-slate-700 dark:text-slate-300 text-sm font-bold mb-2">قيمة الخصم (ريال)</label>
+              <label class="block text-slate-700 dark:text-slate-300 text-sm font-bold mb-2">{{ $t('subscriptions.discount') }}</label>
               <input 
                 v-model="form.discount"
                 type="number" 
@@ -432,7 +432,7 @@ onMounted(() => {
 
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-slate-700 dark:text-slate-300 text-sm font-bold mb-2">عدد مرات الاشتراك</label>
+              <label class="block text-slate-700 dark:text-slate-300 text-sm font-bold mb-2">{{ $t('subscriptions.usage_limit') }}</label>
               <input 
                 v-model="form.usage_limit"
                 type="number" 
@@ -442,15 +442,15 @@ onMounted(() => {
               />
             </div>
             <div>
-              <label class="block text-slate-700 dark:text-slate-300 text-sm font-bold mb-2">مدة العرض</label>
+              <label class="block text-slate-700 dark:text-slate-300 text-sm font-bold mb-2">{{ $t('subscriptions.duration') }}</label>
               <select 
                 v-model="form.duration"
                 required
                 class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl px-5 py-4 text-slate-900 dark:text-white appearance-none"
               >
-                <option :value="30">30 يوم</option>
-                <option :value="60">60 يوم</option>
-                <option :value="90">90 يوم</option>
+                <option :value="30">30 {{ $t('subscriptions.duration_unit') }}</option>
+                <option :value="60">60 {{ $t('subscriptions.duration_unit') }}</option>
+                <option :value="90">90 {{ $t('subscriptions.duration_unit') }}</option>
               </select>
             </div>
           </div>
@@ -461,7 +461,7 @@ onMounted(() => {
             class="w-full bg-emerald-500 text-slate-950 font-black py-5 rounded-2xl hover:bg-emerald-600 transition-all shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-3"
           >
             <span v-if="loading" class="w-5 h-5 border-2 border-slate-950/30 border-t-slate-950 rounded-full animate-spin"></span>
-            <span>{{ editingOffer ? 'حفظ التعديلات' : 'إضافة العرض' }}</span>
+            <span>{{ editingOffer ? $t('subscriptions.save_changes') : $t('subscriptions.add_offer') }}</span>
           </button>
         </form>
       </BaseCard>
@@ -477,8 +477,8 @@ onMounted(() => {
               <Users class="w-6 h-6" />
             </div>
             <div>
-              <h3 class="text-2xl font-black text-slate-900 dark:text-white">إدارة المشتركين</h3>
-              <p class="text-sm text-slate-500">العرض: {{ selectedOffer?.name }}</p>
+              <h3 class="text-2xl font-black text-slate-900 dark:text-white">{{ $t('subscriptions.manage_subscribers') }}</h3>
+              <p class="text-sm text-slate-500">{{ $t('nav.subscriptions_nav') }}: {{ selectedOffer?.name }}</p>
             </div>
           </div>
           <button @click="showCustomerModal = false" class="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors">
@@ -489,13 +489,13 @@ onMounted(() => {
         <div class="p-8 space-y-8">
           <!-- Add New Subscriber -->
           <div class="space-y-4">
-            <label class="text-sm font-bold text-slate-700 dark:text-slate-300">إضافة عميل للعرض</label>
+            <label class="text-sm font-bold text-slate-700 dark:text-slate-300">{{ $t('subscriptions.add_customer_to_offer') }}</label>
             <div class="relative">
               <Search class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
               <input 
                 v-model="customerSearch"
                 type="text" 
-                placeholder="ابحث عن عميل بالاسم أو الرقم..."
+                :placeholder="$t('subscriptions.search_customer')"
                 class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl pr-12 pl-4 py-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
               />
             </div>
@@ -516,7 +516,7 @@ onMounted(() => {
                   class="bg-emerald-500 text-slate-950 px-4 py-2 rounded-lg text-xs font-black hover:bg-emerald-600 disabled:opacity-50 flex items-center gap-1"
                 >
                   <span v-if="subLoading" class="w-3 h-3 border-2 border-slate-950/30 border-t-slate-950 rounded-full animate-spin"></span>
-                  <span>إضافة</span>
+                  <span>{{ $t('subscriptions.add_btn') }}</span>
                 </button>
 
               </div>
@@ -526,12 +526,12 @@ onMounted(() => {
           <!-- Current Subscribers List -->
           <div class="space-y-4">
             <h4 class="text-sm font-bold text-slate-500 flex items-center gap-2">
-              <Users class="w-4 h-4" /> المشتركين الحاليين ({{ subscribedCustomers.length }})
+              <Users class="w-4 h-4" /> {{ $t('subscriptions.current_subscribers', { count: subscribedCustomers.length }) }}
             </h4>
             
             <div class="max-h-[300px] overflow-y-auto space-y-3 custom-scrollbar pr-2">
               <div v-if="subscribedCustomers.length === 0" class="text-center py-10 opacity-40">
-                لا يوجد مشتركين حالياً في هذا العرض.
+                {{ $t('subscriptions.no_subscribers') }}
               </div>
               <div 
                 v-for="sub in subscribedCustomers" 
@@ -544,13 +544,13 @@ onMounted(() => {
                   </div>
                   <div>
                     <p class="font-bold text-slate-900 dark:text-white text-sm">{{ sub.customer?.name }}</p>
-                    <p class="text-[10px] text-slate-500">ينتهي في: {{ new Date(sub.expires_at).toLocaleDateString('ar-EG') }}</p>
+                    <p class="text-[10px] text-slate-500">{{ $t('transactions.date') }}: {{ new Date(sub.expires_at).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US') }}</p>
                   </div>
                 </div>
                 <button 
                   @click="handleRemoveSubscriber(sub.id)"
                   class="p-2 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                  title="إزالة من العرض"
+                  :title="$t('subscriptions.remove_from_offer')"
                 >
                   <Trash2 class="w-4 h-4" />
                 </button>
@@ -571,9 +571,9 @@ onMounted(() => {
           </div>
           
           <div class="space-y-2">
-            <h3 class="text-2xl font-black text-slate-900 dark:text-white">حذف العرض؟</h3>
+            <h3 class="text-2xl font-black text-slate-900 dark:text-white">{{ $t('common.delete_confirm') }}</h3>
             <p class="text-slate-500 dark:text-slate-400 leading-relaxed px-4">
-              هل أنت متأكد من حذف عرض <strong>{{ offerToDelete?.name }}</strong>؟
+              {{ $t('subscriptions.delete_offer_confirm', { name: offerToDelete?.name }) }}
             </p>
           </div>
 
@@ -584,14 +584,14 @@ onMounted(() => {
               class="w-full bg-red-500 text-white font-black py-4 rounded-2xl hover:bg-red-600 transition-all shadow-xl shadow-red-500/20 flex items-center justify-center gap-3"
             >
               <span v-if="loading" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-              <span>تأكيد الحذف</span>
+              <span>{{ $t('common.confirm_delete') }}</span>
             </button>
             <button 
               @click="showDeleteModal = false"
               :disabled="loading"
               class="w-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 font-bold py-4 rounded-2xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all"
             >
-              إلغاء
+              {{ $t('common.cancel') }}
             </button>
           </div>
         </div>
@@ -607,13 +607,13 @@ onMounted(() => {
           <div class="w-16 h-16 bg-red-500/10 text-red-500 rounded-2xl flex items-center justify-center mx-auto">
             <AlertCircle class="w-8 h-8" />
           </div>
-          <h3 class="text-xl font-bold text-slate-900 dark:text-white">عذراً، حدث خطأ</h3>
+          <h3 class="text-xl font-bold text-slate-900 dark:text-white">{{ $t('common.error_occurred') }}</h3>
           <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{{ errorMsg }}</p>
           <button 
             @click="showErrorModal = false"
             class="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold py-3 rounded-xl mt-4 transition-all active:scale-95"
           >
-            حسناً، فهمت
+            {{ $t('common.ok_got_it') }}
           </button>
         </div>
       </div>
@@ -628,9 +628,9 @@ onMounted(() => {
             <Users class="w-10 h-10" />
           </div>
           <div class="space-y-2">
-            <h3 class="text-2xl font-black text-slate-900 dark:text-white">إلغاء الاشتراك؟</h3>
+            <h3 class="text-2xl font-black text-slate-900 dark:text-white">{{ $t('subscriptions.unsubscribe_confirm_title') }}</h3>
             <p class="text-slate-500 dark:text-slate-400 leading-relaxed px-4">
-              هل أنت متأكد من إزالة هذا العميل من العرض؟ لن يستفيد من الخصومات المرتبطة بهذا العرض بعد الآن.
+              {{ $t('subscriptions.unsubscribe_confirm_desc') }}
             </p>
           </div>
           <div class="flex flex-col gap-3 pt-4">
@@ -640,14 +640,14 @@ onMounted(() => {
               class="w-full bg-amber-500 text-slate-950 font-black py-4 rounded-2xl hover:bg-amber-600 transition-all shadow-xl shadow-amber-500/20 flex items-center justify-center gap-3"
             >
               <span v-if="subLoading" class="w-5 h-5 border-2 border-slate-950/30 border-t-slate-950 rounded-full animate-spin"></span>
-              <span>تأكيد الإزالة</span>
+              <span>{{ $t('subscriptions.confirm_remove') }}</span>
             </button>
             <button 
               @click="showUnsubConfirm = false"
               :disabled="subLoading"
               class="w-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 font-bold py-4 rounded-2xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all"
             >
-              إلغاء
+              {{ $t('common.cancel') }}
             </button>
           </div>
         </div>

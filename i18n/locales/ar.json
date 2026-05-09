@@ -10,7 +10,17 @@
     "search": "بحث...",
     "showing": "عرض",
     "to": "إلى",
-    "of": "من أصل"
+    "of": "من أصل",
+    "confirm": "تأكيد",
+    "optional": "اختياري",
+    "confirm_delete": "تأكيد الحذف النهائي",
+    "delete_confirm": "حذف؟",
+    "delete_warning": "هل أنت متأكد من حذف {name}؟",
+    "delete_irreversible": "تحذير: هذا الإجراء لا يمكن التراجع عنه وسيتم حذف كافة البيانات المرتبطة.",
+    "error_occurred": "عذراً، حدث خطأ",
+    "ok_got_it": "حسناً، فهمت",
+    "suspended": "معلق",
+    "blocked": "محظور"
   },
   "brand": {
     "name": "تاجر",
@@ -26,7 +36,23 @@
     "password": "كلمة المرور",
     "error": "خطأ في تسجيل الدخول",
     "welcome": "مرحباً بك مجدداً",
-    "rights": "جميع الحقوق محفوظة"
+    "no_profile_error": "لم يتم العثور على صلاحيات لهذا الحساب. يرجى التواصل مع الإدارة.",
+    "rights": "جميع الحقوق محفوظة",
+    "customer_otp": {
+      "title": "دخول العملاء",
+      "subtitle": "تابع رصيدك وتوفيرك في ثوانٍ",
+      "phone_label": "رقم الجوال",
+      "send_code": "إرسال كود التحقق",
+      "sending_code": "جاري الإرسال...",
+      "code_sent_to": "تم إرسال كود التحقق إلى",
+      "enter_code": "أدخل الكود المكون من 4 أرقام",
+      "confirm_login": "تأكيد والدخول",
+      "verifying": "جاري التحقق...",
+      "edit_phone": "تعديل رقم الجوال",
+      "secure_system": "نظام \"تقدر\" الآمن للتحقق عبر الجوال",
+      "error_send": "فشل في إرسال الكود. تأكد من الرقم.",
+      "error_invalid": "كود التحقق غير صحيح."
+    }
   },
   "nav": {
     "dashboard": "لوحة التحكم",
@@ -46,18 +72,37 @@
   "subscriptions": {
     "title": "الاشتراكات",
     "offers": "عروض الاشتراكات",
+    "subtitle": "قم بإنشاء وإدارة عروض الاشتراكات لعملائك لزيادة الولاء والنشاط.",
     "add_offer": "إضافة عرض جديد",
+    "add_first": "إضافة عرضك الأول",
     "edit_offer": "تعديل العرض",
+    "save_changes": "حفظ التعديلات",
     "offer_name": "اسم العرض",
     "price": "قيمة الاشتراك (ر.س)",
     "usage_limit": "عدد مرات الاستخدام",
     "discount": "قيمة الخصم",
     "duration": "مدة العرض (أيام)",
+    "duration_days": "مدة العرض: {days} يوم",
+    "usage_times": "مرات الاشتراك: {count}",
+    "no_offers": "لا توجد عروض حالياً",
+    "no_offers_desc": "ابدأ بإنشاء أول عرض اشتراك لعملائك لزيادة التفاعل مع محلك.",
+    "manage_subscribers": "إدارة المشتركين",
+    "current_subscribers": "المشتركين الحاليين ({count})",
+    "no_subscribers": "لا يوجد مشتركين حالياً في هذا العرض.",
+    "add_customer_to_offer": "إضافة عميل للعرض",
+    "search_customer": "ابحث عن عميل بالاسم أو الرقم...",
+    "add_btn": "إضافة",
+    "remove_from_offer": "إزالة من العرض",
+    "delete_offer_confirm": "هل أنت متأكد من حذف عرض {name}؟",
+    "unsubscribe_confirm_title": "إلغاء الاشتراك؟",
+    "unsubscribe_confirm_desc": "هل أنت متأكد من إزالة هذا العميل من العرض؟ لن يستفيد من الخصومات المرتبطة بهذا العرض بعد الآن.",
+    "confirm_remove": "تأكيد الإزالة",
     "enable_feature": "تفعيل خاصية الاشتراكات",
     "status": {
       "active": "نشط",
       "inactive": "غير نشط"
-    }
+    },
+    "duration_unit": "يوم"
   },
   "dashboard": {
     "welcome": "أهلاً بك",
@@ -93,7 +138,113 @@
       "trading_volume": "حجم التداول",
       "recent_shops": "أحدث المحلات المنضمة",
       "all_shops": "كل المحلات",
-      "no_new_shops": "لم يتم العثور على محلات جديدة حالياً."
+      "no_new_shops": "لم يتم العثور على محلات جديدة حالياً.",
+      "manage_all_customers": "إدارة كافة العملاء 👥",
+      "manage_all_customers_desc": "عرض ومراقبة جميع العملاء المسجلين عبر كافة المحلات.",
+      "export_customers": "تصدير قائمة العملاء",
+      "search_placeholder": "ابحث بالاسم أو رقم الجوال...",
+      "all_subscribers": "كل المشتركين",
+      "subscribed_only": "المشتركين في عروض",
+      "prepaid_only_filter": "عملاء الدفع المسبق",
+      "table": {
+        "customer": "العميل",
+        "shop": "المحل التابع له",
+        "balance": "الرصيد",
+        "registered_at": "تاريخ التسجيل",
+        "actions": "الإجراءات",
+        "undefined_shop": "غير محدد"
+      },
+      "no_customers_found": "لم يتم العثور على عملاء في النظام.",
+      "edit_customer_title": "تعديل بيانات العميل",
+      "delete_customer_confirm": "تأكيد حذف العميل",
+      "delete_customer_desc": "هل أنت متأكد من حذف هذا العميل نهائياً؟ سيتم مسح كافة سجلاته من النظام.",
+      "confirm_delete_btn": "نعم، احذف العميل",
+      "reports": {
+        "title": "سجل العمليات 📑",
+        "subtitle": "مراقبة جميع العمليات المالية عبر المنصة بالكامل.",
+        "search_placeholder": "البحث في الملاحظات أو الكود...",
+        "all_offers": "كل العروض / الكل",
+        "prepaid_only": "الدفع المقدم فقط",
+        "all_types": "جميع الأنواع",
+        "deposit_only": "شحن فقط",
+        "withdrawal_only": "خصم فقط",
+        "table": {
+          "shop": "المتجر / البائع",
+          "customer": "العميل",
+          "type": "النوع",
+          "amount": "المبلغ",
+          "date": "التاريخ",
+          "prepaid": "رصيد عام"
+        }
+      },
+      "shops_management": {
+        "title": "المحلات 🏪",
+        "subtitle": "إدارة حسابات أصحاب المحلات والتحكم في صلاحياتهم.",
+        "add_shop": "إضافة صاحب محل جديد",
+        "search_placeholder": "ابحث بالبريد الإلكتروني أو اسم المحل...",
+        "table": {
+          "owner": "صاحب المحل",
+          "shop_name": "اسم المحل",
+          "joined_at": "تاريخ الانضمام",
+          "status": "الحالة"
+        },
+        "add_modal": {
+          "title_add": "إضافة صاحب محل",
+          "title_edit": "تعديل بيانات المحل",
+          "shop_name": "اسم المحل",
+          "shop_name_placeholder": "مثال: متجر التقنية",
+          "email": "البريد الإلكتروني",
+          "password": "كلمة المرور المؤقتة",
+          "phone_notifications": "رقم الجوال (للإشعارات)",
+          "account_status": "حالة الحساب",
+          "save_btn": "حفظ التعديلات",
+          "create_btn": "إنشاء الحساب"
+        },
+        "delete_modal": {
+          "title": "تأكيد الحذف",
+          "desc": "هل أنت متأكد من حذف هذا الحساب نهائياً؟ لا يمكن التراجع عن هذه الخطوة.",
+          "confirm": "نعم، احذف الحساب"
+        },
+        "success_modal": {
+          "title": "تم الإنشاء بنجاح!",
+          "desc": "تم إنشاء حساب المحل الجديد وتفعيل صلاحياته في النظام.",
+          "ok": "موافق"
+        }
+      },
+      "subscriptions_management": {
+        "title": "إدارة الاشتراكات 💳",
+        "subtitle": "تفعيل ميزة الاشتراكات للمتاجر ومتابعة عروضهم.",
+        "search_placeholder": "ابحث باسم المحل أو البريد...",
+        "shop_name_placeholder": "بدون اسم",
+        "feature_status": "خاصية الاشتراكات:",
+        "current_offers": "العروض الحالية",
+        "view_shop_details": "عرض تفاصيل المحل",
+        "no_offers": "لا توجد عروض مضافة لهذا المحل.",
+        "price": "السعر",
+        "discount": "الخصم",
+        "days": "يوم",
+        "delete_confirm": "هل أنت متأكد من حذف هذا العرض؟"
+      },
+      "shop_details": {
+        "back_btn": "العودة لإدارة المحلات",
+        "loading": "جاري التحميل...",
+        "disable_subscriptions": "تعطيل الاشتراكات",
+        "enable_subscriptions": "تفعيل الاشتراكات",
+        "active_account": "حساب نشط",
+        "transactions_log": "سجل العمليات المالي للمحل",
+        "customers_list": "عملاء المحل",
+        "no_transactions": "لا توجد عمليات مسجلة لهذا المحل حتى الآن.",
+        "no_customers": "لا يوجد عملاء مضافين.",
+        "no_offers": "لا توجد عروض مضافة حتى الآن.",
+        "page": "صفحة",
+        "of": "من",
+        "usage_times": "مرات",
+        "stats": {
+          "total_customers": "إجمالي العملاء",
+          "total_balances": "إجمالي الأرصدة",
+          "total_transactions": "إجمالي العمليات"
+        }
+      }
     },
     "merchant_stats": {
       "welcome_desc": "تحليل ذكي وشامل لأداء متجرك الحقيقي اليوم.",
@@ -144,13 +295,20 @@
       "active_now": "نشط حالياً",
       "recent_transactions": "آخر المعاملات",
       "view_all": "عرض الكل",
-      "no_transactions": "لا توجد عمليات سابقة حتى الآن.",
+      "no_transactions": "لا توجد عمليات مسجلة حتى الآن.",
       "deposit": "شحن رصيد",
       "withdraw": "خصم من الرصيد",
       "balance_after": "الرصيد: {balance} ر.س",
       "home": "الرئيسية",
       "transactions": "العمليات",
-      "offers": "العروض"
+      "offers": "العروض",
+      "welcome_guest": "أهلاً بك، عميلنا المميز",
+      "last_deposit": "آخر شحن",
+      "request_deposit": "طلب شحن",
+      "your_transactions": "سجل عملياتك",
+      "filter": "تصفية",
+      "my_cards": "بطاقاتي",
+      "notifications": "التنبيهات"
     },
     "user_status": {
       "admin": "مدير النظام",
@@ -158,34 +316,97 @@
       "customer": "عميل",
       "online": "متصل",
       "offline": "غير متصل"
+    },
+    "landing": {
+      "hero": {
+        "tqdr_plus": "تقدر Plus",
+        "smart_discount_system": "نظام الخصومات الذكي",
+        "current_balance": "رصيدك الحالي",
+        "total_savings": "إجمالي التوفير",
+        "subscribe_now": "اشترك الآن"
+      },
+      "contact": {
+        "call_us": "اتصل بنا",
+        "email_us": "راسلنا",
+        "whatsapp": "واتساب"
+      }
     }
   },
   "customers": {
     "title": "إدارة العملاء",
+    "subtitle": "قم بإضافة عملاء جدد وإدارة أرصدتهم بكل سهولة.",
     "add_new": "إضافة عميل جديد",
+    "edit_customer": "تعديل بيانات العميل",
+    "update_data": "تحديث البيانات",
+    "search_placeholder": "ابحث بالاسم أو رقم الجوال...",
+    "quick_actions": "الإجراءات السريعة",
+    "deposit_new": "شحن رصيد جديد",
+    "withdraw_balance": "خصم من الرصيد",
+    "history": "السجل",
+    "history_title": "سجل معاملات العميل",
+    "no_customers": "لا يوجد عملاء مضافين حالياً",
+    "start_adding": "ابدأ بإضافة أول عميل لمتجرك الآن",
+    "account_suspended": "الحساب معلق. لا يمكن إضافة عملاء.",
+    "opening_balance": "الرصيد الافتتاحي",
+    "paid_amount": "المبلغ المدفوع (كاش)",
+    "added_balance": "الرصيد المضاف",
+    "select_offer": "اختيار العرض / الاشتراك",
+    "no_offer_prepaid": "بدون عرض (دفع مقدم فقط)",
+    "save_customer_sub": "حفظ العميل والاشتراك",
+    "available_balance": "رصيد متاح للاستهلاك",
+    "total_savings_desc": "إجمالي المبالغ المخفّضة",
+    "since": "منذ",
     "table": {
       "name": "اسم العميل",
       "phone": "رقم الجوال",
       "balance": "الرصيد",
-      "total_savings": "إجمالي المدخرات",
+      "total_savings": "إجمالي التوفير",
       "actions": "إجراءات"
+    },
+    "errors": {
+      "suspended": "لا يمكن إضافة عملاء جدد أثناء تعليق الحساب",
+      "login_required": "يرجى تسجيل الدخول أولاً",
+      "insufficient_balance": "رصيد العميل غير كافٍ",
+      "select_offer_first": "يرجى اختيار عرض شحن أولاً"
+    },
+    "sms": {
+      "welcome": "أهلاً بك في {shop}! تم تفعيل حسابك بنجاح برصيد {balance} ر.س.",
+      "savings_info": " لقد وفرت {discount} ر.س من خلال اشتراكك في ({offer}).",
+      "footer": " إجمالي توفيرك معنا هو {total} ر.س. تابع رصيدك عبر: tqdr.me/my",
+      "subscription_success": "تم تفعيل اشتراك ({offer}) بنجاح في {shop}. رصيدك الجديد {balance} ر.س. لقد وفرت {savings} ر.س في هذه العملية، وإجمالي توفيرك معنا هو {total} ر.س! شكراً لثقتك."
     }
   },
   "transactions": {
-    "title": "العمليات المالية",
-    "deposit": "شحن رصيد",
-    "withdraw": "سحب رصيد",
-    "amount": "المبلغ",
-    "date": "التاريخ",
-    "status": "الحالة",
+    "title": "سجل العمليات",
+    "subtitle": "سجل كامل لجميع عمليات الشحن والخصم ومتابعة الأرصدة.",
+    "new_transaction": "عملية جديدة",
+    "select_customer": "اختر العميل",
+    "select_customer_placeholder": "اختر عميلاً من القائمة",
+    "link_subscription": "ربط باشتراك (اختياري)",
+    "note_placeholder": "اكتب ملاحظة هنا...",
+    "success_title": "تمت العملية بنجاح",
+    "success_notified": "تم تنفيذ العملية بنجاح وإرسال الإشعار للعميل.",
+    "filters": {
+      "all": "جميع العمليات",
+      "all_offers": "كل العروض",
+      "all_types": "جميع الأنواع"
+    },
+    "table": {
+      "customer": "العميل والمعلومات",
+      "type": "نوع العملية",
+      "amount": "المبلغ والقيمة",
+      "time": "التوقيت",
+      "status": "الحالة"
+    },
     "types": {
       "deposit": "شحن رصيد",
-      "withdrawal": "سحب / خصم"
+      "withdrawal": "خصم رصيد"
     },
     "status_labels": {
-      "completed": "مكتمل",
-      "pending": "معلق"
-    }
+      "completed": "مكتمل"
+    },
+    "date": "التوقيت",
+    "amount": "المبلغ"
   },
   "landing": {
     "nav": {
@@ -373,5 +594,8 @@
       "rights": "تقدر بلس. جميع الحقوق محفوظة.",
       "status": "تشغيل مستمر على مدار الساعة"
     }
+  },
+  "admin": {
+    "welcome_sms": "مرحباً بك كصاحب محل في منصة تقدر بلس! تم إنشاء حسابك لمتجر {shop_name}. بيانات دخولك: البريد: {email} كلمة المرور: {password} رابط الدخول: https://tqdrplus.sa/login"
   }
 }

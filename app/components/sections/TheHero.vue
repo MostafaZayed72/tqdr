@@ -113,17 +113,17 @@ onUnmounted(() => {
                     <img src="/logo.png" alt="Logo" class="w-full h-auto" />
                   </div>
                   <div>
-                    <p class="text-[10px] font-black text-slate-900">تقدر Plus</p>
-                    <p class="text-[8px] text-slate-500">نظام الخصومات الذكي</p>
+                    <p class="text-[10px] font-black text-slate-900">{{ $t('landing.hero.tqdr_plus') }}</p>
+                    <p class="text-[8px] text-slate-500">{{ $t('landing.hero.smart_discount_system') }}</p>
                   </div>
                 </div>
                 
                 <div class="bg-slate-900 rounded-3xl p-5 text-white space-y-4">
-                  <p class="text-[10px] opacity-60">رصيدك الحالي</p>
+                  <p class="text-[10px] opacity-60">{{ $t('landing.hero.current_balance') }}</p>
                   <p class="text-3xl font-black">120.00 <span class="text-sm font-bold opacity-60">SAR</span></p>
                   <div class="pt-4 border-t border-white/10 flex justify-between">
                     <div>
-                      <p class="text-[8px] opacity-60">إجمالي التوفير</p>
+                      <p class="text-[8px] opacity-60">{{ $t('landing.hero.total_savings') }}</p>
                       <p class="font-bold text-green-400 text-sm">40.80 SAR</p>
                     </div>
                     <div class="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center">
@@ -148,7 +148,7 @@ onUnmounted(() => {
                 </div>
 
                 <button class="w-full py-4 bg-green-500 text-slate-950 font-black rounded-2xl text-sm shadow-lg shadow-green-500/20">
-                  اشترك الآن
+                  {{ $t('landing.hero.subscribe_now') }}
                 </button>
               </div>
             </div>

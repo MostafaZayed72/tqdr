@@ -113,9 +113,9 @@ watch([filterType, offerFilter, searchQuery], () => {
       <div>
         <div class="flex items-center gap-3 mb-1">
           <History class="w-8 h-8 text-emerald-500" />
-          <h1 class="text-3xl font-black text-slate-900 dark:text-white">سجل العمليات 📑</h1>
+          <h1 class="text-3xl font-black text-slate-900 dark:text-white">{{ $t('dashboard.admin_stats.reports.title') }}</h1>
         </div>
-        <p class="text-slate-500 dark:text-slate-400">مراقبة جميع العمليات المالية عبر المنصة بالكامل.</p>
+        <p class="text-slate-500 dark:text-slate-400">{{ $t('dashboard.admin_stats.reports.subtitle') }}</p>
       </div>
       
     </div>
@@ -127,7 +127,7 @@ watch([filterType, offerFilter, searchQuery], () => {
         <input 
           v-model="searchQuery"
           type="text" 
-          placeholder="البحث في الملاحظات أو الكود..."
+          :placeholder="$t('dashboard.admin_stats.reports.search_placeholder')"
           :class="locale === 'ar' ? 'pr-12' : 'pl-12'"
           class="w-full bg-slate-50 dark:bg-white/5 border-none rounded-2xl py-4 focus:ring-2 focus:ring-emerald-500/50 transition-all text-slate-900 dark:text-white"
         />
@@ -140,8 +140,8 @@ watch([filterType, offerFilter, searchQuery], () => {
             v-model="offerFilter"
             class="w-full bg-slate-50 dark:bg-white/5 border border-transparent hover:border-emerald-500/30 rounded-2xl px-6 py-4 font-bold text-slate-700 dark:text-slate-300 focus:ring-0 appearance-none cursor-pointer"
           >
-            <option value="all">كل العروض / الكل</option>
-            <option value="prepaid">الدفع المقدم فقط</option>
+            <option value="all">{{ $t('dashboard.admin_stats.reports.all_offers') }}</option>
+            <option value="prepaid">{{ $t('dashboard.admin_stats.reports.prepaid_only') }}</option>
             <option v-for="offer in availableOffers" :key="offer.id" :value="offer.id">
               {{ offer.name }}
             </option>
@@ -155,9 +155,9 @@ watch([filterType, offerFilter, searchQuery], () => {
           v-model="filterType"
           class="bg-slate-50 dark:bg-white/5 border border-transparent hover:border-emerald-500/30 rounded-2xl px-6 py-4 font-bold text-slate-700 dark:text-slate-300 focus:ring-0 appearance-none min-w-[140px]"
         >
-          <option value="all">جميع الأنواع</option>
-          <option value="deposit">شحن فقط</option>
-          <option value="withdrawal">خصم فقط</option>
+          <option value="all">{{ $t('dashboard.admin_stats.reports.all_types') }}</option>
+          <option value="deposit">{{ $t('dashboard.admin_stats.reports.deposit_only') }}</option>
+          <option value="withdrawal">{{ $t('dashboard.admin_stats.reports.withdrawal_only') }}</option>
         </select>
       </div>
     </div>
@@ -168,11 +168,11 @@ watch([filterType, offerFilter, searchQuery], () => {
         <table class="w-full" :class="locale === 'ar' ? 'text-right' : 'text-left'">
           <thead>
             <tr class="bg-slate-50 dark:bg-white/5 border-b border-slate-100 dark:border-white/5">
-              <th class="px-6 py-4 text-sm font-bold text-slate-500">المتجر / البائع</th>
-              <th class="px-6 py-4 text-sm font-bold text-slate-500">العميل</th>
-              <th class="px-6 py-4 text-sm font-bold text-slate-500">النوع</th>
-              <th class="px-6 py-4 text-sm font-bold text-slate-500">المبلغ</th>
-              <th class="px-6 py-4 text-sm font-bold text-slate-500">التاريخ</th>
+              <th class="px-6 py-4 text-sm font-bold text-slate-500">{{ $t('dashboard.admin_stats.reports.table.shop') }}</th>
+              <th class="px-6 py-4 text-sm font-bold text-slate-500">{{ $t('dashboard.admin_stats.reports.table.customer') }}</th>
+              <th class="px-6 py-4 text-sm font-bold text-slate-500">{{ $t('dashboard.admin_stats.reports.table.type') }}</th>
+              <th class="px-6 py-4 text-sm font-bold text-slate-500">{{ $t('dashboard.admin_stats.reports.table.amount') }}</th>
+              <th class="px-6 py-4 text-sm font-bold text-slate-500">{{ $t('dashboard.admin_stats.reports.table.date') }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 dark:divide-white/5">
@@ -182,7 +182,7 @@ watch([filterType, offerFilter, searchQuery], () => {
                 <div class="text-[10px] text-slate-400">ID: {{ tx.shop_owner_id.split('-')[0] }}</div>
               </td>
               <td class="px-6 py-4 text-slate-700 dark:text-slate-300 font-medium">
-                {{ tx.customer?.name || 'غير متوفر' }}
+                {{ tx.customer?.name || $t('common.no_data') }}
               </td>
               <td class="px-6 py-4">
                 <div class="flex items-center gap-2">
@@ -190,7 +190,7 @@ watch([filterType, offerFilter, searchQuery], () => {
                     <component :is="tx.type === 'deposit' ? ArrowUpRight : ArrowDownRight" class="w-4 h-4" />
                   </div>
                   <span class="text-sm font-bold" :class="tx.type === 'deposit' ? 'text-emerald-500' : 'text-red-500'">
-                    {{ tx.type === 'deposit' ? 'إيداع' : 'سحب' }}
+                    {{ tx.type === 'deposit' ? $t('dashboard.merchant_stats.deposit') : $t('dashboard.merchant_stats.withdrawal') }}
                   </span>
                 </div>
               </td>
@@ -200,10 +200,10 @@ watch([filterType, offerFilter, searchQuery], () => {
                     {{ tx.type === 'deposit' ? '+' : '-' }}{{ tx.amount }}
                   </span>
                   <span v-if="tx.offer_id" class="text-[10px] text-slate-400 font-bold">
-                    ({{ offerMap[tx.offer_id] || 'جاري التحميل...' }})
+                    ({{ offerMap[tx.offer_id] || $t('common.loading') }})
                   </span>
                   <span v-else class="text-[10px] text-slate-400 font-bold">
-                    (رصيد عام)
+                    ({{ $t('dashboard.admin_stats.reports.table.prepaid') }})
                   </span>
                 </div>
               </td>
@@ -225,11 +225,11 @@ watch([filterType, offerFilter, searchQuery], () => {
     <!-- Pagination -->
     <div v-if="totalPages > 1" class="p-6 bg-white dark:bg-slate-900 rounded-[32px] border border-slate-200 dark:border-white/5 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-sm">
       <p class="text-sm text-slate-500 font-bold">
-        عرض 
+        {{ $t('common.showing') }} 
         <span class="text-slate-900 dark:text-white">{{ (currentPage - 1) * pageSize + 1 }}</span>
         -
         <span class="text-slate-900 dark:text-white">{{ Math.min(currentPage * pageSize, totalTransactions) }}</span>
-        من
+        {{ $t('common.of') }}
         <span class="text-slate-900 dark:text-white">{{ totalTransactions }}</span>
       </p>
       

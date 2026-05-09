@@ -138,16 +138,16 @@ const fetchOffers = async () => {
 
 const handleAddCustomer = async () => {
   try {
-    if (isSuspended.value) throw new Error('لا يمكن إضافة عملاء جدد أثناء تعليق الحساب')
+    if (isSuspended.value) throw new Error(t('customers.errors.suspended'))
     loading.value = true
     
     // Explicitly get user to avoid null shop_owner_id
     const { data: { user: currentUser } } = await client.auth.getUser()
-    if (!currentUser) throw new Error('يرجى تسجيل الدخول أولاً')
+    if (!currentUser) throw new Error(t('customers.errors.login_required'))
 
     // 1. Create Customer
     const { data: customer, error: custError } = await client.from('customers').insert({
-      name: form.value.name || 'عميل جديد',
+      name: form.value.name || t('dashboard.merchant_stats.new_customer'),
       mobile_number: form.value.mobile_number,
       balance: form.value.added_balance,
       shop_owner_id: currentUser.id,
@@ -167,7 +167,7 @@ const handleAddCustomer = async () => {
         amount: form.value.added_balance,
         balance_before: 0,
         balance_after: form.value.added_balance,
-        note: 'افتتاح حساب عميل جديد',
+        note: t('customers.opening_balance'),
         offer_id: form.value.offer_id || null
       })
     }
@@ -193,13 +193,13 @@ const handleAddCustomer = async () => {
     
     // 4. Send Welcome SMS
     try {
-      const shopName = profile.value?.shop_name || 'تقدر'
-      let smsMessage = `أهلاً بك في ${shopName}! تم تفعيل حسابك بنجاح برصيد ${form.value.added_balance} ر.س.`
+      const shopName = profile.value?.shop_name || 'Tqdr'
+      let smsMessage = t('customers.sms.welcome', { shop: shopName, balance: form.value.added_balance })
       if (duration > 0) {
         const offer = availableOffers.value.find(o => o.id === form.value.offer_id)
-        smsMessage += ` لقد وفرت ${offer?.discount || 0} ر.س من خلال اشتراكك في (${offer?.name}).`
+        smsMessage += t('customers.sms.savings_info', { discount: offer?.discount || 0, offer: offer?.name })
       }
-      smsMessage += ` إجمالي توفيرك معنا هو ${customer.total_saved} ر.س. تابع رصيدك عبر: tqdr.me/my`
+      smsMessage += t('customers.sms.footer', { total: customer.total_saved })
 
 
 
@@ -235,14 +235,14 @@ const handleQuickTx = async () => {
     loading.value = true
     
     const { data: { user: currentUser } } = await client.auth.getUser()
-    if (!currentUser) throw new Error('يرجى تسجيل الدخول أولاً')
+    if (!currentUser) throw new Error(t('customers.errors.login_required'))
 
     const customer = selectedCustomer.value
     const balanceBefore = Number(customer.balance)
     let balanceAfter = balanceBefore
 
     if (txForm.value.type === 'deposit' && !txForm.value.offer_id) {
-      throw new Error('يرجى اختيار عرض شحن أولاً')
+      throw new Error(t('customers.errors.select_offer_first'))
     }
 
     if (txForm.value.type === 'deposit') {
@@ -251,7 +251,7 @@ const handleQuickTx = async () => {
       balanceAfter -= Number(txForm.value.amount)
     }
 
-    if (balanceAfter < 0) throw new Error('رصيد العميل غير كافٍ')
+    if (balanceAfter < 0) throw new Error(t('customers.errors.insufficient_balance'))
 
     // 1. Calculate Saving (if offer selected)
     let savingAmount = 0
@@ -300,9 +300,15 @@ const handleQuickTx = async () => {
 
         // Send SMS for subscription
         try {
-          const shopName = profile.value?.shop_name || 'تقدر بلس'
+          const shopName = profile.value?.shop_name || 'Tqdr Plus'
           const totalSaved = (Number(customer.total_saved) || 0) + savingAmount
-          const smsMessage = `تم تفعيل اشتراك (${offer.name}) بنجاح في ${shopName}. رصيدك الجديد ${balanceAfter} ر.س. لقد وفرت ${savingAmount} ر.س في هذه العملية، وإجمالي توفيرك معنا هو ${totalSaved} ر.س! شكراً لثقتك.`
+          const smsMessage = t('customers.sms.subscription_success', { 
+            offer: offer.name, 
+            shop: shopName, 
+            balance: balanceAfter, 
+            savings: savingAmount, 
+            total: totalSaved 
+          })
           
           await $fetch('/api/sms/send', {
             method: 'POST',
@@ -431,8 +437,8 @@ watch(searchQuery, fetchCustomers)
     <!-- Header -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
-        <h1 class="text-3xl font-black text-slate-900 dark:text-white">إدارة العملاء</h1>
-        <p class="text-slate-500 dark:text-slate-400 mt-1">قم بإضافة عملاء جدد وإدارة أرصدتهم بكل سهولة.</p>
+        <h1 class="text-3xl font-black text-slate-900 dark:text-white">{{ $t('customers.title') }}</h1>
+        <p class="text-slate-500 dark:text-slate-400 mt-1">{{ $t('customers.subtitle') }}</p>
       </div>
       
       <button 
@@ -441,11 +447,11 @@ watch(searchQuery, fetchCustomers)
         class="flex items-center gap-2 px-6 py-3 bg-emerald-500 text-slate-950 rounded-2xl font-bold hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 premium-btn"
       >
         <Plus class="w-5 h-5" />
-        <span>إضافة عميل جديد</span>
+        <span>{{ $t('customers.add_new') }}</span>
       </button>
       <div v-else class="flex items-center gap-3 px-6 py-3 bg-red-500/10 border border-red-500/20 rounded-2xl">
         <div class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-        <p class="text-red-500 font-bold text-xs">الحساب معلق. لا يمكن إضافة عملاء.</p>
+        <p class="text-red-500 font-bold text-xs">{{ $t('customers.account_suspended') }}</p>
       </div>
     </div>
 
@@ -456,7 +462,7 @@ watch(searchQuery, fetchCustomers)
         <input 
           v-model="searchQuery"
           type="text" 
-          placeholder="ابحث بالاسم أو رقم الجوال..."
+          :placeholder="$t('customers.search_placeholder')"
           :class="locale === 'ar' ? 'pr-12 pl-4' : 'pl-12 pr-4'"
           class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl py-4 focus:ring-2 focus:ring-emerald-500/50 transition-all text-slate-900 dark:text-white"
         />
@@ -469,18 +475,18 @@ watch(searchQuery, fetchCustomers)
         <table class="w-full" :class="locale === 'ar' ? 'text-right' : 'text-left'">
           <thead>
             <tr class="bg-slate-50 dark:bg-white/5 border-b border-slate-100 dark:border-white/5">
-              <th class="px-6 py-5 text-sm font-bold text-slate-500">اسم العميل</th>
-              <th class="px-6 py-5 text-sm font-bold text-slate-500">رقم الجوال</th>
-              <th class="px-6 py-5 text-sm font-bold text-slate-500">الرصيد</th>
-              <th class="px-6 py-5 text-sm font-bold text-slate-500">إجمالي التوفير</th>
-              <th class="px-6 py-5 text-sm font-bold text-slate-500 text-center">الإجراءات السريعة</th>
+              <th class="px-6 py-5 text-sm font-bold text-slate-500">{{ $t('customers.table.name') }}</th>
+              <th class="px-6 py-5 text-sm font-bold text-slate-500">{{ $t('customers.table.phone') }}</th>
+              <th class="px-6 py-5 text-sm font-bold text-slate-500">{{ $t('customers.table.balance') }}</th>
+              <th class="px-6 py-5 text-sm font-bold text-slate-500">{{ $t('customers.table.total_savings') }}</th>
+              <th class="px-6 py-5 text-sm font-bold text-slate-500 text-center">{{ $t('customers.quick_actions') }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 dark:divide-white/5">
             <tr v-for="customer in customers" :key="customer.id" class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group">
               <td class="px-6 py-5">
                 <div class="font-black text-slate-900 dark:text-white text-lg">{{ customer.name }}</div>
-                <div class="text-[10px] text-slate-400 mt-0.5">منذ {{ new Date(customer.created_at).toLocaleDateString('ar-EG') }}</div>
+                <div class="text-[10px] text-slate-400 mt-0.5">{{ $t('customers.since') }} {{ new Date(customer.created_at).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US') }}</div>
               </td>
 
               <td class="px-6 py-5">
@@ -491,14 +497,14 @@ watch(searchQuery, fetchCustomers)
               </td>
               <td class="px-6 py-5">
                 <div class="flex flex-col">
-                  <span class="text-xl font-black text-emerald-500">{{ customer.balance }} ر.س</span>
-                  <span class="text-[10px] text-slate-400">رصيد متاح للاستهلاك</span>
+                  <span class="text-xl font-black text-emerald-500">{{ customer.balance }} {{ $t('common.currency') }}</span>
+                  <span class="text-[10px] text-slate-400">{{ $t('customers.available_balance') }}</span>
                 </div>
               </td>
               <td class="px-6 py-5">
                 <div class="flex flex-col">
-                  <span class="text-lg font-bold text-blue-500">{{ customer.total_saved }} ر.س</span>
-                  <span class="text-[10px] text-slate-400">إجمالي المبالغ المخفّضة</span>
+                  <span class="text-lg font-bold text-blue-500">{{ customer.total_saved }} {{ $t('common.currency') }}</span>
+                  <span class="text-[10px] text-slate-400">{{ $t('customers.total_savings_desc') }}</span>
                 </div>
               </td>
               <td class="px-6 py-5">
@@ -507,14 +513,14 @@ watch(searchQuery, fetchCustomers)
                     <button 
                       @click="openTxModal(customer, 'deposit')" 
                       class="p-2 bg-emerald-500/10 text-emerald-600 rounded-xl hover:bg-emerald-500 hover:text-white transition-all shadow-sm active:scale-95"
-                      title="شحن رصيد"
+                      :title="$t('customers.deposit_new')"
                     >
                       <PlusCircle class="w-5 h-5" />
                     </button>
                     <button 
                       @click="openTxModal(customer, 'withdrawal')" 
                       class="p-2 bg-red-500/10 text-red-600 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-sm active:scale-95"
-                      title="خصم رصيد"
+                      :title="$t('customers.withdraw_balance')"
                     >
                       <MinusCircle class="w-5 h-5" />
                     </button>
@@ -523,16 +529,15 @@ watch(searchQuery, fetchCustomers)
                   <div class="w-[1px] h-8 bg-slate-200 dark:bg-white/10 mx-1"></div>
                   
                   <div class="flex items-center gap-1">
-                    <button @click="viewHistory(customer)" class="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-500/10 rounded-xl transition-all active:scale-90" title="السجل">
+                    <button @click="viewHistory(customer)" class="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-500/10 rounded-xl transition-all active:scale-90" :title="$t('customers.history')">
                       <History class="w-5 h-5" />
                     </button>
-                    <button @click="openEditModal(customer)" class="p-2 text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 rounded-xl transition-all active:scale-90" title="تعديل">
+                    <button @click="openEditModal(customer)" class="p-2 text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 rounded-xl transition-all active:scale-90" :title="$t('common.edit')">
                       <Edit2 class="w-5 h-5" />
                     </button>
-                    <button @click="handleDeleteCustomer(customer)" class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-500/10 rounded-xl transition-all active:scale-90" title="حذف">
+                    <button @click="handleDeleteCustomer(customer)" class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-500/10 rounded-xl transition-all active:scale-90" :title="$t('common.delete')">
                       <Trash2 class="w-5 h-5" />
                     </button>
-
                   </div>
                 </div>
               </td>
@@ -541,8 +546,8 @@ watch(searchQuery, fetchCustomers)
               <td colspan="5" class="px-6 py-20 text-center text-slate-500">
                 <div class="flex flex-col items-center gap-4 opacity-40">
                   <Users class="w-20 h-20 text-slate-300" />
-                  <p class="text-xl font-bold">لا يوجد عملاء مضافين حالياً</p>
-                  <p class="text-sm">ابدأ بإضافة أول عميل لمتجرك الآن</p>
+                  <p class="text-xl font-bold">{{ $t('customers.no_customers') }}</p>
+                  <p class="text-sm">{{ $t('customers.start_adding') }}</p>
                 </div>
               </td>
             </tr>
@@ -553,11 +558,11 @@ watch(searchQuery, fetchCustomers)
       <!-- Pagination -->
       <div v-if="totalPages > 1" class="p-6 bg-slate-50/50 dark:bg-white/5 border-t border-slate-100 dark:border-white/5 flex items-center justify-between">
         <p class="text-sm text-slate-500 font-medium">
-          عرض 
+          {{ $t('common.showing') }} 
           <span class="font-bold text-slate-900 dark:text-white">{{ (currentPage - 1) * pageSize + 1 }}</span>
-          إلى
+          {{ $t('common.to') }}
           <span class="font-bold text-slate-900 dark:text-white">{{ Math.min(currentPage * pageSize, totalCustomers) }}</span>
-          من أصل
+          {{ $t('common.of') }}
           <span class="font-bold text-slate-900 dark:text-white">{{ totalCustomers }}</span>
         </p>
         
@@ -603,8 +608,8 @@ watch(searchQuery, fetchCustomers)
               <Edit2 class="w-6 h-6" />
             </div>
             <div>
-              <h3 class="text-2xl font-black text-slate-900 dark:text-white">تعديل بيانات العميل</h3>
-              <p class="text-sm text-slate-500">تحديث معلومات العميل الأساسية</p>
+              <h3 class="text-2xl font-black text-slate-900 dark:text-white">{{ $t('customers.edit_customer') }}</h3>
+              <p class="text-sm text-slate-500">{{ $t('customers.update_data') }}</p>
             </div>
           </div>
           <button @click="showEditModal = false" class="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-all">
@@ -616,13 +621,13 @@ watch(searchQuery, fetchCustomers)
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="space-y-2">
               <label class="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                <User class="w-4 h-4 text-amber-500" /> اسم العميل
+                <User class="w-4 h-4 text-amber-500" /> {{ $t('customers.table.name') }}
               </label>
-              <input v-model="form.name" type="text" required placeholder="محمد علي..." class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl px-5 py-4 focus:ring-2 focus:ring-amber-500" />
+              <input v-model="form.name" type="text" required placeholder="Ex: Mohammed..." class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl px-5 py-4 focus:ring-2 focus:ring-amber-500" />
             </div>
             <div class="space-y-2">
               <label class="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                <Smartphone class="w-4 h-4 text-amber-500" /> رقم الجوال
+                <Smartphone class="w-4 h-4 text-amber-500" /> {{ $t('customers.table.phone') }}
               </label>
               <input v-model="form.mobile_number" type="tel" required placeholder="05xxxxxxxx" class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl px-5 py-4 focus:ring-2 focus:ring-amber-500" />
             </div>
@@ -631,7 +636,7 @@ watch(searchQuery, fetchCustomers)
 
 
           <button type="submit" class="w-full bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 font-black py-5 rounded-[24px] text-lg hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-amber-500/10">
-            تحديث البيانات
+            {{ $t('customers.update_data') }}
           </button>
         </form>
       </div>
@@ -647,8 +652,8 @@ watch(searchQuery, fetchCustomers)
               <Plus class="w-6 h-6" />
             </div>
             <div>
-              <h3 class="text-2xl font-black text-slate-900 dark:text-white">إضافة عميل جديد</h3>
-              <p class="text-sm text-slate-500">سجل بيانات عميلك وابدأ في شحن رصيده</p>
+              <h3 class="text-2xl font-black text-slate-900 dark:text-white">{{ $t('customers.add_new') }}</h3>
+              <p class="text-sm text-slate-500">{{ $t('customers.subtitle') }}</p>
             </div>
           </div>
           <button @click="showAddModal = false" class="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-all">
@@ -660,13 +665,13 @@ watch(searchQuery, fetchCustomers)
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="space-y-2">
               <label class="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                <User class="w-4 h-4 text-emerald-500" /> اسم العميل (اختياري)
+                <User class="w-4 h-4 text-emerald-500" /> {{ $t('customers.table.name') }} ({{ $t('common.optional') }})
               </label>
-              <input v-model="form.name" type="text" placeholder="محمد علي..." class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl px-5 py-4 focus:ring-2 focus:ring-emerald-500" />
+              <input v-model="form.name" type="text" placeholder="Ex: Mohammed..." class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl px-5 py-4 focus:ring-2 focus:ring-emerald-500" />
             </div>
             <div class="space-y-2">
               <label class="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                <Smartphone class="w-4 h-4 text-emerald-500" /> رقم الجوال
+                <Smartphone class="w-4 h-4 text-emerald-500" /> {{ $t('customers.table.phone') }}
               </label>
               <input v-model="form.mobile_number" type="tel" required placeholder="05xxxxxxxx" class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl px-5 py-4 focus:ring-2 focus:ring-emerald-500" />
             </div>
@@ -677,7 +682,7 @@ watch(searchQuery, fetchCustomers)
           <!-- Subscription Offers -->
           <div class="space-y-4">
             <label class="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-              <DollarSign class="w-4 h-4 text-emerald-500" /> اختيار العرض / الاشتراك
+              <DollarSign class="w-4 h-4 text-emerald-500" /> {{ $t('customers.select_offer') }}
             </label>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button 
@@ -686,7 +691,7 @@ watch(searchQuery, fetchCustomers)
                 :class="form.offer_id === '' ? 'bg-emerald-500 text-slate-950 border-emerald-500' : 'bg-slate-100 dark:bg-white/5 text-slate-500 border-transparent'"
                 class="px-4 py-3 rounded-2xl border-2 text-sm font-bold transition-all text-center"
               >
-                بدون عرض (دفع مقدم فقط)
+                {{ $t('customers.no_offer_prepaid') }}
               </button>
               <button 
                 v-for="offer in availableOffers" 
@@ -697,7 +702,7 @@ watch(searchQuery, fetchCustomers)
                 class="px-4 py-3 rounded-2xl border-2 text-sm font-bold transition-all text-center flex flex-col items-center gap-1"
               >
                 <span>{{ offer.name }}</span>
-                <span class="text-[10px] opacity-70">{{ offer.price }} ر.س - {{ offer.duration }} يوم</span>
+                <span class="text-[10px] opacity-70">{{ offer.price }} {{ $t('common.currency') }} - {{ offer.duration }} {{ $t('subscriptions.duration_unit') }}</span>
               </button>
             </div>
           </div>
@@ -706,15 +711,15 @@ watch(searchQuery, fetchCustomers)
           <div class="bg-emerald-500/5 p-8 rounded-[32px] border border-emerald-500/10 space-y-6">
             <div class="flex items-center gap-2 text-emerald-600 font-black mb-2">
               <Wallet class="w-5 h-5" />
-              <span>الرصيد الافتتاحي</span>
+              <span>{{ $t('customers.opening_balance') }}</span>
             </div>
             <div class="grid grid-cols-2 gap-6">
               <div class="space-y-2">
-                <label class="text-[10px] uppercase font-bold text-slate-500">المبلغ المدفوع (كاش)</label>
+                <label class="text-[10px] uppercase font-bold text-slate-500">{{ $t('customers.paid_amount') }}</label>
                 <input v-model="form.paid_amount" type="number" step="0.01" :readonly="form.offer_id !== ''" :class="form.offer_id !== '' ? 'opacity-50 cursor-not-allowed' : ''" class="w-full bg-white dark:bg-slate-900 border-none rounded-2xl px-4 py-3 font-bold text-lg focus:ring-2 focus:ring-emerald-500" />
               </div>
               <div class="space-y-2">
-                <label class="text-[10px] uppercase font-bold text-slate-500">الرصيد المضاف</label>
+                <label class="text-[10px] uppercase font-bold text-slate-500">{{ $t('customers.added_balance') }}</label>
                 <input v-model="form.added_balance" type="number" step="0.01" :readonly="form.offer_id !== ''" :class="form.offer_id !== '' ? 'opacity-50 cursor-not-allowed' : ''" class="w-full bg-white dark:bg-slate-900 border-none rounded-2xl px-4 py-3 font-bold text-lg text-emerald-500 focus:ring-2 focus:ring-emerald-500" />
               </div>
             </div>
@@ -726,7 +731,7 @@ watch(searchQuery, fetchCustomers)
             class="w-full bg-slate-900 dark:bg-emerald-500 text-white dark:text-slate-950 font-black py-5 rounded-[24px] text-lg hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-emerald-500/10 flex items-center justify-center gap-3"
           >
             <span v-if="loading" class="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></span>
-            <span>حفظ العميل والاشتراك</span>
+            <span>{{ $t('customers.save_customer_sub') }}</span>
           </button>
 
         </form>
@@ -743,7 +748,7 @@ watch(searchQuery, fetchCustomers)
               <component :is="txForm.type === 'deposit' ? ArrowUpCircle : ArrowDownCircle" class="w-6 h-6" />
             </div>
             <div>
-              <h3 class="text-2xl font-black text-slate-900 dark:text-white">{{ txForm.type === 'deposit' ? 'شحن رصيد جديد' : 'خصم من الرصيد' }}</h3>
+              <h3 class="text-2xl font-black text-slate-900 dark:text-white">{{ txForm.type === 'deposit' ? $t('customers.deposit_new') : $t('customers.withdraw_balance') }}</h3>
               <p class="text-sm text-slate-500">{{ selectedCustomer?.name }}</p>
             </div>
           </div>
@@ -754,7 +759,7 @@ watch(searchQuery, fetchCustomers)
 
         <form @submit.prevent="handleQuickTx" class="p-10 space-y-8">
           <div class="space-y-4">
-            <label class="text-center block text-sm font-bold text-slate-500 uppercase tracking-widest">أدخل المبلغ</label>
+            <label class="text-center block text-sm font-bold text-slate-500 uppercase tracking-widest">{{ $t('transactions.amount') }}</label>
             <input 
               v-model="txForm.amount" 
               type="number" 
@@ -770,7 +775,7 @@ watch(searchQuery, fetchCustomers)
 
           <!-- Subscription Selection in Tx Modal (MANDATORY for deposit) -->
           <div v-if="txForm.type === 'deposit' && availableOffers.length > 0" class="space-y-4">
-            <label class="text-center block text-sm font-bold text-slate-500 uppercase tracking-widest">اختر عرض الشحن</label>
+            <label class="text-center block text-sm font-bold text-slate-500 uppercase tracking-widest">{{ $t('customers.select_offer') }}</label>
             <div class="grid grid-cols-1 gap-3">
               <button 
                 type="button"
@@ -786,7 +791,7 @@ watch(searchQuery, fetchCustomers)
                   </div>
                   <span>{{ offer.name }}</span>
                 </div>
-                <div class="text-lg font-black">{{ offer.price }} ر.س</div>
+                <div class="text-lg font-black">{{ offer.price }} {{ $t('common.currency') }}</div>
               </button>
             </div>
           </div>
@@ -800,7 +805,7 @@ watch(searchQuery, fetchCustomers)
             class="w-full text-slate-950 font-black py-6 rounded-[28px] text-xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl flex items-center justify-center gap-3"
           >
             <span v-if="loading" class="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></span>
-            <span>تأكيد العملية الآن</span>
+            <span>{{ $t('common.confirm') }}</span>
           </button>
 
         </form>
@@ -817,7 +822,7 @@ watch(searchQuery, fetchCustomers)
               <History class="w-6 h-6" />
             </div>
             <div>
-              <h3 class="text-2xl font-black text-slate-900 dark:text-white">سجل العميل</h3>
+              <h3 class="text-2xl font-black text-slate-900 dark:text-white">{{ $t('customers.history') }}</h3>
               <p class="text-sm text-slate-500">{{ selectedCustomer?.name }}</p>
             </div>
           </div>
@@ -827,23 +832,23 @@ watch(searchQuery, fetchCustomers)
         </div>
 
         <div class="max-h-[60vh] overflow-y-auto p-4 custom-scrollbar">
-          <div v-if="customerHistory.length === 0" class="p-20 text-center text-slate-400">لا توجد عمليات سابقة لهذا العميل.</div>
+          <div v-if="customerHistory.length === 0" class="p-20 text-center text-slate-400">{{ $t('dashboard.customer_stats.no_transactions') }}</div>
           <div v-for="tx in customerHistory" :key="tx.id" class="mb-4 p-5 rounded-3xl border border-slate-100 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/5 transition-all flex items-center justify-between">
             <div class="flex items-center gap-4">
               <div :class="tx.type === 'deposit' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'" class="w-12 h-12 rounded-2xl flex items-center justify-center font-black">
                 {{ tx.type === 'deposit' ? '+' : '-' }}
               </div>
               <div>
-                <p class="font-bold text-slate-900 dark:text-white">{{ tx.type === 'deposit' ? 'شحن رصيد' : 'خصم من الرصيد' }}</p>
-                <p class="text-[10px] text-slate-500">{{ new Date(tx.created_at).toLocaleString('ar-EG') }}</p>
+                <p class="font-bold text-slate-900 dark:text-white">{{ tx.type === 'deposit' ? $t('customers.deposit_new') : $t('customers.withdraw_balance') }}</p>
+                <p class="text-[10px] text-slate-500">{{ new Date(tx.created_at).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-US') }}</p>
                 <p v-if="tx.note" class="text-xs text-slate-400 mt-1 italic">"{{ tx.note }}"</p>
               </div>
             </div>
             <div class="text-right">
               <p class="font-black text-lg" :class="tx.type === 'deposit' ? 'text-emerald-500' : 'text-red-500'">
-                {{ tx.amount }} ر.س
+                {{ tx.amount }} {{ $t('common.currency') }}
               </p>
-              <p class="text-[10px] text-slate-400">بعد العملية: {{ tx.balance_after }} ر.س</p>
+              <p class="text-[10px] text-slate-400">{{ $t('dashboard.customer_stats.balance_after', { balance: tx.balance_after }) }}</p>
             </div>
           </div>
         </div>
@@ -862,11 +867,11 @@ watch(searchQuery, fetchCustomers)
           </div>
           
           <div class="space-y-2">
-            <h3 class="text-2xl font-black text-slate-900 dark:text-white">حذف العميل؟</h3>
+            <h3 class="text-2xl font-black text-slate-900 dark:text-white">{{ $t('common.delete_confirm', 'Delete?') }}</h3>
             <p class="text-slate-500 dark:text-slate-400 leading-relaxed px-4">
-              هل أنت متأكد من حذف <strong>{{ customerToDelete?.name }}</strong>؟ 
+              {{ $t('common.delete_warning', { name: customerToDelete?.name }) }}
               <br/>
-              <span class="text-red-500 text-xs font-bold">تحذير: سيتم حذف جميع سجلات العمليات المرتبطة به نهائياً.</span>
+              <span class="text-red-500 text-xs font-bold">{{ $t('common.delete_irreversible') }}</span>
             </p>
           </div>
 
@@ -877,14 +882,14 @@ watch(searchQuery, fetchCustomers)
               class="w-full bg-red-500 text-white font-black py-4 rounded-2xl hover:bg-red-600 transition-all shadow-xl shadow-red-500/20 flex items-center justify-center gap-3"
             >
               <span v-if="loading" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-              <span>تأكيد الحذف النهائي</span>
+              <span>{{ $t('common.confirm_delete') }}</span>
             </button>
             <button 
               @click="showDeleteModal = false"
               :disabled="loading"
               class="w-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 font-bold py-4 rounded-2xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all"
             >
-              إلغاء
+              {{ $t('common.cancel') }}
             </button>
           </div>
         </div>
@@ -899,13 +904,13 @@ watch(searchQuery, fetchCustomers)
           <div class="w-16 h-16 bg-red-500/10 text-red-500 rounded-2xl flex items-center justify-center mx-auto">
             <AlertCircle class="w-8 h-8" />
           </div>
-          <h3 class="text-xl font-bold text-slate-900 dark:text-white">عذراً، حدث خطأ</h3>
+          <h3 class="text-xl font-bold text-slate-900 dark:text-white">{{ $t('common.error_occurred') }}</h3>
           <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{{ errorMsg }}</p>
           <button 
             @click="showErrorModal = false"
             class="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold py-3 rounded-xl mt-4 transition-all active:scale-95"
           >
-            حسناً، فهمت
+            {{ $t('common.ok_got_it') }}
           </button>
         </div>
       </div>
