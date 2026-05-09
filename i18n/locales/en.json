@@ -173,6 +173,16 @@
         }
       ]
     },
+    "shop_benefits": {
+      "title": "Why join us?",
+      "subtitle": "Benefits for business owners",
+      "points": [
+        "Increases customer visit frequency and contributes to customer retention",
+        "Cash, liquidity, more and sustainable cash flow",
+        "A tool that enables you to manage and track all prepayment and subscription operations",
+        "Money is paid to you upfront"
+      ]
+    },
     "customer_features": {
       "badge": "Customer Benefits ✨",
       "title": "Easier & Smarter Shopping",

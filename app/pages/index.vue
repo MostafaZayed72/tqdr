@@ -28,6 +28,7 @@ onMounted(() => {
   <div>
     <SectionsTheHero />
     <div class="reveal"><SectionsTheHowItWorks /></div>
+    <div class="reveal"><SectionsTheShopBenefits /></div>
     <div class="reveal"><SectionsTheCustomerFeatures /></div>
     <div class="reveal"><SectionsTheShopFeatures /></div>
     <div class="reveal"><SectionsTheFaq /></div>
