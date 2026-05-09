@@ -154,7 +154,7 @@ const handleLogout = async () => {
           <div class="flex items-center gap-2">
             <Wallet class="w-5 h-5 text-emerald-500" />
             <h2 class="text-xl font-bold text-slate-900 dark:text-white hidden sm:block">
-              لوحة تحكم المتجر
+              {{ $t('nav.merchant_dashboard') }}
             </h2>
           </div>
         </div>
@@ -166,9 +166,12 @@ const handleLogout = async () => {
             <div class="w-8 h-8 bg-emerald-500 text-slate-950 rounded-lg flex items-center justify-center font-bold text-sm">
               {{ user?.email?.charAt(0).toUpperCase() }}
             </div>
-            <span class="text-sm font-bold text-slate-700 dark:text-slate-300 hidden sm:block">
-              {{ user?.email?.split('@')[0] }}
-            </span>
+            <div class="hidden sm:block text-right">
+              <span class="text-sm font-bold text-slate-700 dark:text-slate-300 block leading-tight">
+                {{ user?.email?.split('@')[0] }}
+              </span>
+              <span class="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">{{ $t('dashboard.user_status.online') }}</span>
+            </div>
           </div>
         </div>
       </header>

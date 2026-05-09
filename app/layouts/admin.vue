@@ -111,8 +111,8 @@ const handleLogout = async () => {
 
           <div class="flex items-center gap-3">
             <div class="hidden sm:block text-right">
-              <p class="text-sm font-bold text-slate-900 dark:text-white">Admin</p>
-              <p class="text-[10px] text-emerald-500 font-medium">Online</p>
+              <p class="text-sm font-bold text-slate-900 dark:text-white">{{ $t('dashboard.user_status.admin') }}</p>
+              <p class="text-[10px] text-emerald-500 font-medium">{{ $t('dashboard.user_status.online') }}</p>
             </div>
             <div class="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center text-emerald-500 font-bold border border-emerald-500/30">
               AD
