@@ -80,22 +80,7 @@ onUnmounted(() => {
                 {{ slides[currentSlide].subtitle }}
               </p>
 
-              <!-- CTAs -->
-              <div class="flex flex-wrap gap-4 pt-4">
-                <a
-                  href="#contact"
-                  class="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-green-500 hover:bg-green-400 text-black font-black text-lg transition-all shadow-xl shadow-green-500/20 hover:-translate-y-1"
-                >
-                  {{ slides[currentSlide].ctaPrimary }}
-                  <ChevronRight class="w-5 h-5 rtl:rotate-180" />
-                </a>
-                <a
-                  href="#features"
-                  class="inline-flex items-center gap-2 px-8 py-4 rounded-full border border-white/30 bg-white/5 hover:bg-white/10 text-white font-bold text-lg backdrop-blur-md transition-all"
-                >
-                  {{ slides[currentSlide].ctaSecondary }}
-                </a>
-              </div>
+              <!-- CTAs Removed -->
             </div>
           </transition>
 

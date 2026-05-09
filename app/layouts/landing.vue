@@ -153,6 +153,7 @@ if (import.meta.client) {
     </main>
 
     <TheFooter />
+    <WhatsAppFloat />
   </div>
 </template>
 

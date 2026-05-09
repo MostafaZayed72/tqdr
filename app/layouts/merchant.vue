@@ -178,5 +178,6 @@ const handleLogout = async () => {
         <slot />
       </main>
     </div>
+    <WhatsAppFloat />
   </div>
 </template>
