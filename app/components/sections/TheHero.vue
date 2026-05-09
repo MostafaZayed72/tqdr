@@ -3,40 +3,20 @@ import { ChevronRight, ChevronLeft, Plus } from 'lucide-vue-next'
 
 const { t } = useI18n()
 
-const slides = computed(() => [
-  {
-    image: '/hero_1.png',
-    badge: t('landing.hero.slides[0].badge'),
-    title: t('landing.hero.slides[0].title'),
-    subtitle: t('landing.hero.slides[0].subtitle'),
-    ctaPrimary: t('landing.hero.slides[0].cta_primary'),
-    ctaSecondary: t('landing.hero.slides[0].cta_secondary')
-  },
-  {
-    image: '/hero_2.png',
-    badge: t('landing.hero.slides[1].badge'),
-    title: t('landing.hero.slides[1].title'),
-    subtitle: t('landing.hero.slides[1].subtitle'),
-    ctaPrimary: t('landing.hero.slides[1].cta_primary'),
-    ctaSecondary: t('landing.hero.slides[1].cta_secondary')
-  },
-  {
-    image: '/hero_3.png',
-    badge: t('landing.hero.slides[2].badge'),
-    title: t('landing.hero.slides[2].title'),
-    subtitle: t('landing.hero.slides[2].subtitle'),
-    ctaPrimary: t('landing.hero.slides[2].cta_primary'),
-    ctaSecondary: t('landing.hero.slides[2].cta_secondary')
-  },
-  {
-    image: '/hero_4.png',
-    badge: t('landing.hero.slides[3].badge'),
-    title: t('landing.hero.slides[3].title'),
-    subtitle: t('landing.hero.slides[3].subtitle'),
-    ctaPrimary: t('landing.hero.slides[3].cta_primary'),
-    ctaSecondary: t('landing.hero.slides[3].cta_secondary')
+const slides = computed(() => {
+  const items = []
+  for (let i = 0; i < 5; i++) {
+    items.push({
+      image: `/hero_${(i % 4) + 1}.png`, // Cycle through available hero images
+      badge: t(`landing.hero.slides[${i}].badge`),
+      title: t(`landing.hero.slides[${i}].title`),
+      subtitle: t(`landing.hero.slides[${i}].subtitle`),
+      ctaPrimary: t(`landing.hero.slides[${i}].cta_primary`),
+      ctaSecondary: t(`landing.hero.slides[${i}].cta_secondary`)
+    })
   }
-])
+  return items
+})
 
 const currentSlide = ref(0)
 

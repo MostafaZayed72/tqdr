@@ -110,32 +110,39 @@
     "hero": {
       "slides": [
         {
-          "badge": "Future of Digital Trade 🚀",
-          "title": "Turn Your Local Shop into a Smart Store",
-          "subtitle": "Tqdr Plus helps you manage customer balances and increase loyalty through a fully integrated digital system.",
+          "badge": "Special Offer 🎁",
+          "title": "One month free on prepayment service and subscriptions",
+          "subtitle": "No contracts, no risks. Take advantage of the offer and see the difference.",
           "cta_primary": "Get Started",
           "cta_secondary": "Discover More"
         },
         {
-          "badge": "Safe & Secure 🔒",
-          "title": "Fully Encrypted Financial System",
-          "subtitle": "We use the latest encryption technologies to protect your customers' data and financial operations 24/7.",
+          "badge": "Digital Loyalty 🇸🇦",
+          "title": "First Saudi loyalty system based on prepayment for discount",
+          "subtitle": "Document and track all prepayment operations and subscriptions for your business",
           "cta_primary": "Join Us",
           "cta_secondary": "Security Details"
         },
         {
-          "badge": "Sustainable Growth 📈",
-          "title": "Double Profits via Customer Loyalty",
-          "subtitle": "Customers with balances in your shop return to buy 3 times more often than others.",
+          "badge": "Smart Data 📊",
+          "title": "Restaurant, Cafe, Laundry, Beauty Center, Student Services...",
+          "subtitle": "Know your customer data, when they come, how many times, how much they spend, and guarantee they return tomorrow.",
           "cta_primary": "Start Growing",
           "cta_secondary": "View Stats"
         },
         {
-          "badge": "Pure Simplicity ✨",
-          "title": "Simple Interface Managed via Mobile",
-          "subtitle": "No need for complex devices, manage all operations and add customers directly from your smartphone.",
+          "badge": "Effective Communication 💬",
+          "title": "SMS messages for shop customers to confirm balance and discount",
+          "subtitle": "Tqdr Plus strengthens the relationship between merchants and their customers",
           "cta_primary": "Join Now",
           "cta_secondary": "Live Demo"
+        },
+        {
+          "badge": "Ease of Use ✨",
+          "title": "Secure, easy interface, suitable for all cashier devices and mobile phones",
+          "subtitle": "Quick activation, easy to use safely, fits the nature of your project whatever your business activity.",
+          "cta_primary": "Get Started",
+          "cta_secondary": "View Offer"
         }
       ]
     },
@@ -147,6 +154,24 @@
       "customers": "Active Users",
       "savings": "Total Savings",
       "cities": "Cities Covered"
+    },
+    "how_it_works": {
+      "title": "How it works?",
+      "subtitle": "Simple steps to start your savings journey with Tqdr Plus",
+      "steps": [
+        {
+          "title": "Pay and Earn",
+          "desc": "Pay at the shop and get free credit."
+        },
+        {
+          "title": "Save Automatically",
+          "desc": "Use your credit at the time of purchase and save automatically."
+        },
+        {
+          "title": "Instant Notifications",
+          "desc": "You will receive an SMS message with discount details and the remaining amount immediately."
+        }
+      ]
     },
     "customer_features": {
       "badge": "Customer Benefits ✨",

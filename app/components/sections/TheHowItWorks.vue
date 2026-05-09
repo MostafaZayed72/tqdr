@@ -1,36 +1,49 @@
 <template>
-  <section id="how-it-works" class="py-20 sm:py-28 bg-white dark:bg-[#030f03]">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+  <section id="how-it-works" class="py-20 sm:py-28 bg-white dark:bg-[#020c02] relative overflow-hidden">
+    <!-- Glow Effect -->
+    <div class="pointer-events-none absolute inset-0">
+      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-60 rounded-full bg-green-500/5 dark:bg-green-500/5 blur-[100px]" />
+    </div>
 
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6">
       <!-- Header -->
-      <div class="text-center mb-14">
-        <span class="inline-block px-4 py-1.5 rounded-full bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20 text-green-600 dark:text-green-400 text-sm font-semibold mb-4">
-          {{ $t('landing.how_it_works.subtitle') }}
-        </span>
-        <h2 class="text-3xl sm:text-4xl font-black text-gray-900 dark:text-white">
+      <div class="text-center mb-16 sm:mb-24">
+        <h2 class="text-3xl sm:text-5xl font-black text-gray-900 dark:text-white mb-4">
           {{ $t('landing.how_it_works.title') }}
         </h2>
+        <p class="text-gray-500 dark:text-gray-400 text-lg max-w-2xl mx-auto">
+          {{ $t('landing.how_it_works.subtitle') }}
+        </p>
       </div>
 
       <!-- Steps Grid -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-4 relative">
-
-        <!-- Connector line (desktop) -->
-        <div class="hidden lg:block absolute top-10 inset-x-0 mx-auto w-3/4 h-px bg-gradient-to-l from-transparent via-green-300 dark:via-green-800 to-transparent" />
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 relative">
+        <!-- Connection Lines (Desktop) -->
+        <div class="hidden md:block absolute top-12 left-[15%] right-[15%] h-0.5 bg-gradient-to-r from-transparent via-green-100 dark:via-green-900/30 to-transparent" />
 
         <div
-          v-for="step in steps"
-          :key="step.num"
-          class="relative flex flex-col items-center text-center gap-4 p-6 rounded-2xl bg-gray-50 dark:bg-[#0a1a0a] border border-gray-100 dark:border-green-900/20 hover:border-green-300 dark:hover:border-green-700/50 transition-all duration-300 group"
+          v-for="(step, index) in steps"
+          :key="index"
+          class="relative flex flex-col items-center text-center group"
         >
-          <!-- Step Number -->
-          <div class="w-16 h-16 rounded-full bg-green-500 dark:bg-green-500 text-black font-black text-2xl flex items-center justify-center shadow-lg shadow-green-900/20 group-hover:scale-110 transition-transform duration-300 z-10">
-            {{ step.num }}
+          <!-- Icon Container -->
+          <div class="w-24 h-24 rounded-3xl bg-green-50 dark:bg-green-500/10 flex items-center justify-center mb-8 relative z-10 border border-green-100 dark:border-green-500/20 group-hover:scale-110 group-hover:bg-green-100 dark:group-hover:bg-green-500/20 transition-all duration-500">
+            <component :is="step.icon" class="w-10 h-10 text-green-600 dark:text-green-400" />
+            
+            <!-- Step Number Badge -->
+            <div class="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-green-600 text-white text-sm font-bold flex items-center justify-center shadow-lg">
+              {{ index + 1 }}
+            </div>
           </div>
 
-          <div>
-            <h3 class="text-lg font-black text-gray-900 dark:text-white mb-2">{{ step.title }}</h3>
-            <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{{ step.desc }}</p>
+          <!-- Content -->
+          <div class="px-4">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-3">
+              {{ step.title }}
+            </h3>
+            <p class="text-gray-500 dark:text-gray-400 leading-relaxed">
+              {{ step.desc }}
+            </p>
           </div>
         </div>
       </div>
@@ -39,28 +52,43 @@
 </template>
 
 <script setup lang="ts">
-const { t, locale } = useI18n()
+import { defineComponent, h } from 'vue'
+
+function svgIcon(d: string) {
+  return defineComponent({
+    render: () => h('svg', { 
+      xmlns: 'http://www.w3.org/2000/svg', 
+      fill: 'none', 
+      viewBox: '0 0 24 24', 
+      stroke: 'currentColor', 
+      'stroke-width': '1.5',
+      class: 'w-full h-full'
+    }, [
+      h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', d })
+    ])
+  })
+}
+
+const { t } = useI18n()
 
 const steps = computed(() => [
   {
-    num: locale.value === 'ar' ? '١' : '1',
     title: t('landing.how_it_works.steps[0].title'),
     desc: t('landing.how_it_works.steps[0].desc'),
+    // Wallet/Payment icon
+    icon: svgIcon('M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z')
   },
   {
-    num: locale.value === 'ar' ? '٢' : '2',
     title: t('landing.how_it_works.steps[1].title'),
     desc: t('landing.how_it_works.steps[1].desc'),
+    // Shop/Store icon
+    icon: svgIcon('M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z')
   },
   {
-    num: locale.value === 'ar' ? '٣' : '3',
     title: t('landing.how_it_works.steps[2].title'),
     desc: t('landing.how_it_works.steps[2].desc'),
-  },
-  {
-    num: locale.value === 'ar' ? '٤' : '4',
-    title: 'تتبّع سجل عملياتك',
-    desc: 'ارجع وشاهد سجل عملياتك ورصيدك في أي وقت من حسابك.',
-  },
+    // SMS/Message icon
+    icon: svgIcon('M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z')
+  }
 ])
 </script>

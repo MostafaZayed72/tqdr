@@ -27,7 +27,7 @@ onMounted(() => {
 <template>
   <div>
     <SectionsTheHero />
-    <div class="reveal"><SectionsTheStats /></div>
+    <div class="reveal"><SectionsTheHowItWorks /></div>
     <div class="reveal"><SectionsTheCustomerFeatures /></div>
     <div class="reveal"><SectionsTheShopFeatures /></div>
     <div class="reveal"><SectionsTheFaq /></div>
