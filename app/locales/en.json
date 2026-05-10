@@ -88,6 +88,23 @@
     "status_labels": {
       "completed": "Completed",
       "pending": "Pending"
+    },
+    "landing": {
+      "pricing": {
+        "badge": "Pricing & Plans",
+        "title": "Flexible Plans for Your Ambition",
+        "subtitle": "Choose the plan that fits your business size today, and upgrade as you grow.",
+        "monthly": "Monthly",
+        "yearly": "Yearly",
+        "save": "Save 20%",
+        "popular": "Most Popular",
+        "per_month": "SAR / Mo",
+        "per_year": "SAR / Yr",
+        "custom_pricing": "Custom Pricing",
+        "start_plan": "Start with this plan",
+        "contact_us": "Contact Us",
+        "need_help": "Need custom features?"
+      }
     }
   }
 }

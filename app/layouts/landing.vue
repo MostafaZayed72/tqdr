@@ -9,6 +9,7 @@ const navLinks = [
   { nameKey: 'landing.nav.home', href: '#home' },
   { nameKey: 'landing.nav.how_it_works', href: '#features' },
   { nameKey: 'landing.nav.features', href: '#shops' },
+  { nameKey: 'landing.nav.pricing', href: '#pricing' },
   { nameKey: 'landing.nav.faq', href: '#faq' },
   { nameKey: 'landing.nav.contact', href: '#contact' },
 ]
