@@ -32,7 +32,7 @@ onMounted(() => {
     <div class="reveal"><SectionsTheCustomerFeatures /></div>
     <div class="reveal"><SectionsTheShopFeatures /></div>
     <div class="reveal"><SectionsThePricing /></div>
-    <div class="reveal"><SectionsTheFaq /></div>
+
     <div class="reveal"><SectionsTheContact /></div>
   </div>
 </template>

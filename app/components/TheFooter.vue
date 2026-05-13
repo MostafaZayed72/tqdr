@@ -34,10 +34,10 @@ const { locale } = useI18n()
         <div class="flex flex-col gap-5">
           <h3 class="text-white font-black text-sm">{{ $t('landing.footer.quick_links') }}</h3>
           <ul class="flex flex-col gap-3 text-sm">
-            <li><a href="#home" class="hover:text-green-400 transition-colors">{{ $t('landing.nav.home') }}</a></li>
-            <li><a href="#features" class="hover:text-green-400 transition-colors">{{ $t('landing.nav.how_it_works') }}</a></li>
-            <li><a href="#shops" class="hover:text-green-400 transition-colors">{{ $t('landing.nav.features') }}</a></li>
-            <li><a href="#faq" class="hover:text-green-400 transition-colors">{{ $t('landing.nav.faq') }}</a></li>
+            <li><NuxtLink to="/" class="hover:text-green-400 transition-colors">{{ $t('landing.nav.home') }}</NuxtLink></li>
+            <li><NuxtLink to="/#features" class="hover:text-green-400 transition-colors">{{ $t('landing.nav.how_it_works') }}</NuxtLink></li>
+            <li><NuxtLink to="/#shops" class="hover:text-green-400 transition-colors">{{ $t('landing.nav.features') }}</NuxtLink></li>
+            <li><NuxtLink to="/faq" class="hover:text-green-400 transition-colors">{{ $t('landing.nav.faq') }}</NuxtLink></li>
           </ul>
         </div>
 

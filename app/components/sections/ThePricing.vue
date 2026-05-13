@@ -6,56 +6,56 @@ const isYearly = ref(true)
 
 const plans = computed(() => [
   {
-    name: 'باقة البداية',
+    name: t('landing.pricing.plans.starter.name'),
     icon: Star,
     monthlyPrice: 70,
     yearlyPrice: 670,
-    limit: 'حتى ١٠٠ عميل مسجّل',
-    description: 'مثالية للحلاقين والمقاهي الصغيرة وخدمات الطلاب — ابدأ بدون مخاطرة',
+    limit: t('landing.pricing.plans.starter.limit'),
+    description: t('landing.pricing.plans.starter.description'),
     color: 'bg-blue-500',
     lightColor: 'bg-blue-50',
     textColor: 'text-blue-600'
   },
   {
-    name: 'باقة النمو',
+    name: t('landing.pricing.plans.growth.name'),
     icon: Zap,
     monthlyPrice: 199,
     yearlyPrice: 1900,
-    limit: 'حتى ٣٥٠ عميل مسجّل',
-    description: 'للمطاعم ومغاسل الملابس ومراكز التجميل — حين يبدأ العمل يتوسع',
+    limit: t('landing.pricing.plans.growth.limit'),
+    description: t('landing.pricing.plans.growth.description'),
     color: 'bg-green-500',
     lightColor: 'bg-green-50',
     textColor: 'text-green-600'
   },
   {
-    name: 'باقة الاحتراف',
+    name: t('landing.pricing.plans.pro.name'),
     icon: Rocket,
     monthlyPrice: 399,
     yearlyPrice: 3800,
-    limit: 'حتى ٨٠٠ عميل مسجّل',
-    description: 'للمشاريع المتوسطة ذات الحركة اليومية العالية — مغاسل السيارات والمطاعم النشطة',
+    limit: t('landing.pricing.plans.pro.limit'),
+    description: t('landing.pricing.plans.pro.description'),
     color: 'bg-purple-500',
     lightColor: 'bg-purple-50',
     textColor: 'text-purple-600'
   },
   {
-    name: 'باقة التوسع',
+    name: t('landing.pricing.plans.expansion.name'),
     icon: Crown,
     monthlyPrice: 899,
     yearlyPrice: 8649,
-    limit: 'حتى ٢,٠٠٠ عميل مسجّل',
-    description: 'للفروع المتعددة والعلامات التجارية الناشئة — إدارة مركزية لكل الفروع',
+    limit: t('landing.pricing.plans.expansion.limit'),
+    description: t('landing.pricing.plans.expansion.description'),
     color: 'bg-orange-500',
     lightColor: 'bg-orange-50',
     textColor: 'text-orange-600'
   },
   {
-    name: 'باقة المؤسسات',
+    name: t('landing.pricing.plans.enterprise.name'),
     icon: Building2,
     monthlyPrice: 1800,
     yearlyPrice: null,
-    limit: 'عملاء غير محدودين',
-    description: 'للسلاسل والامتيازات التجارية — تكامل كامل وتقارير متقدمة ومدير حساب مخصص',
+    limit: t('landing.pricing.plans.enterprise.limit'),
+    description: t('landing.pricing.plans.enterprise.description'),
     color: 'bg-slate-900',
     lightColor: 'bg-slate-100',
     textColor: 'text-slate-900',
@@ -130,7 +130,7 @@ const plans = computed(() => [
             <div class="mb-8 min-h-[80px] flex flex-col justify-end">
               <template v-if="plan.custom">
                 <div class="flex items-baseline gap-1">
-                  <span class="text-xl font-black text-slate-900 dark:text-white leading-tight">يبدأ من {{ plan.monthlyPrice }}</span>
+                  <span class="text-xl font-black text-slate-900 dark:text-white leading-tight">{{ $t('landing.pricing.starts_from') }} {{ plan.monthlyPrice }}</span>
                   <span class="text-xs font-bold text-slate-500 dark:text-gray-400">{{ $t('landing.pricing.per_month') }}</span>
                 </div>
                 <p class="text-xs text-slate-400 dark:text-gray-500 mt-2 font-bold">{{ $t('landing.pricing.custom_pricing') }}</p>
@@ -145,7 +145,7 @@ const plans = computed(() => [
                   </span>
                 </div>
                 <p v-if="isYearly" class="text-xs text-green-600 dark:text-green-400 mt-2 font-black bg-green-50 dark:bg-green-500/10 w-fit px-2 py-1 rounded-lg">
-                  (تعادل {{ Math.floor(plan.yearlyPrice / 12) }} ر.س شهرياً)
+                  {{ $t('landing.pricing.equivalent_to_monthly', { price: Math.floor(plan.yearlyPrice / 12) }) }}
                 </p>
               </template>
             </div>

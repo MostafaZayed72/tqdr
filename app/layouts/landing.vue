@@ -6,12 +6,12 @@ const isMenuOpen = ref(false)
 const { locale } = useI18n()
 
 const navLinks = [
-  { nameKey: 'landing.nav.home', href: '#home' },
-  { nameKey: 'landing.nav.how_it_works', href: '#features' },
-  { nameKey: 'landing.nav.features', href: '#shops' },
-  { nameKey: 'landing.nav.pricing', href: '#pricing' },
-  { nameKey: 'landing.nav.faq', href: '#faq' },
-  { nameKey: 'landing.nav.contact', href: '#contact' },
+  { nameKey: 'landing.nav.home', to: '/' },
+  { nameKey: 'landing.nav.how_it_works', to: '/#features' },
+  { nameKey: 'landing.nav.features', to: '/#shops' },
+  { nameKey: 'landing.nav.pricing', to: '/#pricing' },
+  { nameKey: 'landing.nav.faq', to: '/faq' },
+  { nameKey: 'landing.nav.contact', to: '/#contact' },
 ]
 
 const showLoginDropdown = ref(false)
@@ -40,14 +40,14 @@ if (import.meta.client) {
 
           <!-- Desktop Nav -->
           <div class="hidden md:flex items-center gap-8">
-            <a 
+            <NuxtLink 
               v-for="link in navLinks" 
-              :key="link.href" 
-              :href="link.href"
+              :key="link.to" 
+              :to="link.to"
               class="text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-green-500 dark:hover:text-green-400 transition-colors"
             >
               {{ $t(link.nameKey) }}
-            </a>
+            </NuxtLink>
           </div>
 
           <!-- Actions -->
@@ -117,15 +117,15 @@ if (import.meta.client) {
 
       <!-- Mobile Menu -->
       <div v-if="isMenuOpen" class="md:hidden bg-white dark:bg-[#020c02] border-t border-gray-100 dark:border-white/5 p-4 space-y-4 animate-fade-in">
-        <a 
+        <NuxtLink 
           v-for="link in navLinks" 
-          :key="link.href" 
-          :href="link.href"
+          :key="link.to" 
+          :to="link.to"
           @click="isMenuOpen = false"
           class="block px-4 py-2 text-lg font-bold text-gray-700 dark:text-gray-300"
         >
           {{ $t(link.nameKey) }}
-        </a>
+        </NuxtLink>
         <div class="grid grid-cols-2 gap-3 pt-4 border-t border-gray-100 dark:border-white/5">
           <NuxtLink 
             to="/login"

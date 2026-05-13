@@ -1,14 +1,17 @@
 <script setup lang="ts">
-const { t } = useI18n()
+const { t, tm, rt } = useI18n()
 const openIndex = ref<number | null>(0)
 
-const faqs = computed(() => [
-  { q: t('landing.faq.questions[0].q'), a: t('landing.faq.questions[0].a') },
-  { q: t('landing.faq.questions[1].q'), a: t('landing.faq.questions[1].a') },
-  { q: t('landing.faq.questions[2].q'), a: t('landing.faq.questions[2].a') },
-  { q: t('landing.faq.questions[3].q'), a: t('landing.faq.questions[3].a') },
-  { q: t('landing.faq.questions[4].q'), a: t('landing.faq.questions[4].a') },
-])
+const faqs = computed(() => {
+  const questions = tm('landing.faq.questions')
+  if (Array.isArray(questions)) {
+    return questions.map((q: any) => ({
+      q: typeof q.q === 'string' ? q.q : rt(q.q),
+      a: typeof q.a === 'string' ? q.a : rt(q.a)
+    }))
+  }
+  return []
+})
 
 function toggle(i: number) {
   openIndex.value = openIndex.value === i ? null : i

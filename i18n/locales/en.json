@@ -552,6 +552,9 @@
     "contact": {
       "title": "Contact Us",
       "subtitle": "We're here to answer your questions and help you join the Tqdr network.",
+      "call_us": "Call Us",
+      "email_us": "Email Us",
+      "whatsapp": "WhatsApp",
       "form": {
         "name": "Full Name",
         "email": "Email Address",
@@ -565,24 +568,56 @@
       "subtitle": "Everything you need to know about Tqdr",
       "questions": [
         {
-          "q": "How can I start?",
-          "a": "You can start immediately by registering as a merchant and adding your shop."
+          "q": "How does Tqdr Plus differ from other loyalty programs?",
+          "a": "Tqdr Plus is a loyalty system based on upfront payments for shop owners, while other loyalty programs are point-based."
         },
         {
-          "q": "Is it secure?",
-          "a": "Yes, we use the highest security standards to protect all data."
+          "q": "What is the difference between upfront payment service and subscriptions?",
+          "a": "Upfront payment acts as a credit for the customer (e.g., customer pays 100 for 120 credit). Subscriptions are for specific offers (e.g., pay 5 SAR for a 3 SAR discount on a meal for 6 visits)."
         },
         {
-          "q": "Does the customer need an app?",
-          "a": "No app needed for customers, they just provide their mobile number and get SMS alerts."
+          "q": "Are funds collected from the shop's customers?",
+          "a": "No funds are collected from the shop's customers."
         },
         {
-          "q": "How does the seller know my balance?",
-          "a": "Provide your registered number, and after the discount, you get an SMS with details instantly."
+          "q": "How long does it take to activate the service? Do I need special devices or complex integrations?",
+          "a": "Activation takes a maximum of 24 hours. Tqdr Plus works on any POS device or mobile phone."
         },
         {
-          "q": "What if my balance runs out?",
-          "a": "Simply recharge your balance at any time to continue enjoying exclusive discounts."
+          "q": "Can I track my sales and customers in real-time?",
+          "a": "Yes — your shop's dashboard gives you a complete picture of every transaction, every customer, and every riyal, moment by moment."
+        },
+        {
+          "q": "How do I receive money in advance?",
+          "a": "You place an advertising board with offers next to the cashier. When a customer requests a subscription offer, they pay you, and you register them in Tqdr Plus to monitor and document the transactions."
+        },
+        {
+          "q": "What happens if the number of my customers exceeds the current plan limit?",
+          "a": "You will receive an automatic notification to upgrade your plan — the upgrade is done with one click without any service interruption."
+        },
+        {
+          "q": "Are there long-term contracts or hidden fees?",
+          "a": "No restrictive contracts and no hidden fees — you pay your subscription and get the full service, the decision is always yours."
+        },
+        {
+          "q": "Is Tqdr+ suitable for a shop with only one branch?",
+          "a": "Absolutely — it was originally designed for independent shops and small projects, and it grows with you as you expand."
+        },
+        {
+          "q": "Can I stop the service whenever I want?",
+          "a": "Yes — you can stop your subscription at any time without penalties or complex conditions."
+        },
+        {
+          "q": "How does the seller know I have a balance?",
+          "a": "You give them your mobile number, and through the Tqdr Plus system, they know and deduct the amount, and you receive an SMS with the deduction and remaining balance."
+        },
+        {
+          "q": "Is the system secure?",
+          "a": "Yes, all data and transactions are secured according to the highest protection standards."
+        },
+        {
+          "q": "Is there technical support?",
+          "a": "Certainly, the support team is available via WhatsApp to assist you."
         }
       ]
     },
@@ -606,7 +641,36 @@
       "custom_pricing": "Or Custom Pricing",
       "start_plan": "Contact us to activate",
       "contact_us": "Contact us to activate",
-      "need_help": "Having trouble?"
+      "need_help": "Having trouble?",
+      "starts_from": "Starts from",
+      "equivalent_to_monthly": "(Equivalent to {price} SAR monthly)",
+      "plans": {
+        "starter": {
+          "name": "Starter Plan",
+          "limit": "Up to 100 registered customers",
+          "description": "Ideal for barbershops, small cafes, and student services — start risk-free"
+        },
+        "growth": {
+          "name": "Growth Plan",
+          "limit": "Up to 350 registered customers",
+          "description": "For restaurants, laundries, and beauty centers — when business starts expanding"
+        },
+        "pro": {
+          "name": "Pro Plan",
+          "limit": "Up to 800 registered customers",
+          "description": "For medium projects with high daily traffic — car washes and active restaurants"
+        },
+        "expansion": {
+          "name": "Expansion Plan",
+          "limit": "Up to 2,000 registered customers",
+          "description": "For multiple branches and emerging brands — central management for all branches"
+        },
+        "enterprise": {
+          "name": "Enterprise Plan",
+          "limit": "Unlimited customers",
+          "description": "For chains and franchises — full integration, advanced reports, and dedicated account manager"
+        }
+      }
     }
   },
   "admin": {
