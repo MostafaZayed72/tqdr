@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     full_name TEXT,
     shop_name TEXT,
     role TEXT DEFAULT 'shop_owner' CHECK (role IN ('admin', 'shop_owner')),
+    status TEXT DEFAULT 'active' CHECK (status IN ('active', 'suspended')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 

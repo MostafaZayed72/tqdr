@@ -107,6 +107,7 @@
   "dashboard": {
     "welcome": "أهلاً بك",
     "welcome_back": "أهلاً بك مجدداً",
+    "active_now": "نشط الآن",
     "total_balance": "الرصيد الإجمالي",
     "active_customers": "العملاء النشطون",
     "recent_transactions": "أحدث العمليات",

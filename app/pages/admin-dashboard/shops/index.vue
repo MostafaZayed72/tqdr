@@ -97,45 +97,35 @@ const handleAddShop = async () => {
       
       if (error) throw error
     } else {
-      // 1. Create auth user
-      const { data: authData, error: authError } = await client.auth.signUp({
-        email: form.value.email,
-        password: form.value.password,
+      // 1. Create auth user and profile via backend API to prevent admin session logout
+      const res: any = await $fetch('/api/admin/create-shop', {
+        method: 'POST',
+        body: {
+          email: form.value.email,
+          password: form.value.password,
+          shop_name: form.value.shop_name
+        }
       })
       
-      if (authError) throw authError
+      const createdUser = res.user
 
-      // 2. Profile is auto-created by trigger, but we update it
-      if (authData.user) {
-        const { error: profileError } = await client
-          .from('profiles')
-          .update({ 
-            role: 'shop_owner',
+      // 2. Send Welcome SMS
+      if (createdUser && form.value.mobile_number) {
+        try {
+          const welcomeMsg = t('admin.welcome_sms', {
             shop_name: form.value.shop_name,
-            status: 'active'
+            email: form.value.email,
+            password: form.value.password
           })
-          .eq('id', authData.user.id)
-        
-        if (profileError) throw profileError
-
-        // 3. Send Welcome SMS
-        if (form.value.mobile_number) {
-          try {
-            const welcomeMsg = t('admin.welcome_sms', {
-              shop_name: form.value.shop_name,
-              email: form.value.email,
-              password: form.value.password
-            })
-            await $fetch('/api/sms/send', {
-              method: 'POST',
-              body: {
-                phone: form.value.mobile_number,
-                message: welcomeMsg
-              }
-            })
-          } catch (smsErr) {
-            console.error('Failed to send SMS:', smsErr)
-          }
+          await $fetch('/api/sms/send', {
+            method: 'POST',
+            body: {
+              phone: form.value.mobile_number,
+              message: welcomeMsg
+            }
+          })
+        } catch (smsErr) {
+          console.error('Failed to send SMS:', smsErr)
         }
       }
     }
@@ -165,16 +155,19 @@ const handleDeleteShop = async () => {
   
   try {
     loading.value = true
-    const { error } = await client.from('profiles').delete().eq('id', shopToDelete.value)
     
-    if (error) throw error
+    // Call backend API endpoint to delete user from Supabase Auth and cascade profiles
+    await $fetch('/api/admin/delete-shop', {
+      method: 'DELETE',
+      body: { id: shopToDelete.value }
+    })
     
     showDeleteModal.value = false
     shopToDelete.value = null
     await fetchShops()
     // We can use a toast here later, for now we just refresh
   } catch (e: any) {
-    alert(e.message)
+    alert(e.message || e.data?.message || 'Failed to delete shop')
   } finally {
     loading.value = false
   }
