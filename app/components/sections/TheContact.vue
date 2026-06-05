@@ -53,7 +53,7 @@ function handleSubmit() {
             </a>
 
             <a
-              href="mailto:info@tqdrplus.sa"
+              href="mailto:info@tqdr.com.sa"
               class="flex items-center gap-4 p-4 rounded-2xl bg-white dark:bg-[#0a1a0a] border border-gray-100 dark:border-green-900/20 hover:border-green-300 dark:hover:border-green-700/50 transition-all group"
             >
               <div class="w-10 h-10 rounded-xl bg-green-50 dark:bg-green-500/10 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
@@ -63,7 +63,7 @@ function handleSubmit() {
               </div>
               <div>
                 <p class="text-xs text-gray-400 mb-0.5">{{ $t('landing.contact.email_us') }}</p>
-                <p class="font-bold text-gray-900 dark:text-white text-sm">info@tqdrplus.sa</p>
+                <p class="font-bold text-gray-900 dark:text-white text-sm">info@tqdr.com.sa</p>
               </div>
             </a>
 

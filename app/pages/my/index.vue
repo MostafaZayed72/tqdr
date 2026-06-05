@@ -7,6 +7,7 @@ import {
   ArrowUpCircle, 
   ArrowDownCircle,
   Star,
+  Sparkles,
   ShoppingBag,
   Smartphone,
   Calendar,
@@ -29,45 +30,17 @@ const shop = ref(null)
 const transactions = ref([])
 const subscriptions = ref([])
 const loading = ref(true)
+const currentTab = ref('home') // 'home', 'transactions', 'offers'
 
 const fetchData = async () => {
   try {
     loading.value = true
     
-    // 1. Fetch Customer Data
-    const { data: custData, error: custError } = await client
-      .from('customers')
-      .select('*')
-      .eq('id', customerId.value)
-      .single()
-    
-    if (custError || !custData) throw new Error('Customer not found')
-    customer.value = custData
-
-    // 2. Fetch Shop Profile
-    const { data: shopData } = await client
-      .from('profiles')
-      .select('*')
-      .eq('id', custData.shop_owner_id)
-      .single()
-    shop.value = shopData
-
-    // 3. Fetch Transactions
-    const { data: txData } = await client
-      .from('transactions')
-      .select('*')
-      .eq('customer_id', customerId.value)
-      .order('created_at', { ascending: false })
-      .limit(10)
-    transactions.value = txData || []
-
-    // 4. Fetch Subscriptions
-    const { data: subData } = await client
-      .from('customer_subscriptions')
-      .select('*, offer:subscription_offers(*)')
-      .eq('customer_id', customerId.value)
-      .gte('expires_at', new Date().toISOString())
-    subscriptions.value = subData || []
+    const res = await $fetch('/api/customer/data')
+    customer.value = res.customer
+    shop.value = res.shop
+    transactions.value = res.transactions
+    subscriptions.value = res.subscriptions
 
   } catch (e) {
     console.error(e)
@@ -145,7 +118,7 @@ onMounted(fetchData)
         </div>
 
         <!-- Featured Savings Card (Prominent) -->
-        <div class="bg-white/10 backdrop-blur-2xl p-8 rounded-[40px] border border-white/10 shadow-2xl relative overflow-hidden group">
+        <div v-if="currentTab === 'home'" class="bg-white/10 backdrop-blur-2xl p-8 rounded-[40px] border border-white/10 shadow-2xl relative overflow-hidden group">
           <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
             <TrendingUp class="w-32 h-32 text-white -mr-8 -mt-8 rotate-12" />
           </div>
@@ -168,7 +141,7 @@ onMounted(fetchData)
 
       <div class="px-6 -mt-8 space-y-8">
         <!-- Main Stats Grid -->
-        <div class="grid grid-cols-1 gap-6">
+        <div v-if="currentTab === 'home'" class="grid grid-cols-1 gap-6">
           <div class="bg-white dark:bg-slate-900 p-8 rounded-[40px] shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-white/5 flex items-center justify-between group hover:scale-[1.02] transition-all duration-500">
             <div>
               <div class="flex items-center gap-2 mb-2 text-slate-400">
@@ -187,7 +160,7 @@ onMounted(fetchData)
         </div>
 
         <!-- Shop Info Section -->
-        <div class="bg-slate-100 dark:bg-white/5 p-6 rounded-[32px] flex items-center justify-between border border-transparent hover:border-emerald-500/20 transition-all">
+        <div v-if="currentTab === 'home'" class="bg-slate-100 dark:bg-white/5 p-6 rounded-[32px] flex items-center justify-between border border-transparent hover:border-emerald-500/20 transition-all">
           <div class="flex items-center gap-4">
             <div class="w-12 h-12 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center shadow-sm">
               <ShoppingBag class="w-6 h-6 text-slate-400" />
@@ -201,7 +174,7 @@ onMounted(fetchData)
         </div>
 
         <!-- Active Subscriptions -->
-        <div v-if="subscriptions.length > 0" class="space-y-4">
+        <div v-if="currentTab === 'offers'" class="space-y-4">
           <div class="flex items-center justify-between px-2">
             <h3 class="text-xl font-black text-slate-900 dark:text-white flex items-center gap-3">
               <CreditCard class="w-6 h-6 text-amber-500" /> {{ $t('dashboard.customer_stats.active_subscriptions') }}
@@ -209,7 +182,11 @@ onMounted(fetchData)
             <span class="text-xs font-bold text-slate-400">{{ $t('dashboard.customer_stats.subscription_count', { count: subscriptions.length }) }}</span>
           </div>
           
-          <div class="grid grid-cols-1 gap-4">
+          <div v-if="subscriptions.length === 0" class="bg-white dark:bg-slate-900 p-12 rounded-[40px] text-center border border-dashed border-slate-200 dark:border-white/10">
+            <p class="text-slate-400 font-bold italic">{{ $t('dashboard.customer_stats.no_subscriptions') }}</p>
+          </div>
+
+          <div v-else class="grid grid-cols-1 gap-4">
             <div v-for="sub in subscriptions" :key="sub.id" class="bg-white dark:bg-slate-900 p-6 rounded-[35px] border border-slate-100 dark:border-white/5 shadow-lg shadow-slate-200/20 dark:shadow-none group relative overflow-hidden">
               <div class="absolute top-0 left-0 w-2 h-full bg-amber-500"></div>
               <div class="flex justify-between items-start mb-6">
@@ -233,12 +210,11 @@ onMounted(fetchData)
         </div>
 
         <!-- Transactions History -->
-        <div class="space-y-4">
+        <div v-if="currentTab === 'transactions'" class="space-y-4">
           <div class="flex items-center justify-between px-2">
             <h3 class="text-xl font-black text-slate-900 dark:text-white flex items-center gap-3">
               <History class="w-6 h-6 text-slate-400" /> {{ $t('dashboard.customer_stats.recent_transactions') }}
             </h3>
-            <button class="text-xs font-bold text-emerald-500">{{ $t('dashboard.customer_stats.view_all') }}</button>
           </div>
           
           <div class="space-y-4">
@@ -277,16 +253,30 @@ onMounted(fetchData)
       <!-- Bottom Navigation -->
       <div class="fixed bottom-0 left-0 right-0 p-6 z-50 pointer-events-none">
         <div class="max-w-md mx-auto bg-slate-900/90 dark:bg-slate-900/90 backdrop-blur-2xl p-3 rounded-[35px] border border-white/10 flex items-center justify-around shadow-2xl pointer-events-auto">
-          <button class="flex flex-col items-center gap-1.5 text-emerald-500 p-2 min-w-[70px] relative">
-            <div class="absolute -top-1 w-1 h-1 bg-emerald-500 rounded-full"></div>
-            <Star class="w-6 h-6 fill-emerald-500/20" />
+          <button 
+            @click="currentTab = 'home'"
+            :class="currentTab === 'home' ? 'text-emerald-500' : 'text-slate-400 hover:text-white'"
+            class="flex flex-col items-center gap-1.5 p-2 min-w-[70px] relative transition-colors"
+          >
+            <div v-if="currentTab === 'home'" class="absolute -top-1 w-1 h-1 bg-emerald-500 rounded-full"></div>
+            <Star class="w-6 h-6" :class="currentTab === 'home' ? 'fill-emerald-500/20' : ''" />
             <span class="text-[9px] font-black uppercase tracking-widest">{{ $t('dashboard.customer_stats.home') }}</span>
           </button>
-          <button class="flex flex-col items-center gap-1.5 text-slate-400 p-2 min-w-[70px] hover:text-white transition-colors">
+          <button 
+            @click="currentTab = 'transactions'"
+            :class="currentTab === 'transactions' ? 'text-emerald-500' : 'text-slate-400 hover:text-white'"
+            class="flex flex-col items-center gap-1.5 p-2 min-w-[70px] relative transition-colors"
+          >
+            <div v-if="currentTab === 'transactions'" class="absolute -top-1 w-1 h-1 bg-emerald-500 rounded-full"></div>
             <History class="w-6 h-6" />
             <span class="text-[9px] font-black uppercase tracking-widest">{{ $t('dashboard.customer_stats.transactions') }}</span>
           </button>
-          <button class="flex flex-col items-center gap-1.5 text-slate-400 p-2 min-w-[70px] hover:text-white transition-colors">
+          <button 
+            @click="currentTab = 'offers'"
+            :class="currentTab === 'offers' ? 'text-emerald-500' : 'text-slate-400 hover:text-white'"
+            class="flex flex-col items-center gap-1.5 p-2 min-w-[70px] relative transition-colors"
+          >
+            <div v-if="currentTab === 'offers'" class="absolute -top-1 w-1 h-1 bg-emerald-500 rounded-full"></div>
             <CreditCard class="w-6 h-6" />
             <span class="text-[9px] font-black uppercase tracking-widest">{{ $t('dashboard.customer_stats.offers') }}</span>
           </button>

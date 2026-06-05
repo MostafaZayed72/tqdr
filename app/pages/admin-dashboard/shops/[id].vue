@@ -147,6 +147,11 @@ const toggleSubscriptions = async () => {
   }
 }
 
+const displayEmailOrPhone = (email?: string) => {
+  if (!email) return ''
+  return email.endsWith('@tqdr.com') ? email.split('@')[0] : email
+}
+
 onMounted(fetchData)
 </script>
 
@@ -191,7 +196,7 @@ onMounted(fetchData)
             </div>
             <div>
               <h1 class="text-3xl font-black text-slate-900 dark:text-white">{{ shop?.shop_name || $t('dashboard.admin_stats.shop_details.loading') }}</h1>
-              <p class="text-slate-500 dark:text-slate-400 font-medium">{{ shop?.email }}</p>
+              <p class="text-slate-500 dark:text-slate-400 font-medium">{{ displayEmailOrPhone(shop?.email) }}</p>
             </div>
           </div>
           <div class="flex items-center gap-3">

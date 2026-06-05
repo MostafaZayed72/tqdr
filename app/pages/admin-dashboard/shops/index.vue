@@ -97,11 +97,12 @@ const handleAddShop = async () => {
       
       if (error) throw error
     } else {
+      const loginEmail = form.value.mobile_number + '@tqdr.com'
       // 1. Create auth user and profile via backend API to prevent admin session logout
       const res: any = await $fetch('/api/admin/create-shop', {
         method: 'POST',
         body: {
-          email: form.value.email,
+          email: loginEmail,
           password: form.value.password,
           shop_name: form.value.shop_name
         }
@@ -114,7 +115,7 @@ const handleAddShop = async () => {
         try {
           const welcomeMsg = t('admin.welcome_sms', {
             shop_name: form.value.shop_name,
-            email: form.value.email,
+            phone: form.value.mobile_number,
             password: form.value.password
           })
           await $fetch('/api/sms/send', {
@@ -176,13 +177,21 @@ const handleDeleteShop = async () => {
 const editingShop = ref(null)
 const handleEditShop = (shop: any) => {
   editingShop.value = { ...shop }
+  const emailVal = shop.email || ''
+  const displayVal = emailVal.endsWith('@tqdr.com') ? emailVal.split('@')[0] : emailVal
   form.value = { 
-    email: shop.email, 
+    email: emailVal, 
     password: '', 
     shop_name: shop.shop_name,
+    mobile_number: displayVal,
     status: shop.status || 'active'
   }
   showAddModal.value = true
+}
+
+const displayEmailOrPhone = (email: string) => {
+  if (!email) return ''
+  return email.endsWith('@tqdr.com') ? email.split('@')[0] : email
 }
 
 onMounted(fetchShops)
@@ -255,9 +264,9 @@ watch(searchQuery, fetchShops)
                 <td class="px-6 py-4">
                   <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center font-bold text-emerald-600">
-                      {{ shop.email.charAt(0).toUpperCase() }}
+                      {{ displayEmailOrPhone(shop.email).charAt(0).toUpperCase() }}
                     </div>
-                    <div class="font-bold text-slate-900 dark:text-white">{{ shop.email }}</div>
+                    <div class="font-bold text-slate-900 dark:text-white">{{ displayEmailOrPhone(shop.email) }}</div>
                   </div>
                 </td>
                 <td class="px-6 py-4 text-slate-600 dark:text-slate-400 font-medium">
@@ -380,13 +389,14 @@ watch(searchQuery, fetchShops)
             />
           </div>
           <div>
-            <label class="block text-slate-700 dark:text-slate-300 text-sm font-bold mb-2">{{ $t('dashboard.admin_stats.shops_management.add_modal.email') }}</label>
+            <label class="block text-slate-700 dark:text-slate-300 text-sm font-bold mb-2">{{ $t('dashboard.admin_stats.shops_management.add_modal.phone_notifications') }}</label>
             <input 
-              v-model="form.email"
-              type="email" 
+              v-model="form.mobile_number"
+              type="tel" 
               required
-              class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl px-5 py-4 text-slate-900 dark:text-white"
-              placeholder="shop@example.com"
+              :disabled="!!editingShop"
+              class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl px-5 py-4 text-slate-900 dark:text-white disabled:opacity-50"
+              placeholder="05xxxxxxxx"
             />
           </div>
           <div>
@@ -397,16 +407,6 @@ watch(searchQuery, fetchShops)
               :required="!editingShop"
               class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl px-5 py-4 text-slate-900 dark:text-white"
               placeholder="••••••••"
-            />
-          </div>
-          <div v-if="!editingShop">
-            <label class="block text-slate-700 dark:text-slate-300 text-sm font-bold mb-2">{{ $t('dashboard.admin_stats.shops_management.add_modal.phone_notifications') }}</label>
-            <input 
-              v-model="form.mobile_number"
-              type="tel" 
-              required
-              class="w-full bg-slate-100 dark:bg-white/5 border-none rounded-2xl px-5 py-4 text-slate-900 dark:text-white"
-              placeholder="05xxxxxxxx"
             />
           </div>
 

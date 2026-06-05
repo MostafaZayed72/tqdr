@@ -33,6 +33,8 @@
     "logging_in": "جاري تسجيل الدخول...",
     "logout": "تسجيل الخروج",
     "email": "البريد الإلكتروني",
+    "email_or_phone": "البريد الإلكتروني أو رقم الجوال",
+    "email_or_phone_placeholder": "admin{'@'}example.com أو 05xxxxxxxx",
     "password": "كلمة المرور",
     "error": "خطأ في تسجيل الدخول",
     "welcome": "مرحباً بك مجدداً",
@@ -196,7 +198,7 @@
           "shop_name_placeholder": "مثال: متجر التقنية",
           "email": "البريد الإلكتروني",
           "password": "كلمة المرور المؤقتة",
-          "phone_notifications": "رقم الجوال (للإشعارات)",
+          "phone_notifications": "رقم الجوال",
           "account_status": "حالة الحساب",
           "save_btn": "حفظ التعديلات",
           "create_btn": "إنشاء الحساب"
@@ -297,6 +299,7 @@
       "recent_transactions": "آخر المعاملات",
       "view_all": "عرض الكل",
       "no_transactions": "لا توجد عمليات مسجلة حتى الآن.",
+      "no_subscriptions": "لا توجد اشتراكات نشطة حالياً.",
       "deposit": "شحن رصيد",
       "withdraw": "خصم من الرصيد",
       "balance_after": "الرصيد: {balance} ر.س",
@@ -679,6 +682,6 @@
     }
   },
   "admin": {
-    "welcome_sms": "مرحباً بك كصاحب محل في منصة تقدر بلس! تم إنشاء حسابك لمتجر {shop_name}. بيانات دخولك: البريد: {email} كلمة المرور: {password} رابط الدخول: https://tqdrplus.sa/login"
+    "welcome_sms": "مرحباً بك كصاحب محل في منصة تقدر بلس! تم إنشاء حسابك لمتجر {shop_name}. بيانات دخولك: الجوال: {phone} كلمة المرور: {password} رابط الدخول: https://tqdrplus.sa/login"
   }
 }

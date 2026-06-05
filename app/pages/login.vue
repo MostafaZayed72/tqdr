@@ -15,8 +15,16 @@ const handleLogin = async () => {
     loading.value = true
     errorMsg.value = ''
     
+    let loginEmail = email.value.trim()
+    if (!loginEmail.includes('@')) {
+      const cleanPhone = loginEmail.replace(/\D/g, '')
+      if (cleanPhone) {
+        loginEmail = `${cleanPhone}@tqdr.com`
+      }
+    }
+
     const { data, error } = await client.auth.signInWithPassword({
-      email: email.value,
+      email: loginEmail,
       password: password.value
     })
 
@@ -82,13 +90,13 @@ const handleLogin = async () => {
         
         <form @submit.prevent="handleLogin" class="space-y-6">
           <div>
-            <label class="block text-slate-700 dark:text-slate-300 text-sm font-bold mb-2">{{ $t('auth.email') }}</label>
+            <label class="block text-slate-700 dark:text-slate-300 text-sm font-bold mb-2">{{ $t('auth.email_or_phone') }}</label>
             <input 
               v-model="email"
-              type="email" 
+              type="text" 
               required
               class="w-full bg-slate-100 dark:bg-white/5 border border-transparent focus:border-emerald-500/50 rounded-2xl px-5 py-4 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all"
-              placeholder="admin@example.com"
+              :placeholder="$t('auth.email_or_phone_placeholder')"
             />
           </div>
 

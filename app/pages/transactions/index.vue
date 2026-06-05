@@ -76,7 +76,7 @@ const totalWithdrawals = ref(0)
 const form = ref({
   customer_id: '',
   type: 'deposit',
-  amount: 0,
+  amount: '' as any,
   note: '',
   offer_id: ''
 })
@@ -361,7 +361,7 @@ const handleAddTransaction = async () => {
     }
 
     showAddModal.value = false
-    form.value = { customer_id: '', type: 'deposit', amount: 0, note: '', offer_id: '' }
+    form.value = { customer_id: '', type: 'deposit', amount: '' as any, note: '', offer_id: '' }
     fetchData()
     successMsg.value = t('transactions.success_notified')
     showSuccessModal.value = true

@@ -31,6 +31,8 @@
     "logging_in": "Logging in...",
     "logout": "Logout",
     "email": "Email Address",
+    "email_or_phone": "Email or Mobile Number",
+    "email_or_phone_placeholder": "admin{'@'}example.com or 05xxxxxxxx",
     "password": "Password",
     "error": "Authentication Failed",
     "welcome": "Welcome Back",
@@ -194,7 +196,7 @@
           "shop_name_placeholder": "e.g. Tech Store",
           "email": "Email Address",
           "password": "Temporary Password",
-          "phone_notifications": "Mobile Number (for notifications)",
+          "phone_notifications": "Mobile Number",
           "account_status": "Account Status",
           "save_btn": "Save Changes",
           "create_btn": "Create Account"
@@ -295,6 +297,7 @@
       "recent_transactions": "Recent Transactions",
       "view_all": "View All",
       "no_transactions": "No transactions registered yet.",
+      "no_subscriptions": "No active subscriptions currently.",
       "deposit": "Recharge Balance",
       "withdraw": "Deduction from Balance",
       "balance_after": "Balance: {balance} SAR",
@@ -677,6 +680,6 @@
     }
   },
   "admin": {
-    "welcome_sms": "Welcome as a shop owner on Tqdr Plus! Your account for {shop_name} has been created. Your login details: Email: {email} Password: {password} Login Link: https://tqdrplus.sa/login"
+    "welcome_sms": "Welcome as a shop owner on Tqdr Plus! Your account for {shop_name} has been created. Your login details: Mobile: {phone} Password: {password} Login Link: https://tqdrplus.sa/login"
   }
 }

@@ -71,7 +71,7 @@ onUnmounted(() => {
               </div>
 
               <!-- Heading -->
-              <h1 class="text-4xl sm:text-6xl font-black leading-[1.1] drop-shadow-2xl">
+              <h1 class="text-4xl sm:text-6xl font-black leading-snug sm:leading-normal drop-shadow-2xl">
                 {{ slides[currentSlide].title }}
               </h1>
 

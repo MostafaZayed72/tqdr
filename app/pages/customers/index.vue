@@ -63,8 +63,8 @@ const totalPages = computed(() => {
 const form = ref({
   name: '',
   mobile_number: '',
-  paid_amount: 0,
-  added_balance: 0,
+  paid_amount: '' as any,
+  added_balance: '' as any,
   offer_id: ''
 })
 
@@ -73,9 +73,9 @@ const form = ref({
 
 const txForm = ref({
   type: 'deposit' as 'deposit' | 'withdrawal',
-  amount: 0,
-  paid_amount: 0,
-  saved_amount: 0,
+  amount: '' as any,
+  paid_amount: '' as any,
+  saved_amount: '' as any,
   note: '',
   offer_id: ''
 })
@@ -146,10 +146,11 @@ const handleAddCustomer = async () => {
     if (!currentUser) throw new Error(t('customers.errors.login_required'))
 
     // 1. Create Customer
+    const addedBalance = Number(form.value.added_balance || 0)
     const { data: customer, error: custError } = await client.from('customers').insert({
       name: form.value.name || t('dashboard.merchant_stats.new_customer'),
       mobile_number: form.value.mobile_number,
-      balance: form.value.added_balance,
+      balance: addedBalance,
       shop_owner_id: currentUser.id,
       total_saved: form.value.offer_id ? (availableOffers.value.find(o => o.id === form.value.offer_id)?.discount || 0) : 0
     }).select().single()
@@ -159,14 +160,14 @@ const handleAddCustomer = async () => {
     if (custError) throw custError
 
     // 2. Create Initial Transaction (if balance > 0)
-    if (form.value.added_balance > 0) {
+    if (addedBalance > 0) {
       await client.from('transactions').insert({
         customer_id: customer.id,
         shop_owner_id: currentUser.id,
         type: 'deposit',
-        amount: form.value.added_balance,
+        amount: addedBalance,
         balance_before: 0,
-        balance_after: form.value.added_balance,
+        balance_after: addedBalance,
         note: t('customers.opening_balance'),
         offer_id: form.value.offer_id || null
       })
@@ -194,7 +195,7 @@ const handleAddCustomer = async () => {
     // 4. Send Welcome SMS
     try {
       const shopName = profile.value?.shop_name || 'Tqdr'
-      let smsMessage = t('customers.sms.welcome', { shop: shopName, balance: form.value.added_balance })
+      let smsMessage = t('customers.sms.welcome', { shop: shopName, balance: addedBalance })
       if (duration > 0) {
         const offer = availableOffers.value.find(o => o.id === form.value.offer_id)
         smsMessage += t('customers.sms.savings_info', { discount: offer?.discount || 0, offer: offer?.name })
@@ -216,7 +217,7 @@ const handleAddCustomer = async () => {
     }
 
     showAddModal.value = false
-    form.value = { name: '', mobile_number: '', paid_amount: 0, added_balance: 0, offer_id: '' }
+    form.value = { name: '', mobile_number: '', paid_amount: '' as any, added_balance: '' as any, offer_id: '' }
     await fetchCustomers()
 
 
@@ -371,7 +372,7 @@ const handleQuickTx = async () => {
     }
 
     showTxModal.value = false
-    txForm.value = { type: 'deposit', amount: 0, paid_amount: 0, saved_amount: 0, note: '', offer_id: '' }
+    txForm.value = { type: 'deposit', amount: '' as any, paid_amount: '' as any, saved_amount: '' as any, note: '', offer_id: '' }
     await fetchCustomers()
 
   } catch (e: any) {
@@ -395,7 +396,7 @@ const handleUpdateCustomer = async () => {
     if (error) throw error
     
     showEditModal.value = false
-    form.value = { name: '', mobile_number: '', paid_amount: 0, added_balance: 0, offer_id: '' }
+    form.value = { name: '', mobile_number: '', paid_amount: '' as any, added_balance: '' as any, offer_id: '' }
     await fetchCustomers()
   } catch (e: any) {
 
@@ -441,9 +442,9 @@ const openEditModal = (customer: any) => {
     name: customer.name,
     mobile_number: customer.mobile_number,
     login_password: '',
-    paid_amount: 0,
+    paid_amount: '' as any,
 
-    added_balance: 0,
+    added_balance: '' as any,
     offer_id: ''
   }
   showEditModal.value = true
