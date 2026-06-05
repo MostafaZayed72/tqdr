@@ -372,7 +372,9 @@
       "welcome": "Welcome to {shop}! Your account has been successfully activated with a balance of {balance} SAR.",
       "savings_info": " You saved {discount} SAR through your subscription in ({offer}).",
       "footer": " Your total savings with us is {total} SAR. Track your balance at: tqdr.me/my",
-      "subscription_success": "Subscription ({offer}) successfully activated at {shop}. Your new balance is {balance} SAR. You saved {savings} SAR in this transaction, and your total savings with us is {total} SAR! Thank you for your trust."
+      "subscription_success": "Subscription ({offer}) successfully activated at {shop}. Your new balance is {balance} SAR. You saved {savings} SAR in this transaction, and your total savings with us is {total} SAR! Thank you for your trust.",
+      "withdrawal_success": "Deducted {amount} SAR from your balance at {shop}. New balance is {balance} SAR. Your total savings is {total} SAR.",
+      "withdrawal_success_saved": "Deducted {amount} SAR from your balance at {shop}. New balance is {balance} SAR. You saved {savings} SAR in this transaction, and your total savings is {total} SAR!"
     }
   },
   "transactions": {

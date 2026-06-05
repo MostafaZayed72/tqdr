@@ -253,24 +253,40 @@ const handleQuickTx = async () => {
 
     if (balanceAfter < 0) throw new Error(t('customers.errors.insufficient_balance'))
 
-    // 1. Calculate Saving (if offer selected)
+    // 1. Calculate Saving (if offer selected or if active subscription exists)
     let savingAmount = 0
     if (txForm.value.type === 'deposit' && txForm.value.offer_id) {
       const offer = availableOffers.value.find(o => o.id === txForm.value.offer_id)
       if (offer) {
         savingAmount = Number(offer.discount || 0)
       }
+    } else if (txForm.value.type === 'withdrawal') {
+      // Check if customer has an active subscription
+      const { data: activeSubs } = await client
+        .from('customer_subscriptions')
+        .select('*, offer:subscription_offers(*)')
+        .eq('customer_id', customer.id)
+        .eq('status', 'active')
+        .gte('expires_at', new Date().toISOString())
+        .limit(1)
+      
+      const activeSub = activeSubs?.[0]
+      if (activeSub && activeSub.offer) {
+        savingAmount = Number(activeSub.offer.discount || 0)
+      }
     }
+
+    const newTotalSaved = (Number(customer.total_saved) || 0) + savingAmount
 
     // 2. Update Customer Balance and Total Saved
     const { error: custError } = await client.from('customers').update({
       balance: balanceAfter,
-      total_saved: (Number(customer.total_saved) || 0) + savingAmount
+      total_saved: newTotalSaved
     }).eq('id', customer.id)
 
     if (custError) throw custError
 
-    // 2. Create Transaction
+    // 3. Create Transaction
     await client.from('transactions').insert({
       customer_id: customer.id,
       shop_owner_id: currentUser.id,
@@ -284,7 +300,7 @@ const handleQuickTx = async () => {
 
     showTxModal.value = false
     
-    // 3. Handle Subscription (if selected during deposit)
+    // 4. Handle Subscription (if selected during deposit)
     if (txForm.value.type === 'deposit' && txForm.value.offer_id) {
       const offer = availableOffers.value.find(o => o.id === txForm.value.offer_id)
       if (offer) {
@@ -297,30 +313,61 @@ const handleQuickTx = async () => {
           shop_owner_id: currentUser.id,
           expires_at: expiresAt.toISOString()
         })
+      }
+    }
 
-        // Send SMS for subscription
-        try {
-          const shopName = profile.value?.shop_name || 'Tqdr Plus'
-          const totalSaved = (Number(customer.total_saved) || 0) + savingAmount
-          const smsMessage = t('customers.sms.subscription_success', { 
-            offer: offer.name, 
-            shop: shopName, 
-            balance: balanceAfter, 
-            savings: savingAmount, 
-            total: totalSaved 
+    // 5. Send SMS to Customer
+    try {
+      const shopName = profile.value?.shop_name || 'Tqdr Plus'
+      let smsMessage = ''
+
+      if (txForm.value.type === 'deposit') {
+        if (txForm.value.offer_id) {
+          const offer = availableOffers.value.find(o => o.id === txForm.value.offer_id)
+          if (offer) {
+            smsMessage = t('customers.sms.subscription_success', { 
+              offer: offer.name, 
+              shop: shopName, 
+              balance: balanceAfter, 
+              savings: savingAmount, 
+              total: newTotalSaved 
+            })
+          }
+        } else {
+          smsMessage = t('customers.sms.welcome', { shop: shopName, balance: balanceAfter }) + 
+                       t('customers.sms.footer', { total: newTotalSaved })
+        }
+      } else {
+        // Withdrawal SMS
+        if (savingAmount > 0) {
+          smsMessage = t('customers.sms.withdrawal_success_saved', {
+            amount: txForm.value.amount,
+            shop: shopName,
+            balance: balanceAfter,
+            savings: savingAmount,
+            total: newTotalSaved
           })
-          
-          await $fetch('/api/sms/send', {
-            method: 'POST',
-            body: {
-              phone: customer.mobile_number,
-              message: smsMessage
-            }
+        } else {
+          smsMessage = t('customers.sms.withdrawal_success', {
+            amount: txForm.value.amount,
+            shop: shopName,
+            balance: balanceAfter,
+            total: newTotalSaved
           })
-        } catch (smsErr) {
-          console.error('Failed to send subscription SMS:', smsErr)
         }
       }
+
+      if (smsMessage) {
+        await $fetch('/api/sms/send', {
+          method: 'POST',
+          body: {
+            phone: customer.mobile_number,
+            message: smsMessage
+          }
+        })
+      }
+    } catch (smsErr) {
+      console.error('Failed to send transaction SMS:', smsErr)
     }
 
     showTxModal.value = false

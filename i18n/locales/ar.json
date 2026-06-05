@@ -374,7 +374,9 @@
       "welcome": "أهلاً بك في {shop}! تم تفعيل حسابك بنجاح برصيد {balance} ر.س.",
       "savings_info": " لقد وفرت {discount} ر.س من خلال اشتراكك في ({offer}).",
       "footer": " إجمالي توفيرك معنا هو {total} ر.س. تابع رصيدك عبر: tqdr.me/my",
-      "subscription_success": "تم تفعيل اشتراك ({offer}) بنجاح في {shop}. رصيدك الجديد {balance} ر.س. لقد وفرت {savings} ر.س في هذه العملية، وإجمالي توفيرك معنا هو {total} ر.س! شكراً لثقتك."
+      "subscription_success": "تم تفعيل اشتراك ({offer}) بنجاح في {shop}. رصيدك الجديد {balance} ر.س. لقد وفرت {savings} ر.س في هذه العملية، وإجمالي توفيرك معنا هو {total} ر.س! شكراً لثقتك.",
+      "withdrawal_success": "تم خصم {amount} ر.س من رصيدك في {shop}. رصيدك الجديد هو {balance} ر.س. إجمالي ما وفرته هو {total} ر.س.",
+      "withdrawal_success_saved": "تم خصم {amount} ر.س من رصيدك في {shop}. رصيدك الجديد هو {balance} ر.س. لقد وفرت {savings} ر.س في هذه العملية، وإجمالي ما وفرته هو {total} ر.س!"
     }
   },
   "transactions": {

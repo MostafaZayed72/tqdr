@@ -184,7 +184,7 @@ const fetchData = async () => {
     // 4. Fetch Offers for the dropdown
     const { data: offerData } = await client
       .from('subscription_offers')
-      .select('id, name, price')
+      .select('id, name, price, discount, duration')
       .eq('shop_owner_id', currentUser.id)
     availableOffers.value = offerData || []
 
@@ -220,7 +220,7 @@ const handleAddTransaction = async () => {
     // 1. Get current customer balance
     const { data: customer } = await client
       .from('customers')
-      .select('balance, total_saved')
+      .select('id, balance, total_saved, mobile_number')
       .eq('id', form.value.customer_id)
       .single()
 
@@ -237,6 +237,31 @@ const handleAddTransaction = async () => {
       balance_after -= amount
     }
 
+    // 1b. Calculate Saving (if offer selected or if active subscription exists)
+    let savingAmount = 0
+    if (form.value.type === 'deposit' && form.value.offer_id) {
+      const offer = availableOffers.value.find(o => o.id === form.value.offer_id)
+      if (offer) {
+        savingAmount = Number(offer.discount || 0)
+      }
+    } else if (form.value.type === 'withdrawal') {
+      // Check if customer has an active subscription
+      const { data: activeSubs } = await client
+        .from('customer_subscriptions')
+        .select('*, offer:subscription_offers(*)')
+        .eq('customer_id', customer.id)
+        .eq('status', 'active')
+        .gte('expires_at', new Date().toISOString())
+        .limit(1)
+      
+      const activeSub = activeSubs?.[0]
+      if (activeSub && activeSub.offer) {
+        savingAmount = Number(activeSub.offer.discount || 0)
+      }
+    }
+
+    const newTotalSaved = (Number(customer.total_saved) || 0) + savingAmount
+
     // 2. Insert transaction
     const { error: txError } = await client.from('transactions').insert({
       ...form.value,
@@ -248,57 +273,95 @@ const handleAddTransaction = async () => {
 
     if (txError) throw txError
 
-    // 3. Update customer balance
-    const updateData: any = { balance: balance_after }
-    if (form.value.type === 'deposit') {
-      updateData.total_saved = Number(customer.total_saved) + amount
-    }
-
+    // 3. Update customer balance and total saved
     const { error: custError } = await client
       .from('customers')
-      .update(updateData)
-      .eq('id', form.value.customer_id)
+      .update({
+        balance: balance_after,
+        total_saved: newTotalSaved
+      })
+      .eq('id', customer.id)
 
     if (custError) throw custError
 
-    // 4. Send SMS to Customer
-    try {
-      // Fetch shop name and customer phone
-      const { data: profile } = await client.from('profiles').select('shop_name').eq('id', currentUser.id).single()
-      const { data: custInfo } = await client.from('customers').select('name, mobile_number').eq('id', form.value.customer_id).single()
+    // 4. Handle Subscription (if selected during deposit)
+    if (form.value.type === 'deposit' && form.value.offer_id) {
+      const offer = availableOffers.value.find(o => o.id === form.value.offer_id)
+      if (offer) {
+        const expiresAt = new Date()
+        expiresAt.setDate(expiresAt.getDate() + (offer.duration || 30))
+        
+        await client.from('customer_subscriptions').insert({
+          customer_id: customer.id,
+          offer_id: offer.id,
+          shop_owner_id: currentUser.id,
+          status: 'active',
+          expires_at: expiresAt.toISOString()
+        })
+      }
+    }
 
-      if (custInfo?.mobile_number) {
+    // 5. Send SMS to Customer
+    try {
+      // Fetch shop name
+      const { data: profile } = await client.from('profiles').select('shop_name').eq('id', currentUser.id).single()
+      
+      if (customer.mobile_number) {
         let smsMessage = ''
         const shopName = profile?.shop_name || 'Tqdr'
         
         if (form.value.type === 'deposit') {
-          smsMessage = t('customers.sms.welcome', { shop: shopName, balance: balance_after })
+          if (form.value.offer_id) {
+            const offer = availableOffers.value.find(o => o.id === form.value.offer_id)
+            if (offer) {
+              smsMessage = t('customers.sms.subscription_success', { 
+                offer: offer.name, 
+                shop: shopName, 
+                balance: balance_after, 
+                savings: savingAmount, 
+                total: newTotalSaved 
+              })
+            }
+          } else {
+            smsMessage = t('customers.sms.welcome', { shop: shopName, balance: balance_after }) + 
+                         t('customers.sms.footer', { total: newTotalSaved })
+          }
         } else {
-          // Assume a 5% saving for the example
-          const saving = (amount * 0.05).toFixed(2) 
-          smsMessage = t('customers.sms.subscription_success', { 
-            offer: t('dashboard.merchant_stats.withdrawal'), 
-            shop: shopName, 
-            balance: balance_after, 
-            savings: saving, 
-            total: customer.total_saved 
-          })
+          // Withdrawal SMS
+          if (savingAmount > 0) {
+            smsMessage = t('customers.sms.withdrawal_success_saved', {
+              amount: amount,
+              shop: shopName,
+              balance: balance_after,
+              savings: savingAmount,
+              total: newTotalSaved
+            })
+          } else {
+            smsMessage = t('customers.sms.withdrawal_success', {
+              amount: amount,
+              shop: shopName,
+              balance: balance_after,
+              total: newTotalSaved
+            })
+          }
         }
 
-        await $fetch('/api/sms/send', {
-          method: 'POST',
-          body: {
-            phone: custInfo.mobile_number,
-            message: smsMessage
-          }
-        })
+        if (smsMessage) {
+          await $fetch('/api/sms/send', {
+            method: 'POST',
+            body: {
+              phone: customer.mobile_number,
+              message: smsMessage
+            }
+          })
+        }
       }
     } catch (smsErr) {
       console.error('Failed to send customer SMS:', smsErr)
     }
 
     showAddModal.value = false
-    form.value = { customer_id: '', type: 'deposit', amount: 0, note: '' }
+    form.value = { customer_id: '', type: 'deposit', amount: 0, note: '', offer_id: '' }
     fetchData()
     successMsg.value = t('transactions.success_notified')
     showSuccessModal.value = true
