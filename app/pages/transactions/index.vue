@@ -171,7 +171,13 @@ const fetchData = async () => {
     }
 
     const { data: txData, count } = await txQuery
-    transactions.value = txData || []
+    // Filter out offer-related transactions from withdrawals display
+    // Offer deductions are not real balance withdrawals
+    const filteredForDisplay = (txData || []).filter(tx => {
+      if (tx.type === 'withdrawal' && tx.offer_id) return false // offer deductions are NOT withdrawals
+      return true
+    })
+    transactions.value = filteredForDisplay
     totalTransactions.value = count || 0
 
     // 3. Fetch Customers for the dropdown

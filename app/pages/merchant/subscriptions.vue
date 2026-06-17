@@ -236,7 +236,13 @@ const handleAddSubscriber = async (customerId: string) => {
     if (customer) {
       const { data: profile } = await client.from('profiles').select('shop_name').eq('id', authUser.id).single()
       const shopName = profile?.shop_name || t('brand.name')
-      const smsMessage = t('customers.sms.subscription_success_simple', { offer: offer.name, shop: shopName, duration: offer.duration })
+      const smsMessage = t('customers.sms.subscription_activated', { 
+        offer: offer.name, 
+        shop: shopName, 
+        price: offer.price,
+        uses: offer.usage_limit,
+        duration: offer.duration
+      })
       await $fetch('/api/sms/send', {
         method: 'POST',
         body: { phone: customer.mobile_number, message: smsMessage }

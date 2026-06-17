@@ -77,7 +77,8 @@ const txForm = ref({
   paid_amount: '' as any,
   saved_amount: '' as any,
   note: '',
-  offer_id: ''
+  offer_id: '',
+  service_type: 'prepaid' as 'prepaid' | 'offer' // NEW: to distinguish deduction type
 })
 
 
@@ -195,15 +196,7 @@ const handleAddCustomer = async () => {
     // 4. Send Welcome SMS
     try {
       const shopName = profile.value?.shop_name || 'Tqdr'
-      let smsMessage = t('customers.sms.welcome', { shop: shopName, balance: addedBalance })
-      if (duration > 0) {
-        const offer = availableOffers.value.find(o => o.id === form.value.offer_id)
-        smsMessage += t('customers.sms.savings_info', { discount: offer?.discount || 0, offer: offer?.name })
-      }
-      smsMessage += t('customers.sms.footer', { total: customer.total_saved })
-
-
-
+      const smsMessage = t('customers.sms.welcome', { shop: shopName, balance: addedBalance })
       await $fetch('/api/sms/send', {
         method: 'POST',
         body: {
@@ -211,7 +204,6 @@ const handleAddCustomer = async () => {
           message: smsMessage
         }
       })
-
     } catch (smsErr) {
       console.error('Failed to send welcome SMS:', smsErr)
     }
@@ -254,15 +246,10 @@ const handleQuickTx = async () => {
 
     if (balanceAfter < 0) throw new Error(t('customers.errors.insufficient_balance'))
 
-    // 1. Calculate Saving (if offer selected or if active subscription exists)
+    // 1. Calculate Saving (only for prepaid withdrawals)
     let savingAmount = 0
-    if (txForm.value.type === 'deposit' && txForm.value.offer_id) {
-      const offer = availableOffers.value.find(o => o.id === txForm.value.offer_id)
-      if (offer) {
-        savingAmount = Number(offer.discount || 0)
-      }
-    } else if (txForm.value.type === 'withdrawal') {
-      // Check if customer has an active subscription
+    if (txForm.value.type === 'withdrawal' && txForm.value.service_type === 'prepaid') {
+      // Check if customer has an active subscription for discount calculation
       const { data: activeSubs } = await client
         .from('customer_subscriptions')
         .select('*, offer:subscription_offers(*)')
@@ -276,27 +263,31 @@ const handleQuickTx = async () => {
         savingAmount = Number(activeSub.offer.discount || 0)
       }
     }
+    // For offer-type deductions: decrement usage count, no balance change
 
-    const newTotalSaved = (Number(customer.total_saved) || 0) + savingAmount
-
-    // 2. Update Customer Balance and Total Saved
-    const { error: custError } = await client.from('customers').update({
-      balance: balanceAfter,
-      total_saved: newTotalSaved
-    }).eq('id', customer.id)
-
-    if (custError) throw custError
+    // 2. Update Customer Balance and Total Saved (only for prepaid)
+    const isPrepaidWithdrawal = txForm.value.type === 'withdrawal' && txForm.value.service_type === 'prepaid'
+    const isDeposit = txForm.value.type === 'deposit'
+    const newTotalSaved = isPrepaidWithdrawal ? (Number(customer.total_saved) || 0) + savingAmount : (Number(customer.total_saved) || 0)
+    
+    if (isDeposit || isPrepaidWithdrawal) {
+      const { error: custError } = await client.from('customers').update({
+        balance: balanceAfter,
+        total_saved: newTotalSaved
+      }).eq('id', customer.id)
+      if (custError) throw custError
+    }
 
     // 3. Create Transaction
     await client.from('transactions').insert({
       customer_id: customer.id,
       shop_owner_id: currentUser.id,
       type: txForm.value.type,
-      amount: txForm.value.amount,
+      amount: txForm.value.type === 'withdrawal' && txForm.value.service_type === 'offer' ? 0 : txForm.value.amount,
       balance_before: balanceBefore,
-      balance_after: balanceAfter,
-      note: txForm.value.note,
-      offer_id: txForm.value.offer_id || null
+      balance_after: isDeposit || isPrepaidWithdrawal ? balanceAfter : balanceBefore,
+      note: txForm.value.service_type === 'offer' ? `استخدام عرض: ${txForm.value.note}` : txForm.value.note,
+      offer_id: txForm.value.service_type === 'offer' ? txForm.value.offer_id || null : null
     })
 
     showTxModal.value = false
@@ -322,38 +313,46 @@ const handleQuickTx = async () => {
       const shopName = profile.value?.shop_name || 'Tqdr Plus'
       let smsMessage = ''
 
-      if (txForm.value.type === 'deposit') {
-        if (txForm.value.offer_id) {
-          const offer = availableOffers.value.find(o => o.id === txForm.value.offer_id)
-          if (offer) {
-            smsMessage = t('customers.sms.subscription_success', { 
-              offer: offer.name, 
-              shop: shopName, 
-              balance: balanceAfter, 
-              savings: savingAmount, 
-              total: newTotalSaved 
-            })
-          }
-        } else {
-          smsMessage = t('customers.sms.welcome', { shop: shopName, balance: balanceAfter }) + 
-                       t('customers.sms.footer', { total: newTotalSaved })
-        }
-      } else {
-        // Withdrawal SMS
+      if (txForm.value.type === 'deposit' && !txForm.value.offer_id) {
+        // Prepaid deposit: welcome message
+        smsMessage = t('customers.sms.welcome', { shop: shopName, balance: balanceAfter })
+      } else if (txForm.value.type === 'withdrawal' && txForm.value.service_type === 'prepaid') {
+        // Prepaid withdrawal: deduction message with savings
         if (savingAmount > 0) {
-          smsMessage = t('customers.sms.withdrawal_success_saved', {
-            amount: txForm.value.amount,
-            shop: shopName,
-            balance: balanceAfter,
-            savings: savingAmount,
-            total: newTotalSaved
-          })
-        } else {
           smsMessage = t('customers.sms.withdrawal_success', {
             amount: txForm.value.amount,
             shop: shopName,
             balance: balanceAfter,
-            total: newTotalSaved
+            savings: savingAmount
+          })
+        } else {
+          smsMessage = t('customers.sms.withdrawal_success_no_savings', {
+            amount: txForm.value.amount,
+            shop: shopName,
+            balance: balanceAfter
+          })
+        }
+      } else if (txForm.value.service_type === 'offer') {
+        // Offer usage: remaining uses message
+        const { data: subData } = await client
+          .from('customer_subscriptions')
+          .select('*, offer:subscription_offers(*)')
+          .eq('customer_id', customer.id)
+          .eq('offer_id', txForm.value.offer_id)
+          .gte('expires_at', new Date().toISOString())
+          .single()
+        
+        if (subData) {
+          const expiresDate = new Date(subData.expires_at)
+          const now = new Date()
+          const daysLeft = Math.max(0, Math.ceil((expiresDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+          const usedCount = (subData.used_count || 0) + 1
+          const remaining = Math.max(0, (subData.offer?.usage_limit || 0) - usedCount)
+          smsMessage = t('customers.sms.offer_used', {
+            offer: subData.offer?.name || '',
+            shop: shopName,
+            remaining,
+            days: daysLeft
           })
         }
       }
@@ -361,10 +360,7 @@ const handleQuickTx = async () => {
       if (smsMessage) {
         await $fetch('/api/sms/send', {
           method: 'POST',
-          body: {
-            phone: customer.mobile_number,
-            message: smsMessage
-          }
+          body: { phone: customer.mobile_number, message: smsMessage }
         })
       }
     } catch (smsErr) {
@@ -372,7 +368,7 @@ const handleQuickTx = async () => {
     }
 
     showTxModal.value = false
-    txForm.value = { type: 'deposit', amount: '' as any, paid_amount: '' as any, saved_amount: '' as any, note: '', offer_id: '' }
+    txForm.value = { type: 'deposit', amount: '' as any, paid_amount: '' as any, saved_amount: '' as any, note: '', offer_id: '', service_type: 'prepaid' }
     await fetchCustomers()
 
   } catch (e: any) {
@@ -526,7 +522,6 @@ watch(searchQuery, fetchCustomers)
               <th class="px-6 py-5 text-sm font-bold text-slate-500">{{ $t('customers.table.name') }}</th>
               <th class="px-6 py-5 text-sm font-bold text-slate-500">{{ $t('customers.table.phone') }}</th>
               <th class="px-6 py-5 text-sm font-bold text-slate-500">{{ $t('customers.table.balance') }}</th>
-              <th class="px-6 py-5 text-sm font-bold text-slate-500">{{ $t('customers.table.total_savings') }}</th>
               <th class="px-6 py-5 text-sm font-bold text-slate-500 text-center">{{ $t('customers.quick_actions') }}</th>
             </tr>
           </thead>
@@ -547,12 +542,6 @@ watch(searchQuery, fetchCustomers)
                 <div class="flex flex-col">
                   <span class="text-xl font-black text-emerald-500">{{ customer.balance }} {{ $t('common.currency') }}</span>
                   <span class="text-[10px] text-slate-400">{{ $t('customers.available_balance') }}</span>
-                </div>
-              </td>
-              <td class="px-6 py-5">
-                <div class="flex flex-col">
-                  <span class="text-lg font-bold text-blue-500">{{ customer.total_saved }} {{ $t('common.currency') }}</span>
-                  <span class="text-[10px] text-slate-400">{{ $t('customers.total_savings_desc') }}</span>
                 </div>
               </td>
               <td class="px-6 py-5">
@@ -591,7 +580,7 @@ watch(searchQuery, fetchCustomers)
               </td>
             </tr>
             <tr v-if="customers.length === 0 && !loading">
-              <td colspan="5" class="px-6 py-20 text-center text-slate-500">
+              <td colspan="4" class="px-6 py-20 text-center text-slate-500">
                 <div class="flex flex-col items-center gap-4 opacity-40">
                   <Users class="w-20 h-20 text-slate-300" />
                   <p class="text-xl font-bold">{{ $t('customers.no_customers') }}</p>
@@ -811,17 +800,17 @@ watch(searchQuery, fetchCustomers)
             <input 
               v-model="txForm.amount" 
               type="number" 
-              required 
+              :required="txForm.service_type !== 'offer'"
               autofocus
               step="0.01" 
               placeholder="0.00"
               class="w-full bg-transparent border-none text-center text-6xl font-black text-slate-900 dark:text-white focus:ring-0 placeholder:text-slate-200 dark:placeholder:text-slate-800" 
-              :readonly="txForm.type === 'deposit'"
-              :class="txForm.type === 'deposit' ? 'opacity-50 cursor-not-allowed' : ''"
+              :readonly="txForm.type === 'deposit' || (txForm.type === 'withdrawal' && txForm.service_type === 'offer')"
+              :class="(txForm.type === 'deposit' || (txForm.type === 'withdrawal' && txForm.service_type === 'offer')) ? 'opacity-50 cursor-not-allowed' : ''"
             />
           </div>
 
-          <!-- Subscription Selection in Tx Modal (MANDATORY for deposit) -->
+          <!-- Subscription Selection in Tx Modal (for deposit) -->
           <div v-if="txForm.type === 'deposit' && availableOffers.length > 0" class="space-y-4">
             <label class="text-center block text-sm font-bold text-slate-500 uppercase tracking-widest">{{ $t('customers.select_offer') }}</label>
             <div class="grid grid-cols-1 gap-3">
@@ -844,16 +833,52 @@ watch(searchQuery, fetchCustomers)
             </div>
           </div>
 
+          <!-- Withdrawal Type Selector -->
+          <div v-if="txForm.type === 'withdrawal'" class="space-y-4">
+            <label class="text-center block text-sm font-bold text-slate-500 uppercase tracking-widest">{{ $t('customers.withdrawal_type_title') }}</label>
+            <div class="grid grid-cols-1 gap-3">
+              <button
+                type="button"
+                @click="txForm.service_type = 'prepaid'; txForm.offer_id = ''"
+                :class="txForm.service_type === 'prepaid' ? 'bg-red-500 text-white border-red-500' : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 border-transparent'"
+                class="px-6 py-4 rounded-[20px] border-2 text-sm font-black transition-all flex items-center gap-4"
+              >
+                <div :class="txForm.service_type === 'prepaid' ? 'bg-white/20' : 'bg-red-500/10'" class="w-10 h-10 rounded-xl flex items-center justify-center">
+                  <Wallet class="w-5 h-5" :class="txForm.service_type === 'prepaid' ? 'text-white' : 'text-red-500'" />
+                </div>
+                <div class="text-right flex-1">
+                  <p class="font-black">{{ $t('customers.withdrawal_type_prepaid') }}</p>
+                  <p class="text-xs opacity-70">{{ $t('common.currency') }} {{ selectedCustomer?.balance }}</p>
+                </div>
+              </button>
 
+              <button
+                v-for="offer in availableOffers"
+                :key="offer.id"
+                type="button"
+                @click="txForm.service_type = 'offer'; txForm.offer_id = offer.id; txForm.amount = 0"
+                :class="txForm.service_type === 'offer' && txForm.offer_id === offer.id ? 'bg-amber-500 text-slate-950 border-amber-500' : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 border-transparent'"
+                class="px-6 py-4 rounded-[20px] border-2 text-sm font-black transition-all flex items-center gap-4"
+              >
+                <div :class="txForm.service_type === 'offer' && txForm.offer_id === offer.id ? 'bg-white/20' : 'bg-amber-500/10'" class="w-10 h-10 rounded-xl flex items-center justify-center">
+                  <Sparkles class="w-5 h-5" :class="txForm.service_type === 'offer' && txForm.offer_id === offer.id ? 'text-slate-950' : 'text-amber-500'" />
+                </div>
+                <div class="text-right flex-1">
+                  <p class="font-black">{{ $t('customers.withdrawal_type_offer') }}</p>
+                  <p class="text-xs opacity-70">{{ offer.name }} - {{ $t('customers.remaining_uses_label') }}</p>
+                </div>
+              </button>
+            </div>
+          </div>
 
           <button 
             type="submit" 
             :disabled="loading"
-            :class="txForm.type === 'deposit' ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-red-500 shadow-red-500/20'"
+            :class="txForm.type === 'deposit' ? 'bg-emerald-500 shadow-emerald-500/20' : txForm.service_type === 'offer' ? 'bg-amber-500 shadow-amber-500/20' : 'bg-red-500 shadow-red-500/20'"
             class="w-full text-slate-950 font-black py-6 rounded-[28px] text-xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl flex items-center justify-center gap-3"
           >
             <span v-if="loading" class="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></span>
-            <span>{{ $t('common.confirm') }}</span>
+            <span>{{ txForm.type === 'withdrawal' && txForm.service_type === 'offer' ? $t('customers.remaining_uses_label') : $t('common.confirm') }}</span>
           </button>
 
         </form>

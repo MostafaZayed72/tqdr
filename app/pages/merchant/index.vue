@@ -50,11 +50,11 @@ const loading = ref(true)
 const isSuspended = computed(() => profile.value?.status === 'suspended')
 
 const filteredTransactions = computed(() => {
-  if (txFilter.value === 'all') return recentTransactions.value.slice(0, 4)
-  if (txFilter.value === 'prepaid') return recentTransactions.value.filter(tx => !tx.offer_id).slice(0, 4)
-  return recentTransactions.value
-    .filter(tx => tx.offer_id === txFilter.value)
-    .slice(0, 4)
+  // Only show prepaid withdrawals (no offer_id) and deposits - never subscription-related deductions
+  const prepaidOnly = recentTransactions.value.filter(tx => !tx.offer_id)
+  if (txFilter.value === 'all') return prepaidOnly.slice(0, 4)
+  if (txFilter.value === 'prepaid') return prepaidOnly.slice(0, 4)
+  return prepaidOnly.slice(0, 4)
 })
 
 // Chart Data
@@ -229,7 +229,7 @@ onMounted(fetchDashboardData)
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
       <div>
         <h1 class="text-5xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-4">
-          <span>{{ $t('dashboard.welcome') }}، {{ user?.email?.split('@')[0] }}</span>
+          <span>{{ $t('dashboard.welcome') }}، {{ profile?.shop_name || user?.email?.split('@')[0] }}</span>
           <span class="animate-bounce">👋</span>
         </h1>
         <p class="text-slate-500 dark:text-slate-400 mt-3 font-medium text-lg">{{ $t('dashboard.merchant_stats.welcome_desc') }}</p>
@@ -420,6 +420,7 @@ onMounted(fetchDashboardData)
           <div>
             <h3 class="text-3xl font-black text-slate-900 dark:text-white">{{ $t('dashboard.merchant_stats.recent_activity') }}</h3>
             <p class="text-base text-slate-500 font-medium">{{ $t('dashboard.merchant_stats.recent_activity_desc') }}</p>
+            <p class="text-xs text-amber-500 font-bold mt-1">{{ $t('dashboard.merchant_stats.prepaid_only') }}</p>
           </div>
         </div>
 
