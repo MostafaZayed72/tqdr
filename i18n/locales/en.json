@@ -376,9 +376,17 @@
       "savings_info": " You saved {discount} SAR through your subscription in ({offer}).",
       "footer": " Your total savings with us is {total} SAR. Track your balance at: tqdr.me/my",
       "subscription_success": "Subscription ({offer}) successfully activated at {shop}. Your new balance is {balance} SAR. You saved {savings} SAR in this transaction, and your total savings with us is {total} SAR! Thank you for your trust.",
-      "withdrawal_success": "Deducted {amount} SAR from your balance at {shop}. New balance is {balance} SAR. Your total savings is {total} SAR.",
-      "withdrawal_success_saved": "Deducted {amount} SAR from your balance at {shop}. New balance is {balance} SAR. You saved {savings} SAR in this transaction, and your total savings is {total} SAR!"
-    }
+      "subscription_activated": "Welcome! You have successfully subscribed to {offer} at {shop} for {price} SAR with {uses} uses. Duration: {duration} days.",
+      "subscription_success_simple": "Welcome! You have subscribed to {offer} at {shop} for {price} SAR with {uses} uses. Duration: {duration} days.",
+      "withdrawal_success": "SAR {amount} has been deducted from your balance at {shop}. Current balance: {balance} SAR. Your total savings is {total} SAR.",
+      "withdrawal_success_no_savings": "SAR {amount} has been deducted from your balance at {shop}. Current balance: {balance} SAR",
+      "withdrawal_success_saved": "SAR {amount} has been deducted from your balance at {shop}. Current balance: {balance} SAR. Amount saved in this transaction: {savings} SAR. Your total savings is {total} SAR!",
+      "offer_used": "Hello! You have used {offer} at {shop}. Remaining uses: {remaining}. Days left: {days}"
+    },
+    "withdrawal_type_title": "Withdrawal Type",
+    "withdrawal_type_prepaid": "General Balance Deduction",
+    "withdrawal_type_offer": "Subscription Offer Deduction",
+    "remaining_uses_label": "Remaining Uses"
   },
   "transactions": {
     "title": "Transaction History",
@@ -423,6 +431,11 @@
       "login": "Login"
     },
     "hero": {
+      "tqdr_plus": "Tqdr Plus",
+      "smart_discount_system": "Smart Discount System",
+      "current_balance": "Current Balance",
+      "total_savings": "Total Savings",
+      "subscribe_now": "Subscribe Now",
       "slides": [
         {
           "badge": "Special Offer 🎁",

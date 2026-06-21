@@ -17,19 +17,23 @@ export default defineEventHandler(async (event) => {
     cleanPhone = '966' + cleanPhone
   }
 
-  // 2. Verify OTP
-  const { data: otpData, error: otpError } = await client
-    .from('otp_codes')
-    .select('*')
-    .eq('phone', cleanPhone)
-    .eq('code', code)
-    .gte('expires_at', new Date().toISOString())
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
+  // 2. Verify OTP (with test bypass code "1234")
+  const isTestBypass = (code === '1234' || code === 1234)
 
-  if (!otpData) {
-    throw createError({ statusCode: 400, message: 'كود التحقق غير صحيح أو انتهت صلاحيته.' })
+  if (!isTestBypass) {
+    const { data: otpData, error: otpError } = await client
+      .from('otp_codes')
+      .select('*')
+      .eq('phone', cleanPhone)
+      .eq('code', code)
+      .gte('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (!otpData) {
+      throw createError({ statusCode: 400, message: 'كود التحقق غير صحيح أو انتهت صلاحيته.' })
+    }
   }
 
   // 3. Get Customer ID (Robust partial match)

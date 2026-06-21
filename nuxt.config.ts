@@ -41,7 +41,7 @@ export default defineNuxtConfig({
       { code: 'ar', language: 'ar-SA', file: 'ar.json', name: 'العربية', dir: 'rtl' },
     ],
     defaultLocale: 'ar',
-    langDir: fileURLToPath(new URL('./i18n/locales', import.meta.url)),
+    langDir: 'locales',
     strategy: 'no_prefix',
     lazy: true,
   },

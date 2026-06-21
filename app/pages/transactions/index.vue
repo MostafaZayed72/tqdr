@@ -343,11 +343,10 @@ const handleAddTransaction = async () => {
               total: newTotalSaved
             })
           } else {
-            smsMessage = t('customers.sms.withdrawal_success', {
+            smsMessage = t('customers.sms.withdrawal_success_no_savings', {
               amount: amount,
               shop: shopName,
-              balance: balance_after,
-              total: newTotalSaved
+              balance: balance_after
             })
           }
         }
@@ -689,23 +688,6 @@ onMounted(async () => {
                   {{ c.name }} ({{ c.mobile_number }})
                 </option>
               </select>
-            </div>
-          </div>
-
-          <!-- Offer Filter Dropdown -->
-          <div class="relative min-w-[200px]">
-            <select 
-              v-model="offerFilter"
-              class="w-full bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-2xl px-6 py-4 text-xs font-black text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-emerald-500/50 appearance-none cursor-pointer"
-            >
-              <option value="all">{{ $t('transactions.filters.all_offers') }}</option>
-              <option value="prepaid">{{ $t('customers.no_offer_prepaid') }}</option>
-              <option v-for="offer in availableOffers" :key="offer.id" :value="offer.id">
-                {{ offer.name }}
-              </option>
-            </select>
-            <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-400">
-              <ChevronDown class="w-4 h-4" />
             </div>
           </div>
 

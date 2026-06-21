@@ -234,10 +234,6 @@ const handleQuickTx = async () => {
     const balanceBefore = Number(customer.balance)
     let balanceAfter = balanceBefore
 
-    if (txForm.value.type === 'deposit' && !txForm.value.offer_id) {
-      throw new Error(t('customers.errors.select_offer_first'))
-    }
-
     if (txForm.value.type === 'deposit') {
       balanceAfter += Number(txForm.value.amount)
     } else {
@@ -246,33 +242,47 @@ const handleQuickTx = async () => {
 
     if (balanceAfter < 0) throw new Error(t('customers.errors.insufficient_balance'))
 
-    // 1. Calculate Saving (only for prepaid withdrawals)
+    // 1. Calculate Saving
     let savingAmount = 0
-    if (txForm.value.type === 'withdrawal' && txForm.value.service_type === 'prepaid') {
-      // Check if customer has an active subscription for discount calculation
-      const { data: activeSubs } = await client
-        .from('customer_subscriptions')
-        .select('*, offer:subscription_offers(*)')
-        .eq('customer_id', customer.id)
-        .eq('status', 'active')
-        .gte('expires_at', new Date().toISOString())
-        .limit(1)
-      
-      const activeSub = activeSubs?.[0]
-      if (activeSub && activeSub.offer) {
-        savingAmount = Number(activeSub.offer.discount || 0)
+    if (txForm.value.type === 'deposit' && txForm.value.offer_id) {
+      const offer = availableOffers.value.find(o => o.id === txForm.value.offer_id)
+      if (offer) {
+        savingAmount = Number(offer.discount || 0)
+      }
+    } else if (txForm.value.type === 'withdrawal') {
+      if (txForm.value.service_type === 'prepaid') {
+        // Check if customer has an active subscription for discount calculation
+        const { data: activeSubs } = await client
+          .from('customer_subscriptions')
+          .select('*, offer:subscription_offers(*)')
+          .eq('customer_id', customer.id)
+          .eq('status', 'active')
+          .gte('expires_at', new Date().toISOString())
+          .limit(1)
+        
+        const activeSub = activeSubs?.[0]
+        if (activeSub && activeSub.offer) {
+          savingAmount = Number(activeSub.offer.discount || 0)
+        }
+      } else if (txForm.value.service_type === 'offer') {
+        const offer = availableOffers.value.find(o => o.id === txForm.value.offer_id)
+        if (offer) {
+          savingAmount = Number(offer.discount || 0)
+        }
       }
     }
-    // For offer-type deductions: decrement usage count, no balance change
 
-    // 2. Update Customer Balance and Total Saved (only for prepaid)
+    // 2. Update Customer Balance and Total Saved
     const isPrepaidWithdrawal = txForm.value.type === 'withdrawal' && txForm.value.service_type === 'prepaid'
+    const isOfferWithdrawal = txForm.value.type === 'withdrawal' && txForm.value.service_type === 'offer'
     const isDeposit = txForm.value.type === 'deposit'
-    const newTotalSaved = isPrepaidWithdrawal ? (Number(customer.total_saved) || 0) + savingAmount : (Number(customer.total_saved) || 0)
+    const newTotalSaved = (isPrepaidWithdrawal || isOfferWithdrawal || (isDeposit && txForm.value.offer_id))
+      ? (Number(customer.total_saved) || 0) + savingAmount
+      : (Number(customer.total_saved) || 0)
     
-    if (isDeposit || isPrepaidWithdrawal) {
+    if (isDeposit || isPrepaidWithdrawal || isOfferWithdrawal) {
       const { error: custError } = await client.from('customers').update({
-        balance: balanceAfter,
+        balance: isOfferWithdrawal ? balanceBefore : balanceAfter,
         total_saved: newTotalSaved
       }).eq('id', customer.id)
       if (custError) throw custError
@@ -287,7 +297,7 @@ const handleQuickTx = async () => {
       balance_before: balanceBefore,
       balance_after: isDeposit || isPrepaidWithdrawal ? balanceAfter : balanceBefore,
       note: txForm.value.service_type === 'offer' ? `استخدام عرض: ${txForm.value.note}` : txForm.value.note,
-      offer_id: txForm.value.service_type === 'offer' ? txForm.value.offer_id || null : null
+      offer_id: (txForm.value.type === 'deposit' && txForm.value.offer_id) ? txForm.value.offer_id : (txForm.value.service_type === 'offer' ? txForm.value.offer_id || null : null)
     })
 
     showTxModal.value = false
@@ -313,17 +323,30 @@ const handleQuickTx = async () => {
       const shopName = profile.value?.shop_name || 'Tqdr Plus'
       let smsMessage = ''
 
-      if (txForm.value.type === 'deposit' && !txForm.value.offer_id) {
-        // Prepaid deposit: welcome message
-        smsMessage = t('customers.sms.welcome', { shop: shopName, balance: balanceAfter })
+      if (txForm.value.type === 'deposit') {
+        if (txForm.value.offer_id) {
+          const offer = availableOffers.value.find(o => o.id === txForm.value.offer_id)
+          if (offer) {
+            smsMessage = t('customers.sms.subscription_success', {
+              offer: offer.name,
+              shop: shopName,
+              balance: balanceAfter,
+              savings: savingAmount,
+              total: newTotalSaved
+            })
+          }
+        } else {
+          smsMessage = t('customers.sms.welcome', { shop: shopName, balance: balanceAfter })
+        }
       } else if (txForm.value.type === 'withdrawal' && txForm.value.service_type === 'prepaid') {
         // Prepaid withdrawal: deduction message with savings
         if (savingAmount > 0) {
-          smsMessage = t('customers.sms.withdrawal_success', {
+          smsMessage = t('customers.sms.withdrawal_success_saved', {
             amount: txForm.value.amount,
             shop: shopName,
             balance: balanceAfter,
-            savings: savingAmount
+            savings: savingAmount,
+            total: newTotalSaved
           })
         } else {
           smsMessage = t('customers.sms.withdrawal_success_no_savings', {
@@ -805,8 +828,8 @@ watch(searchQuery, fetchCustomers)
               step="0.01" 
               placeholder="0.00"
               class="w-full bg-transparent border-none text-center text-6xl font-black text-slate-900 dark:text-white focus:ring-0 placeholder:text-slate-200 dark:placeholder:text-slate-800" 
-              :readonly="txForm.type === 'deposit' || (txForm.type === 'withdrawal' && txForm.service_type === 'offer')"
-              :class="(txForm.type === 'deposit' || (txForm.type === 'withdrawal' && txForm.service_type === 'offer')) ? 'opacity-50 cursor-not-allowed' : ''"
+              :readonly="(txForm.type === 'deposit' && txForm.offer_id !== '') || (txForm.type === 'withdrawal' && txForm.service_type === 'offer')"
+              :class="((txForm.type === 'deposit' && txForm.offer_id !== '') || (txForm.type === 'withdrawal' && txForm.service_type === 'offer')) ? 'opacity-50 cursor-not-allowed' : ''"
             />
           </div>
 
@@ -814,6 +837,20 @@ watch(searchQuery, fetchCustomers)
           <div v-if="txForm.type === 'deposit' && availableOffers.length > 0" class="space-y-4">
             <label class="text-center block text-sm font-bold text-slate-500 uppercase tracking-widest">{{ $t('customers.select_offer') }}</label>
             <div class="grid grid-cols-1 gap-3">
+              <button 
+                type="button"
+                @click="txForm.offer_id = ''; txForm.amount = ''; txForm.paid_amount = '';"
+                :class="txForm.offer_id === '' ? 'bg-emerald-500 text-slate-950 border-emerald-500 scale-105 shadow-lg' : 'bg-slate-100 dark:bg-white/5 text-slate-500 border-transparent hover:bg-slate-200'"
+                class="px-6 py-4 rounded-[24px] border-2 text-base font-black transition-all flex items-center justify-between group"
+              >
+                <div class="flex items-center gap-4">
+                  <div :class="txForm.offer_id === '' ? 'bg-white/20' : 'bg-emerald-500/10'" class="w-10 h-10 rounded-xl flex items-center justify-center">
+                    <Wallet class="w-5 h-5" :class="txForm.offer_id === '' ? 'text-slate-950' : 'text-emerald-500'" />
+                  </div>
+                  <span>{{ $t('customers.no_offer_prepaid') }}</span>
+                </div>
+              </button>
+
               <button 
                 type="button"
                 v-for="offer in availableOffers" 
